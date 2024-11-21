@@ -7,13 +7,24 @@ import android.view.View;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.TextView;
+import android.widget.Toast;
 
+import com.google.firebase.firestore.FirebaseFirestore;
 
-public class SignUpActivity extends android.app.Activity {
+import java.util.HashMap;
+import java.util.Map;
+
+public class SignUpActivity extends AppCompatActivity {
+
+    private FirebaseFirestore db;
+
     @Override
-    protected void onCreate(Bundle SavedInstaceState) {
-        super.onCreate(SavedInstaceState);
+    protected void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_signup);
+
+        // Initialize Firestore
+        db = FirebaseFirestore.getInstance();
 
         // Access views using findViewById
         TextView textView = findViewById(R.id.textView);
@@ -34,6 +45,24 @@ public class SignUpActivity extends android.app.Activity {
                 String phoneNumber = phoneNumberEditText.getText().toString();
                 String email = emailEditText.getText().toString();
                 String password = passwordEditText.getText().toString();
+
+                // Create a user map
+                Map<String, Object> user = new HashMap<>();
+                user.put("firstName", firstName);
+                user.put("lastName", lastName);
+                user.put("phoneNumber", phoneNumber);
+                user.put("email", email);
+                user.put("password", password);
+
+                // Add a new document with a generated ID
+                db.collection("users")
+                        .add(user)
+                        .addOnSuccessListener(documentReference -> {
+                            Toast.makeText(SignUpActivity.this, "User registered successfully!", Toast.LENGTH_SHORT).show();
+                        })
+                        .addOnFailureListener(e -> {
+                            Toast.makeText(SignUpActivity.this, "Error registering user: " + e.getMessage(), Toast.LENGTH_SHORT).show();
+                        });
             }
         });
     }

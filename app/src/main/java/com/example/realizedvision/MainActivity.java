@@ -13,6 +13,7 @@ public class MainActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
+        // Initialize views
         tvWelcomeMessage = findViewById(R.id.textView2);
 
         // Get data from intent
@@ -20,6 +21,10 @@ public class MainActivity extends AppCompatActivity {
         String lastName = getIntent().getStringExtra("lastName");
 
         // Set welcome message
-        tvWelcomeMessage.setText("Welcome, " + firstName + " " + lastName + "!");
+        if (firstName != null && lastName != null) {
+            tvWelcomeMessage.setText("Welcome, " + firstName + " " + lastName + "!");
+        } else {
+            tvWelcomeMessage.setText("Welcome!");
+        }
     }
 }

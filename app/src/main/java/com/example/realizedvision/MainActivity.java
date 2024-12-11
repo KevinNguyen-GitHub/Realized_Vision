@@ -1,12 +1,22 @@
 package com.example.realizedvision;
 
+import android.content.Intent;
 import android.os.Bundle;
+import android.view.View;
+import android.widget.Button;
 import android.widget.TextView;
 import androidx.appcompat.app.AppCompatActivity;
+
+import com.google.firebase.auth.FirebaseAuth;
+import com.google.firebase.auth.FirebaseUser;
 
 public class MainActivity extends AppCompatActivity {
 
     private TextView tvWelcomeMessage;
+
+    FirebaseAuth auth;
+    FirebaseUser user;
+    Button button;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -15,6 +25,15 @@ public class MainActivity extends AppCompatActivity {
 
         // Initialize views
         tvWelcomeMessage = findViewById(R.id.textView2);
+        auth = FirebaseAuth.getInstance();
+        button = findViewById(R.id.btn_logout);
+        user = auth.getCurrentUser();
+
+        if (user == null) {
+            Intent intent = new Intent(getApplicationContext(), LoginActivity.class);
+            startActivity(intent);
+            finish();
+        }
 
         // Get data from intent
         String firstName = getIntent().getStringExtra("firstName");
@@ -26,5 +45,15 @@ public class MainActivity extends AppCompatActivity {
         } else {
             tvWelcomeMessage.setText("Welcome!");
         }
+
+        button.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                FirebaseAuth.getInstance().signOut();
+                Intent intent = new Intent(getApplicationContext(), LoginActivity.class);
+                startActivity(intent);
+                finish();
+            }
+        });
     }
 }

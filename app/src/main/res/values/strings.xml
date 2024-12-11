@@ -6,9 +6,9 @@
     <string name="phone">Phone Number</string>
     <string name="email">Email</string>
     <string name="password">Password</string>
-    <string name="favorite">Favorite</string>
-    <string name="message">Message</string>
-    <string name="profile">Profile</string>
-    <string name="favorites" />
-    <string name="home">Home</string>
+    <string name="login">Login</string>
+    <string name="register_now">Register Now</string>
+    <string name="realized_vision">Realized Vision</string>
+    <string name="logout">Logout</string>
+    <string name="login_now">Login Now</string>
 </resources>

@@ -132,7 +132,7 @@
             android:layout_height="32dp"
             android:layout_weight="1"
             android:src="@drawable/ic_home"
-            android:contentDescription="@string/home"
+            android:contentDescription="Home"
             android:layout_gravity="center"/>
 
         <ImageView

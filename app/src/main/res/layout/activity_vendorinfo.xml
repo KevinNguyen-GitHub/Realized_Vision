@@ -43,34 +43,34 @@
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@+id/vendorInfo">
 
-        <TextView
+        <EditText
             android:id="@+id/companyName"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginBottom="20dp"
             android:background="@drawable/rounded_edittext"
             android:padding="10dp"
-            android:text="Company Name"
+            android:hint="Company Name"
             android:textSize="20sp" />
 
-        <TextView
+        <EditText
             android:id="@+id/address"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginBottom="20dp"
             android:background="@drawable/rounded_edittext"
             android:padding="10dp"
-            android:text="Address"
+            android:hint="Address"
             android:textSize="20sp" />
 
-        <TextView
+        <EditText
             android:id="@+id/yearsInBusiness"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginBottom="20dp"
             android:background="@drawable/rounded_edittext"
             android:padding="10dp"
-            android:text="Years in Business"
+            android:hint="Years in Business"
             android:textSize="20sp" />
     </LinearLayout>
 
@@ -81,6 +81,7 @@
         android:layout_marginTop="36dp"
         android:background="@drawable/rounded_button"
         android:text="Submit"
+        android:textAlignment="center"
         android:textColor="@color/white"
         android:textSize="30sp"
         app:layout_constraintEnd_toEndOf="parent"

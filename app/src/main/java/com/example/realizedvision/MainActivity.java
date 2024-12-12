@@ -16,7 +16,8 @@ public class MainActivity extends AppCompatActivity {
 
     FirebaseAuth auth;
     FirebaseUser user;
-    Button button;
+    Button buttonLogout;
+    Button buttonProfile;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -26,7 +27,8 @@ public class MainActivity extends AppCompatActivity {
         // Initialize views
         tvWelcomeMessage = findViewById(R.id.textView2);
         auth = FirebaseAuth.getInstance();
-        button = findViewById(R.id.btn_logout);
+        buttonLogout = findViewById(R.id.btn_logout);
+        buttonProfile = findViewById(R.id.btn_profile);
         user = auth.getCurrentUser();
 
         if (user == null) {
@@ -46,7 +48,7 @@ public class MainActivity extends AppCompatActivity {
             tvWelcomeMessage.setText("Welcome!");
         }
 
-        button.setOnClickListener(new View.OnClickListener() {
+        buttonLogout.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
                 FirebaseAuth.getInstance().signOut();
@@ -55,5 +57,16 @@ public class MainActivity extends AppCompatActivity {
                 finish();
             }
         });
+
+        buttonProfile.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                Intent intent = new Intent(getApplicationContext(), ProfileActivity.class);
+                startActivity(intent);
+            }
+        });
+
+
+
     }
 }

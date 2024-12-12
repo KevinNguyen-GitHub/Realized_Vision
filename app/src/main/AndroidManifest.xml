@@ -21,11 +21,6 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
-        <activity android:name=".SettingsActivity"
-            android:exported="true"
-            android:label="Realized Vision"
-            android:theme="@style/Theme.RealizedVision">
-        </activity>
         <activity android:name=".ChangeNameActivity"
             android:exported="true"
             android:label="Realized Vision"
@@ -56,15 +51,6 @@
             </intent-filter>
         </activity>
         <activity
-            android:name=".SettingsActivity"
-            android:exported="true">
-            <intent-filter>
-                <action android:name="android.intent.action.MAIN" />
-
-                <category android:name="android.intent.category.LAUNCHER" />
-            </intent-filter>
-        </activity>
-        <activity
             android:name=".SignUpActivity"
             android:exported="true"
             android:label="Realized Vision"
@@ -77,6 +63,28 @@
         </activity>
         <activity
             android:name=".MainActivity"
+            android:exported="true"
+            android:label="Realized Vision"
+            android:theme="@style/Theme.RealizedVision">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+        <activity
+            android:name=".SettingsActivity"
+            android:exported="true"
+            android:label="Realized Vision"
+            android:theme="@style/Theme.RealizedVision">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+        <activity
+            android:name=".FavoritesActivity"
             android:exported="true"
             android:label="Realized Vision"
             android:theme="@style/Theme.RealizedVision">

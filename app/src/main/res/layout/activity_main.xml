@@ -1,41 +1,272 @@
-<?xml version="1.0" encoding="utf-8"?>
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:app="http://schemas.android.com/apk/res-auto"
-    android:layout_width="match_parent"
-    android:layout_height="match_parent"
-    android:orientation="vertical"
-    android:gravity="center">
+<androidx.constraintlayout.widget.ConstraintLayout
+xmlns:android="http://schemas.android.com/apk/res/android"
+xmlns:app="http://schemas.android.com/apk/res-auto"
+xmlns:tools="http://schemas.android.com/tools"
+android:layout_width="match_parent"
+android:layout_height="match_parent"
+android:background="@color/beige"
+tools:context=".MainActivity">
 
-    <TextView
-        android:id="@+id/textView2"
-        android:layout_width="wrap_content"
+<!-- Search Bar -->
+<LinearLayout
+    android:id="@+id/search_bar"
+    android:layout_width="0dp"
+    android:layout_height="wrap_content"
+    android:orientation="horizontal"
+    android:background="@color/white"
+    android:padding="8dp"
+    app:layout_constraintTop_toTopOf="parent"
+    app:layout_constraintStart_toStartOf="parent"
+    app:layout_constraintEnd_toEndOf="parent">
+
+    <ImageView
+        android:id="@+id/menu_icon"
+        android:layout_width="48dp"
+        android:layout_height="48dp"
+        android:src="@drawable/ic_menu"
+        android:contentDescription="Menu Icon"
+        android:layout_gravity="center_vertical" />
+
+    <EditText
+        android:id="@+id/search_input"
+        android:layout_width="0dp"
         android:layout_height="wrap_content"
-        android:text="Welcome Message"
-        android:textColor="@color/black"
-        android:textSize="20sp"
-        app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintHorizontal_bias="0.5"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toTopOf="parent"
-        app:layout_constraintVertical_bias="0.5" />
+        android:layout_gravity="center_vertical"
+        android:layout_weight="1"
+        android:hint="Hinted search text"
+        android:background="@null"
+        android:paddingStart="8dp"
+        android:paddingEnd="8dp" />
 
-    <Button
-        android:id="@+id/btn_logout"
-        android:text="@string/logout"
-        android:layout_margin="10dp"
-        android:textColor="#FFFFFF"
-        android:background="@drawable/rounded_button"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content" />
-
-    <Button
-        android:id="@+id/btn_profile"
-        android:text="Profile"
-        android:layout_margin="10dp"
-        android:textColor="#FFFFFF"
-        android:background="@drawable/rounded_button"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content" />
-
+    <ImageView
+        android:id="@+id/search_icon"
+        android:layout_width="48dp"
+        android:layout_height="48dp"
+        android:src="@drawable/ic_search"
+        android:contentDescription="Search Icon"
+        android:layout_gravity="center_vertical" />
 </LinearLayout>
+    <HorizontalScrollView
+        android:id="@+id/filter_tags"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="8dp"
+        android:paddingStart="16dp"
+        android:paddingEnd="16dp"
+        app:layout_constraintTop_toBottomOf="@id/search_bar"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintLeft_toLeftOf="parent"
+        app:layout_constraintRight_toRightOf="parent"
+        app:layout_constraintEnd_toEndOf="parent">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:orientation="horizontal"
+            android:weightSum="5">
+
+
+            <Button
+                android:id="@+id/filter_artwork"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:background="@drawable/rounded_button"
+                android:padding="4dp"
+                android:paddingLeft="10dp"
+                android:layout_weight="1"
+                android:text="Art work"
+                android:textColor="@color/white" />
+
+            <Button
+                android:id="@+id/filter_woodwork"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                app:layout_constraintLeft_toLeftOf="@+id/filter_artwork"
+                android:background="@drawable/rounded_button"
+                android:padding="8dp"
+                android:layout_weight="1"
+                android:text="Woodwork"
+                android:textColor="@color/white"
+                android:layout_marginStart="8dp" />
+
+            <Button
+                android:id="@+id/filter_metalwork"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:background="@drawable/rounded_button"
+                android:padding="8dp"
+                android:layout_weight="1"
+                android:text="Metal work"
+                android:textColor="@color/white"
+                android:layout_marginStart="8dp" />
+
+            <ImageView
+                android:id="@+id/add_tag_icon"
+                android:layout_width="32dp"
+                android:layout_height="32dp"
+                android:layout_weight="2"
+                android:layout_marginStart="8dp"
+                android:src="@drawable/ic_add"
+                android:contentDescription="Add Tag Icon"
+                android:layout_gravity="center" />
+        </LinearLayout>
+    </HorizontalScrollView>
+<!-- Scrollable Vendor Postings -->
+    <ScrollView
+        android:layout_width="0dp"
+        android:layout_height="0dp"
+        app:layout_constraintTop_toBottomOf="@id/filter_tags"
+        app:layout_constraintBottom_toTopOf="@id/bottom_navigation"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:padding="16dp">
+
+            <!-- First Posting Card -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="16dp"
+                android:background="@drawable/rounded_edittext"
+                android:elevation="4dp"
+                android:orientation="vertical"
+                android:padding="16dp">
+
+                <ImageView
+                    android:id="@+id/posting_image"
+                    android:layout_width="match_parent"
+                    android:layout_height="150dp"
+                    android:contentDescription="Posting Image"
+                    android:scaleType="centerCrop"
+                    android:src="@drawable/ic_placeholder_image" />
+
+                <TextView
+                    android:id="@+id/posting_title"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="8dp"
+                    android:text="Ceramic Pot"
+                    android:textStyle="bold"
+                    android:textSize="16sp" />
+
+                <TextView
+                    android:id="@+id/posting_price"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="4dp"
+                    android:text="$80"
+                    android:textSize="14sp"
+                    android:textColor="@color/green" />
+
+                <TextView
+                    android:id="@+id/posting_description"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="8dp"
+                    android:text="Hand painted ceramic pot with engraved designs"
+                    android:textSize="14sp"
+                    android:textColor="@color/gray" />
+            </LinearLayout>
+
+            <!-- Second Posting Card -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="16dp"
+                android:background="@drawable/rounded_edittext"
+                android:elevation="4dp"
+                android:orientation="vertical"
+                android:padding="16dp">
+
+                <ImageView
+                    android:id="@+id/posting_image_2"
+                    android:layout_width="match_parent"
+                    android:layout_height="150dp"
+                    android:contentDescription="Posting Image"
+                    android:scaleType="centerCrop"
+                    android:src="@drawable/ic_placeholder_image" />
+
+                <TextView
+                    android:id="@+id/posting_title_2"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="8dp"
+                    android:text="Wooden Chair"
+                    android:textStyle="bold"
+                    android:textSize="16sp" />
+
+                <TextView
+                    android:id="@+id/posting_price_2"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="4dp"
+                    android:text="$30"
+                    android:textSize="14sp"
+                    android:textColor="@color/green" />
+
+                <TextView
+                    android:id="@+id/posting_description_2"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="8dp"
+                    android:text="Modern style wooden chair"
+                    android:textSize="14sp"
+                    android:textColor="@color/gray" />
+            </LinearLayout>
+
+            <!-- Add more posting cards here if needed -->
+        </LinearLayout>
+    </ScrollView>
+
+
+<!-- Bottom Navigation Bar -->
+<LinearLayout
+    android:id="@+id/bottom_navigation"
+    android:layout_width="0dp"
+    android:layout_height="wrap_content"
+    android:orientation="horizontal"
+    android:background="@color/maroon"
+    android:padding="8dp"
+    android:gravity="center"
+    app:layout_constraintBottom_toBottomOf="parent"
+    app:layout_constraintStart_toStartOf="parent"
+    app:layout_constraintEnd_toEndOf="parent"
+    android:weightSum="4">
+
+    <ImageView
+        android:id="@+id/home_icon"
+        android:layout_width="32dp"
+        android:layout_height="32dp"
+        android:layout_weight="1"
+        android:src="@drawable/ic_home"
+        android:contentDescription="Home" />
+
+    <ImageView
+        android:id="@+id/favorites_icon"
+        android:layout_width="32dp"
+        android:layout_height="32dp"
+        android:layout_weight="1"
+        android:src="@drawable/ic_favorite"
+        android:contentDescription="Favorites" />
+
+    <ImageView
+        android:id="@+id/messages_icon"
+        android:layout_width="32dp"
+        android:layout_height="32dp"
+        android:layout_weight="1"
+        android:src="@drawable/ic_message"
+        android:contentDescription="Messages" />
+
+    <ImageView
+        android:id="@+id/profile_icon"
+        android:layout_width="32dp"
+        android:layout_height="32dp"
+        android:layout_weight="1"
+        android:src="@drawable/ic_profile"
+        android:contentDescription="Profile" />
+</LinearLayout>
+</androidx.constraintlayout.widget.ConstraintLayout>

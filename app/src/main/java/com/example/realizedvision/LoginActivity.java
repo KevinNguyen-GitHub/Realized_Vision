@@ -70,7 +70,7 @@ public class LoginActivity extends AppCompatActivity {
         buttonLogin.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                String email = String.valueOf(editTextPassword.getText());
+                String email = String.valueOf(editTextEmail.getText());
                 String password = String.valueOf(editTextPassword.getText());
 
                 if (TextUtils.isEmpty(email)){

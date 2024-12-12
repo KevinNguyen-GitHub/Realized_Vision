@@ -2,6 +2,7 @@ package com.example.realizedvision;
 
 import android.content.Intent;
 import android.os.Bundle;
+import android.view.View;
 import android.widget.ImageView;
 
 import androidx.appcompat.app.AppCompatActivity;
@@ -9,6 +10,8 @@ import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 import java.util.ArrayList;
 import java.util.List;
+
+
 
 public class ProfileActivity extends AppCompatActivity {
 
@@ -36,6 +39,8 @@ public class ProfileActivity extends AppCompatActivity {
         Intent intent = new Intent(ProfileActivity.this, targetActivity);
         startActivity(intent);
     }
+
+
 
 
 }

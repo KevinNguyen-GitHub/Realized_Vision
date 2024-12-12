@@ -18,6 +18,22 @@ public class SettingsActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_settings);
 
+        Button termsAndConditionsButton = findViewById(R.id.tcButton);
+        termsAndConditionsButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                Intent intent = new Intent(SettingsActivity.this, TermsAndConditionsActivity.class);
+                startActivity(intent);
+            }
+        });
+        Button orderHistoryButton = findViewById(R.id.historyButton);
+        orderHistoryButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                Intent intent = new Intent(SettingsActivity.this, OrderHistoryActivity.class);
+                startActivity(intent);
+            }
+        });
         Button changeUsernameButton = findViewById(R.id.changeUsernameButton);
         changeUsernameButton.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -26,6 +42,7 @@ public class SettingsActivity extends AppCompatActivity {
                 startActivity(intent);
             }
         });
+
         Button changePasswordButton = findViewById(R.id.changePasswordButton);
         changePasswordButton.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -34,6 +51,7 @@ public class SettingsActivity extends AppCompatActivity {
                 startActivity(intent);
             }
         });
+
         Button notificationsButton = findViewById(R.id.notificationsButton);
         notificationsButton.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -42,6 +60,7 @@ public class SettingsActivity extends AppCompatActivity {
                 startActivity(intent);
             }
         });
+
         Button vendorInfoButton = findViewById(R.id.upgradeButton);
         vendorInfoButton.setOnClickListener(new View.OnClickListener() {
             @Override

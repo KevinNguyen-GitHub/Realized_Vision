@@ -100,6 +100,17 @@
                 android:gravity="start|top"
                 android:padding="2dp"
                 android:text="Notifications" />
+
+            <Button
+                android:id="@+id/btn_logout"
+                android:layout_width="150dp"
+                android:layout_height="wrap_content"
+                android:layout_gravity="center"
+                android:layout_marginTop="50dp"
+                android:background="@drawable/rounded_button"
+                android:textColor="#FFFFFF"
+                android:textSize="20sp"
+                android:text="Logout"/>
         </LinearLayout>
 
 

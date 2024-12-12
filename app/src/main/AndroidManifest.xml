@@ -21,6 +21,31 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
+        <activity android:name=".SettingsActivity"
+            android:exported="true"
+            android:label="Realized Vision"
+            android:theme="@style/Theme.RealizedVision">
+        </activity>
+        <activity android:name=".ChangeNameActivity"
+            android:exported="true"
+            android:label="Realized Vision"
+            android:theme="@style/Theme.RealizedVision">
+        </activity>
+        <activity android:name=".ChangePasswordActivity"
+            android:exported="true"
+            android:label="Realized Vision"
+            android:theme="@style/Theme.RealizedVision">
+        </activity>
+        <activity android:name=".VendorInfoActivity"
+            android:exported="true"
+            android:label="Realized Vision"
+            android:theme="@style/Theme.RealizedVision">
+        </activity>
+        <activity android:name=".NotificationsActivity"
+            android:exported="true"
+            android:label="Realized Vision"
+            android:theme="@style/Theme.RealizedVision">
+        </activity>
         <activity
             android:name=".ProfileActivity"
             android:exported="true">

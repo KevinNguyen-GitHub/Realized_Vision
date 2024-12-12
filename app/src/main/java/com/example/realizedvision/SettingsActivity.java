@@ -7,6 +7,9 @@ import android.widget.Button;
 import android.widget.ImageButton;
 
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.compose.ui.text.font.FontVariation;
+
+import com.google.firebase.auth.FirebaseAuth;
 
 public class SettingsActivity extends AppCompatActivity {
 
@@ -54,6 +57,17 @@ public class SettingsActivity extends AppCompatActivity {
             public void onClick(View v) {
                 Intent intent = new Intent(SettingsActivity.this, ProfileActivity.class);
                 startActivity(intent);
+            }
+        });
+
+        Button logoutButton = findViewById(R.id.btn_logout);
+        logoutButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                FirebaseAuth.getInstance().signOut();
+                Intent intent = new Intent(SettingsActivity.this, LoginActivity.class);
+                startActivity(intent);
+                finish();
             }
         });
 

@@ -19,33 +19,34 @@
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@+id/edit">
 
-        <TextView
+        <EditText
             android:id="@+id/firstName"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:background="@drawable/rounded_edittext"
             android:padding="10dp"
-            android:text="@string/first"
+            android:hint="@string/first"
             android:textSize="20sp" />
 
-        <TextView
+        <EditText
             android:id="@+id/lastName"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="20dp"
             android:padding="10dp"
-            android:text="@string/last"
+            android:hint="@string/last"
             android:textSize="20sp"
-            tools:background="@drawable/rounded_edittext" />
+            android:background="@drawable/rounded_edittext" />
 
-        <TextView
+        <EditText
             android:id="@+id/currentPassword"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="200dp"
             android:background="@drawable/rounded_edittext"
             android:padding="10dp"
-            android:text="@string/password"
+            android:hint="@string/password"
+            android:inputType="textPassword"
             android:textSize="20sp" />
 
     </LinearLayout>

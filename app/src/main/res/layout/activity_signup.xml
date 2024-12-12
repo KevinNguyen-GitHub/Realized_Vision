@@ -42,7 +42,6 @@
             android:inputType="textPersonName"
             android:hint="@string/first"
             android:textAlignment="center"
-            android:textColorHint="@color/black"
             android:textSize="30sp"
             app:layout_constraintTop_toBottomOf="@id/textView" />
 
@@ -98,31 +97,30 @@
             android:textSize="30sp"
             app:layout_constraintTop_toBottomOf="@id/emailEditText" />
 
+        <Button
+            android:id="@+id/signUpButton"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="25dp"
+            android:background="@drawable/rounded_button"
+            android:text="@string/sign_up"
+            android:textColor="@color/white"
+            android:textSize="25sp"
+            app:layout_constraintTop_toBottomOf="@+id/information"
+            tools:layout_editor_absoluteX="16dp" />
 
         <TextView
             android:id="@+id/login_link"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center"
+            android:layout_marginTop="20dp"
             android:text="@string/login_now"
-            android:gravity="center"
-            android:textStyle="bold"
-            android:textSize="15sp"
             android:textColor="#0000FF"
-            android:layout_marginTop="15dp"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content" />
+            android:textSize="15sp"
+            android:textStyle="bold"/>
 
     </LinearLayout>
-
-    <Button
-        android:id="@+id/signUpButton"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="40dp"
-        android:background="@drawable/rounded_button"
-        android:text="@string/sign_up"
-        android:textColor="@color/white"
-        android:textSize="25sp"
-        app:layout_constraintTop_toBottomOf="@+id/information"
-        tools:layout_editor_absoluteX="16dp" />
 
 
 </androidx.constraintlayout.widget.ConstraintLayout>

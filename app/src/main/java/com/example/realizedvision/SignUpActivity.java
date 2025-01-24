@@ -3,8 +3,10 @@ package com.example.realizedvision;
 import android.content.Intent;
 import android.os.Bundle;
 import android.util.Log;
+import android.view.View;
 import android.widget.Button;
 import android.widget.EditText;
+import android.widget.TextView;
 import android.widget.Toast;
 import androidx.appcompat.app.AppCompatActivity;
 import com.google.firebase.auth.FirebaseAuth;
@@ -19,6 +21,7 @@ public class SignUpActivity extends AppCompatActivity {
     private Button btnSignUp;
     private FirebaseAuth auth;
     private DatabaseReference database;
+    private TextView textViewLogin;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -34,6 +37,17 @@ public class SignUpActivity extends AppCompatActivity {
 
         auth = FirebaseAuth.getInstance();
         database = FirebaseDatabase.getInstance().getReference();
+
+        textViewLogin = findViewById(R.id.login_link);
+
+        textViewLogin.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                Intent intent = new Intent(getApplicationContext(), LoginActivity.class);
+                startActivity(intent);
+                finish();
+            }
+        });
 
         btnSignUp.setOnClickListener(v -> {
             String firstName = etFirstName.getText().toString().trim();

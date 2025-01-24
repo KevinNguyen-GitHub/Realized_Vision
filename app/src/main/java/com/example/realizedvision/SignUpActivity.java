@@ -70,11 +70,12 @@ public class SignUpActivity extends AppCompatActivity {
                     .addOnCompleteListener(task -> {
                         if (task.isSuccessful() && auth.getCurrentUser() != null) {
                             String userId = auth.getCurrentUser().getUid();
-                            HashMap<String, String> userMap = new HashMap<>();
+                            HashMap<String, Object> userMap = new HashMap<>();
                             userMap.put("firstName", firstName);
                             userMap.put("lastName", lastName);
                             userMap.put("email", email);
                             userMap.put("phoneNumber", phoneNumber);
+                            userMap.put("isVendor", false);
 
                             database.child("Users").child(userId).setValue(userMap)
                                     .addOnCompleteListener(task1 -> {

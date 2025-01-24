@@ -72,6 +72,16 @@
             android:padding="10dp"
             android:hint="Years in Business"
             android:textSize="20sp" />
+
+        <TextView
+            android:id="@+id/vendorStatus"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="You are already a vendor."
+            android:gravity="center"
+            android:textColor="@color/black"
+            android:textSize="20sp"
+            android:visibility="invisible"/>
     </LinearLayout>
 
     <Button

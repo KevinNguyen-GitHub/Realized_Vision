@@ -58,7 +58,8 @@ public class ProfileActivity extends AppCompatActivity {
             databaseReference.child(userId).addListenerForSingleValueEvent(new ValueEventListener() {
                 @Override
                 public void onDataChange(DataSnapshot snapshot) {
-                    if (snapshot.exists()) {
+
+                    if (snapshot.exists() && snapshot.child("isVendor").getValue().equals(false)) {
                         String firstName = snapshot.child("firstName").getValue(String.class);
                         String lastName = snapshot.child("lastName").getValue(String.class);
 
@@ -69,6 +70,15 @@ public class ProfileActivity extends AppCompatActivity {
                         // Use resource string with placeholders
                         String fullName = getString(R.string.profile_name_format, firstName, lastName);
                         profileNameTextView.setText(fullName);
+
+                    } else if (snapshot.exists() && snapshot.child("isVendor").getValue().equals(true)) {
+                        String displayName = snapshot.child("companyInfo").child("companyName").getValue(String.class);
+
+                        // Handle null values
+                        displayName = (displayName != null) ? displayName : "";
+
+                        profileNameTextView.setText(displayName);
+
                     } else {
                         Toast.makeText(ProfileActivity.this, "User data not found.", Toast.LENGTH_SHORT).show();
                     }

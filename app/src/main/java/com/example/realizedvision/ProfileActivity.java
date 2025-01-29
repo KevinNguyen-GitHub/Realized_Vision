@@ -58,13 +58,27 @@ public class ProfileActivity extends AppCompatActivity {
             databaseReference.child(userId).addListenerForSingleValueEvent(new ValueEventListener() {
                 @Override
                 public void onDataChange(DataSnapshot snapshot) {
-                    if (snapshot.exists()) {
-                        // Fetch firstName and lastName from the database
+
+                    if (snapshot.exists() && snapshot.child("isVendor").getValue().equals(false)) {
                         String firstName = snapshot.child("firstName").getValue(String.class);
                         String lastName = snapshot.child("lastName").getValue(String.class);
 
-                        // Update UI
-                        profileNameTextView.setText(firstName + " " + lastName);
+                        // Handle null values
+                        firstName = (firstName != null) ? firstName : "";
+                        lastName = (lastName != null) ? lastName : "";
+
+                        // Use resource string with placeholders
+                        String fullName = getString(R.string.profile_name_format, firstName, lastName);
+                        profileNameTextView.setText(fullName);
+
+                    } else if (snapshot.exists() && snapshot.child("isVendor").getValue().equals(true)) {
+                        String displayName = snapshot.child("companyInfo").child("companyName").getValue(String.class);
+
+                        // Handle null values
+                        displayName = (displayName != null) ? displayName : "";
+
+                        profileNameTextView.setText(displayName);
+
                     } else {
                         Toast.makeText(ProfileActivity.this, "User data not found.", Toast.LENGTH_SHORT).show();
                     }
@@ -72,11 +86,12 @@ public class ProfileActivity extends AppCompatActivity {
 
                 @Override
                 public void onCancelled(DatabaseError error) {
-                    Toast.makeText(ProfileActivity.this, "Failed to load user data.", Toast.LENGTH_SHORT).show();
+                    Toast.makeText(ProfileActivity.this, "Error: " + error.getMessage(), Toast.LENGTH_LONG).show();
                 }
             });
         }
     }
+
 
     // Helper function for activity navigation
     private void navigateTo(Class<?> targetActivity) {

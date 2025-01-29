@@ -6,19 +6,21 @@ import android.util.Log;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.Toast;
+
 import androidx.appcompat.app.AppCompatActivity;
+
 import com.google.firebase.auth.FirebaseAuth;
-import com.google.firebase.database.DatabaseReference;
-import com.google.firebase.database.FirebaseDatabase;
+import com.google.firebase.firestore.FirebaseFirestore;
 
 import java.util.HashMap;
+import java.util.Map;
 
 public class SignUpActivity extends AppCompatActivity {
 
     private EditText etFirstName, etLastName, etEmail, etPassword, etPhoneNumber;
     private Button btnSignUp;
     private FirebaseAuth auth;
-    private DatabaseReference database;
+    private FirebaseFirestore firestore;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -33,7 +35,7 @@ public class SignUpActivity extends AppCompatActivity {
         btnSignUp = findViewById(R.id.signUpButton);
 
         auth = FirebaseAuth.getInstance();
-        database = FirebaseDatabase.getInstance().getReference();
+        firestore = FirebaseFirestore.getInstance();  // Initialize Firestore
 
         btnSignUp.setOnClickListener(v -> {
             String firstName = etFirstName.getText().toString().trim();
@@ -52,33 +54,39 @@ public class SignUpActivity extends AppCompatActivity {
                 return;
             }
 
+            // Create the user with Email and Password
             auth.createUserWithEmailAndPassword(email, password)
                     .addOnCompleteListener(task -> {
                         if (task.isSuccessful() && auth.getCurrentUser() != null) {
                             String userId = auth.getCurrentUser().getUid();
-                            HashMap<String, String> userMap = new HashMap<>();
+
+                            // Create a map for user data
+                            Map<String, Object> userMap = new HashMap<>();
                             userMap.put("firstName", firstName);
                             userMap.put("lastName", lastName);
                             userMap.put("email", email);
                             userMap.put("phoneNumber", phoneNumber);
 
-                            database.child("Users").child(userId).setValue(userMap)
+                            // Store data in Firestore
+                            firestore.collection("Users")
+                                    .document(userId)
+                                    .set(userMap)
                                     .addOnCompleteListener(task1 -> {
                                         if (task1.isSuccessful()) {
-                                            Log.d("FirebaseDatabase", "User data saved successfully");
+                                            Log.d("Firestore", "User data saved successfully");
                                             Intent intent = new Intent(SignUpActivity.this, MainActivity.class);
                                             intent.putExtra("firstName", firstName);
                                             intent.putExtra("lastName", lastName);
                                             startActivity(intent);
                                             finish();
                                         } else {
-                                            Log.e("FirebaseDatabase", "Failed to save user data", task1.getException());
+                                            Log.e("Firestore", "Failed to save user data", task1.getException());
                                             Toast.makeText(SignUpActivity.this, "Failed to save user data.", Toast.LENGTH_SHORT).show();
                                         }
                                     });
                         } else {
                             Log.e("FirebaseAuth", "Signup failed", task.getException());
-                            Toast.makeText(SignUpActivity.this, "Signup Failed: " + task.getException().getMessage(), Toast.LENGTH_SHORT).show();
+                            Toast.makeText(SignUpActivity.this, "Signup Failed: " + (task.getException() != null ? task.getException().getMessage() : ""), Toast.LENGTH_SHORT).show();
                         }
                     });
         });

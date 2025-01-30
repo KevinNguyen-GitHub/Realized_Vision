@@ -29,8 +29,8 @@ public class ItemAdapter extends RecyclerView.Adapter<ItemViewHolder> {
     @Override
     public void onBindViewHolder(ItemViewHolder holder, int position) {
         ClipData.Item item = itemList.get(position);
-        holder.itemName.setText(item.getName());
-        holder.itemPrice.setText("$" + String.valueOf(item.getPrice()));
+        //holder.itemName.setText(item.getName());
+        //holder.itemPrice.setText("$" + String.valueOf(item.getPrice()));
         // Look into glide or picasso library
         // using placeholder image:
         holder.itemImage.setImageResource(R.drawable.ic_launcher_background);

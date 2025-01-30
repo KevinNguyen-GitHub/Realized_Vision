@@ -2,6 +2,7 @@ package com.example.realizedvision;
 
 import android.content.Intent;
 import android.os.Bundle;
+import android.widget.Button;
 import android.widget.ImageView;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -39,6 +40,7 @@ public class ProfileActivity extends AppCompatActivity {
         ImageView messageIcon = findViewById(R.id.messages_icon);
         ImageView profileIcon = findViewById(R.id.profile_icon);
         ImageView settingsIcon = findViewById(R.id.settings_icon);
+        Button storefrontButton = findViewById(R.id.storefrontButton);
 
         // Set navigation
         homeIcon.setOnClickListener(view -> navigateTo(MainActivity.class));
@@ -46,6 +48,37 @@ public class ProfileActivity extends AppCompatActivity {
         messageIcon.setOnClickListener(view -> navigateTo(MessagesActivity.class));
         profileIcon.setOnClickListener(view -> navigateTo(ProfileActivity.class));
         settingsIcon.setOnClickListener(view -> navigateTo(SettingsActivity.class));
+
+        storefrontButton.setOnClickListener(view -> {
+            if (currentUser != null) {
+                String userId = currentUser.getUid();
+
+                databaseReference.child(userId).addListenerForSingleValueEvent(new ValueEventListener() {
+                    @Override
+                    public void onDataChange(DataSnapshot snapshot) {
+                        if (snapshot.exists()) {
+                            Boolean isVendor = snapshot.child("isVendor").getValue(Boolean.class);
+
+                            if (isVendor != null && isVendor) {
+                                // User is a vendor, allow access to StorefrontActivity
+                                navigateTo(StorefrontActivity.class);
+                            } else {
+                                // User is NOT a vendor, show error message
+                                Toast.makeText(ProfileActivity.this, "Upgrade to vendor to use this feature.", Toast.LENGTH_SHORT).show();
+                            }
+                        } else {
+                            Toast.makeText(ProfileActivity.this, "User data not found.", Toast.LENGTH_SHORT).show();
+                        }
+                    }
+
+                    @Override
+                    public void onCancelled(DatabaseError error) {
+                        Toast.makeText(ProfileActivity.this, "Error: " + error.getMessage(), Toast.LENGTH_LONG).show();
+                    }
+                });
+            }
+        });
+
 
         // Fetch user data
         fetchUserData();

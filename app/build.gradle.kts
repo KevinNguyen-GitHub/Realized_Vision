@@ -37,7 +37,7 @@ android {
     }
 
     kotlinOptions {
-        jvmTarget = "1.8"
+        jvmTarget = "1.8" //used to be "1.8"
     }
 
     buildFeatures {

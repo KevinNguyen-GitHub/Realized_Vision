@@ -2,6 +2,7 @@ package com.example.realizedvision;
 
 import android.content.Intent;
 import android.os.Bundle;
+import android.view.View;
 import android.widget.ImageView;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -10,16 +11,17 @@ import androidx.appcompat.app.AppCompatActivity;
 
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
-import com.google.firebase.database.DatabaseReference;
-import com.google.firebase.database.FirebaseDatabase;
 import com.google.firebase.database.DataSnapshot;
 import com.google.firebase.database.DatabaseError;
 import com.google.firebase.database.ValueEventListener;
+import com.google.firebase.firestore.DocumentReference;
+import com.google.firebase.firestore.DocumentSnapshot;
+import com.google.firebase.firestore.FirebaseFirestore;
 
 public class ProfileActivity extends AppCompatActivity {
 
     private TextView profileNameTextView;
-    private DatabaseReference databaseReference;
+    private FirebaseFirestore firestore;
     private FirebaseUser currentUser;
 
     @Override
@@ -29,7 +31,9 @@ public class ProfileActivity extends AppCompatActivity {
 
         // Initialize Firebase
         currentUser = FirebaseAuth.getInstance().getCurrentUser();
-        databaseReference = FirebaseDatabase.getInstance().getReference("Users");
+        if (currentUser != null) {
+            firestore = FirebaseFirestore.getInstance();
+        }
 
         // Initialize views
         profileNameTextView = findViewById(R.id.profile_name);
@@ -51,7 +55,7 @@ public class ProfileActivity extends AppCompatActivity {
         fetchUserData();
     }
 
-    private void fetchUserData() {
+    /*private void fetchUserData() {
         if (currentUser != null) {
             String userId = currentUser.getUid();
 
@@ -90,8 +94,61 @@ public class ProfileActivity extends AppCompatActivity {
                 }
             });
         }
-    }
+    }*/
 
+    private void fetchUserData() {
+        if (currentUser != null) {
+            String userId = currentUser.getUid();
+
+            DocumentReference userDocRef = firestore.collection("Users").document(userId);
+
+            userDocRef.get().addOnCompleteListener(task -> {
+                if (task.isSuccessful()) {
+                    DocumentSnapshot snapshot = task.getResult();
+
+                    if (snapshot.exists() && Boolean.TRUE.equals(snapshot.getBoolean("isVendor"))) {
+                        DocumentReference companyDocRef = firestore.collection("Users")
+                                .document(userId)
+                                .collection("Company")
+                                .document("Info");
+
+                        companyDocRef.get().addOnCompleteListener(companyTask -> {
+                            if (companyTask.isSuccessful()){
+                                DocumentSnapshot companySnapshot = companyTask.getResult();
+
+                                if (companySnapshot.exists()) {
+                                    String displayName =  companySnapshot.getString("companyName");
+                                    // Handle null values
+                                    displayName = (displayName != null) ? displayName : "";
+
+                                    profileNameTextView.setText(displayName);
+                                } else {
+                                    Toast.makeText(ProfileActivity.this, "Company info not found.", Toast.LENGTH_SHORT).show();
+                                }
+                            } else {
+                                Toast.makeText(ProfileActivity.this, "Error: " + companyTask.getException().getMessage(), Toast.LENGTH_SHORT).show();
+                            }
+                        });
+                    } else if (snapshot.exists() && Boolean.FALSE.equals(snapshot.getBoolean("isVendor"))) {
+                        String firstName = snapshot.getString("firstName");
+                        String lastName = snapshot.getString("lastName");
+
+                        // Handle null values
+                        firstName = (firstName != null) ? firstName : "";
+                        lastName = (lastName != null) ? lastName : "";
+
+                        // Use resource string with placeholders
+                        String fullName = getString(R.string.profile_name_format, firstName, lastName);
+                        profileNameTextView.setText(fullName);
+                    } else {
+                        Toast.makeText(ProfileActivity.this, "User data not found.", Toast.LENGTH_SHORT).show();
+                    }
+                } else {
+                    Toast.makeText(ProfileActivity.this, "Error: " + task.getException().getMessage(), Toast.LENGTH_SHORT).show();
+                }
+            });
+        }
+    }
 
     // Helper function for activity navigation
     private void navigateTo(Class<?> targetActivity) {

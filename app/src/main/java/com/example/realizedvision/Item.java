@@ -4,7 +4,9 @@ public class Item {
     private String name;
     private double price;
     private String imageUrl; // Or a drawable resource ID
-
+    public Item(){
+        //default constructor
+    }
     public Item(String name, double price, String imageUrl) {
         this.name = name;
         this.price = price;

@@ -48,7 +48,6 @@ public class ChangePasswordActivity extends AppCompatActivity {
             String currentPassword = editTextCurrentPassword.getText().toString().trim();
             String newPassword = editTextNewPassword.getText().toString().trim();
             String confirmPassword = editTextConfirmPassword.getText().toString().trim();
-
             if (validateInputs(currentPassword, newPassword, confirmPassword)) {
                 changePassword(currentPassword, newPassword);
             }

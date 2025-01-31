@@ -46,7 +46,7 @@ tools:context=".MainActivity">
         android:contentDescription="Search Icon"
         android:layout_gravity="center_vertical" />
 </LinearLayout>
-    <HorizontalScrollView
+    <LinearLayout
         android:id="@+id/filter_tags"
         android:layout_width="0dp"
         android:layout_height="wrap_content"
@@ -110,117 +110,20 @@ tools:context=".MainActivity">
                 android:contentDescription="Add Tag Icon"
                 android:layout_gravity="center" />
         </LinearLayout>
-    </HorizontalScrollView>
+    </LinearLayout>
 <!-- Scrollable Vendor Postings -->
-    <ScrollView
-        android:layout_width="0dp"
-        android:layout_height="0dp"
-        app:layout_constraintTop_toBottomOf="@id/filter_tags"
-        app:layout_constraintBottom_toTopOf="@id/bottom_navigation"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintEnd_toEndOf="parent">
+<androidx.recyclerview.widget.RecyclerView
+    android:id="@+id/mainRecyclerView"
+    android:layout_width="0dp"
+    android:layout_height="0dp"
+    android:padding="15dp"
+    app:layout_constraintTop_toBottomOf="@id/filter_tags"
+    app:layout_constraintBottom_toTopOf="@id/bottom_navigation"
+    app:layout_constraintStart_toStartOf="parent"
+    app:layout_constraintEnd_toEndOf="parent">
 
-        <LinearLayout
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:orientation="vertical"
-            android:padding="16dp">
 
-            <!-- First Posting Card -->
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginBottom="16dp"
-                android:background="@drawable/rounded_edittext"
-                android:elevation="4dp"
-                android:orientation="vertical"
-                android:padding="16dp">
-
-                <ImageView
-                    android:id="@+id/posting_image"
-                    android:layout_width="match_parent"
-                    android:layout_height="150dp"
-                    android:contentDescription="Posting Image"
-                    android:scaleType="centerCrop"
-                    android:src="@drawable/ic_placeholder_image" />
-
-                <TextView
-                    android:id="@+id/posting_title"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="8dp"
-                    android:text="Ceramic Pot"
-                    android:textStyle="bold"
-                    android:textSize="16sp" />
-
-                <TextView
-                    android:id="@+id/posting_price"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="4dp"
-                    android:text="$80"
-                    android:textSize="14sp"
-                    android:textColor="@color/green" />
-
-                <TextView
-                    android:id="@+id/posting_description"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="8dp"
-                    android:text="Hand painted ceramic pot with engraved designs"
-                    android:textSize="14sp"
-                    android:textColor="@color/gray" />
-            </LinearLayout>
-
-            <!-- Second Posting Card -->
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginBottom="16dp"
-                android:background="@drawable/rounded_edittext"
-                android:elevation="4dp"
-                android:orientation="vertical"
-                android:padding="16dp">
-
-                <ImageView
-                    android:id="@+id/posting_image_2"
-                    android:layout_width="match_parent"
-                    android:layout_height="150dp"
-                    android:contentDescription="Posting Image"
-                    android:scaleType="centerCrop"
-                    android:src="@drawable/ic_placeholder_image" />
-
-                <TextView
-                    android:id="@+id/posting_title_2"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="8dp"
-                    android:text="Wooden Chair"
-                    android:textStyle="bold"
-                    android:textSize="16sp" />
-
-                <TextView
-                    android:id="@+id/posting_price_2"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="4dp"
-                    android:text="$30"
-                    android:textSize="14sp"
-                    android:textColor="@color/green" />
-
-                <TextView
-                    android:id="@+id/posting_description_2"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="8dp"
-                    android:text="Modern style wooden chair"
-                    android:textSize="14sp"
-                    android:textColor="@color/gray" />
-            </LinearLayout>
-
-            <!-- Add more posting cards here if needed -->
-        </LinearLayout>
-    </ScrollView>
+</androidx.recyclerview.widget.RecyclerView>
 
 
 <!-- Bottom Navigation Bar -->

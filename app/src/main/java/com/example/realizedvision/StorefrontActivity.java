@@ -62,70 +62,45 @@ public class StorefrontActivity extends AppCompatActivity {
         if (currentUser != null) {
             String userId = currentUser.getUid();
 
-            DocumentReference vendorDocRef = firestore.collection("Vendors").document(userId);
+            CollectionReference itemsRef = firestore.collection("StoreFront");
 
-            vendorDocRef.get().addOnCompleteListener(task -> {
-                if (task.isSuccessful()) {
-                    DocumentSnapshot userSnapshot = task.getResult();
-
-                    if (userSnapshot.exists() /*&& Boolean.TRUE.equals(snapshot.getBoolean("isVendor"))*/) {
-                        CollectionReference storefrontColRef = firestore.collection("Storefront");
-
-                        storefrontColRef.get().addOnCompleteListener(storefrontTask -> {
-                            if (storefrontTask.isSuccessful()){
-                                QuerySnapshot storefrontSnapshot = storefrontTask.getResult();
-
-                                if (storefrontSnapshot.isEmpty()) {
-                                    populateStorefront(userId);
-                                } else {
-                                    loadStorefrontItems(userId);
-                                }
-                            } else {
-                                Toast.makeText(StorefrontActivity.this, "Error: " + storefrontTask.getException().getMessage(), Toast.LENGTH_SHORT).show();
+            itemsRef.whereEqualTo("vendorID", userId)
+                    .addSnapshotListener(new EventListener<QuerySnapshot>() {
+                        @Override
+                        public void onEvent(@Nullable QuerySnapshot snapshot, @Nullable FirebaseFirestoreException error) {
+                            if (error != null) {
+                                Log.e("Firestore", "Error loading items", error);
+                                return;
                             }
-                        });
-                    } else {
-                        Toast.makeText(StorefrontActivity.this, "User data not found.", Toast.LENGTH_SHORT).show();
-                    }
-                } else {
-                    Toast.makeText(StorefrontActivity.this, "Error: " + task.getException().getMessage(), Toast.LENGTH_SHORT).show();
-                }
-            });
+
+                            if (snapshot == null || snapshot.isEmpty()) {
+                                Log.d("Firestore", "No items found for this vendor");
+                                populateStorefront(userId);
+                            }
+
+                            loadStorefrontItems(userId);
+                        }
+                    });
         }
     }
 
     private void populateStorefront(String userId) {
+        CollectionReference storefrontColRef = firestore.collection("Storefront");
 
-        DocumentReference vendorDocRef = firestore.collection("Vendors").document(userId);
+        String itemID;
+        for (int i = 1; i <= 10; i++) {
+            itemID = storefrontColRef.document().getId();
 
-        vendorDocRef.get().addOnCompleteListener(task -> {
-            if (task.isSuccessful()) {
-                DocumentSnapshot userSnapshot = task.getResult();
+            HashMap<String, Object> item = new HashMap<>();
+            item.put("name", "Sample Item " + i);
+            item.put("description", "This is a sample item number " + i);
+            item.put("price", (double) (5 + i * 2)); // Different prices
+            item.put("imageUrl", ""); // No image for now
+            item.put("itemID", itemID);
+            item.put("vendorID", userId);
 
-                if (userSnapshot.exists() /*&& Boolean.TRUE.equals(snapshot.getBoolean("isVendor"))*/) {
-                    CollectionReference storefrontColRef = firestore.collection("Storefront");
-
-                    String itemID;
-                    for (int i = 1; i <= 10; i++) {
-                        itemID = storefrontColRef.document().getId();
-
-                        HashMap<String, Object> item = new HashMap<>();
-                        item.put("name", "Sample Item " + i);
-                        item.put("description", "This is a sample item number " + i);
-                        item.put("price", (double) (5 + i * 2)); // Different prices
-                        item.put("imageUrl", ""); // No image for now
-                        item.put("itemID", itemID);
-                        item.put("vendorID", userId);
-
-                        storefrontColRef.document(itemID).set(item);
-                    }
-                } else {
-                    Toast.makeText(StorefrontActivity.this, "User data not found.", Toast.LENGTH_SHORT).show();
-                }
-            } else {
-                Toast.makeText(StorefrontActivity.this, "Error: " + task.getException().getMessage(), Toast.LENGTH_SHORT).show();
-            }
-        });
+            storefrontColRef.document(itemID).set(item);
+        }
 
         Toast.makeText(StorefrontActivity.this, "10 Sample Items Added to Storefront!", Toast.LENGTH_SHORT).show();
 

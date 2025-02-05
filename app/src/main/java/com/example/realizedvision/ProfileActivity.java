@@ -88,30 +88,7 @@ public class ProfileActivity extends AppCompatActivity {
                 if (task.isSuccessful()) {
                     DocumentSnapshot snapshot = task.getResult();
 
-                    /*if (snapshot.exists() && Boolean.TRUE.equals(snapshot.getBoolean("isVendor"))) {
-                        DocumentReference companyDocRef = firestore.collection("Users")
-                                .document(userId)
-                                .collection("Company")
-                                .document("Info");
-
-                        companyDocRef.get().addOnCompleteListener(companyTask -> {
-                            if (companyTask.isSuccessful()){
-                                DocumentSnapshot companySnapshot = companyTask.getResult();
-
-                                if (companySnapshot.exists()) {
-                                    String displayName =  companySnapshot.getString("companyName");
-                                    // Handle null values
-                                    displayName = (displayName != null) ? displayName : "";
-
-                                    profileNameTextView.setText(displayName);
-                                } else {
-                                    Toast.makeText(ProfileActivity.this, "Company info not found.", Toast.LENGTH_SHORT).show();
-                                }
-                            } else {
-                                Toast.makeText(ProfileActivity.this, "Error: " + companyTask.getException().getMessage(), Toast.LENGTH_SHORT).show();
-                            }
-                        });
-                    }*/ if (snapshot.exists() /*&& Boolean.FALSE.equals(snapshot.getBoolean("isVendor"))*/) {
+                    if (snapshot.exists() /*&& Boolean.FALSE.equals(snapshot.getBoolean("isVendor"))*/) {
                         String firstName = snapshot.getString("firstName");
                         String lastName = snapshot.getString("lastName");
 

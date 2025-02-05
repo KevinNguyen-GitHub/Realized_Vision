@@ -88,10 +88,10 @@ public class VendorInfoActivity extends AppCompatActivity {
         userMap.put("companyName", companyName);
         userMap.put("address", address);
         userMap.put("years", yearsInBusiness);
+        userMap.put("vendorID", userId);
 
 
-        firestore.collection("Users").document(userId)
-                        .collection("Company").document("Info")
+        firestore.collection("Vendors").document(userId)
                         .set(userMap)
                         .addOnSuccessListener(new OnSuccessListener<Void>() {
                             @Override

@@ -106,7 +106,6 @@ public class StorefrontActivity extends AppCompatActivity {
                     CollectionReference storefrontColRef = firestore.collection("Storefront");
 
                     String itemID;
-                    DocumentReference itemRef;
                     for (int i = 1; i <= 10; i++) {
                         itemID = storefrontColRef.document().getId();
 

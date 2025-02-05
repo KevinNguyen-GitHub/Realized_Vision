@@ -20,6 +20,7 @@ import com.google.firebase.firestore.EventListener;
 import com.google.firebase.firestore.FirebaseFirestore;
 import com.google.firebase.firestore.FirebaseFirestoreException;
 import com.google.firebase.firestore.QuerySnapshot;
+import com.google.firebase.firestore.Source;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -62,7 +63,7 @@ public class StorefrontActivity extends AppCompatActivity {
         if (currentUser != null) {
             String userId = currentUser.getUid();
 
-            CollectionReference itemsRef = firestore.collection("StoreFront");
+            CollectionReference itemsRef = firestore.collection("Storefront");
 
             itemsRef.whereEqualTo("vendorID", userId)
                     .addSnapshotListener(new EventListener<QuerySnapshot>() {

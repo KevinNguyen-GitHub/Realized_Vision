@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent">
 
@@ -9,9 +10,11 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:background="@drawable/logo"
+        android:paddingTop="30dp"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintHorizontal_bias="0.5"
-        app:layout_constraintStart_toStartOf="parent" />
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent" />
 
 
     <LinearLayout
@@ -20,20 +23,37 @@
         android:layout_height="wrap_content"
         android:layout_margin="20dp"
         android:orientation="vertical"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintHorizontal_bias="0.5"
+        app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@+id/logo">
 
         <TextView
             android:layout_width="match_parent"
             android:layout_height="match_parent"
-            android:gravity="center" />
+            android:gravity="center"
+            android:text="@string/app_name"
+            android:textSize="32sp" />
 
         <EditText
-            android:layout_width="match_parent"
-            android:layout_height="match_parent" />
-
-        <EditText
+            android:id="@+id/emailEditText"
             android:layout_width="match_parent"
             android:layout_height="match_parent"
+            android:autofillHints="emailAddress"
+            android:gravity="center"
+            android:hint="@string/email"
+            android:inputType="textEmailAddress"
+            android:textSize="30sp" />
+
+        <EditText
+            android:id="@+id/passwordEditText"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:autofillHints="password"
+            android:gravity="center"
+            android:hint="@string/password"
+            android:inputType="textPassword"
+            android:textSize="30sp" />
 
     </LinearLayout>
 
@@ -43,27 +63,54 @@
         android:layout_height="wrap_content"
         android:gravity="center"
         android:orientation="horizontal"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintHorizontal_bias="0.5"
+        app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@id/authentication">
 
         <TextView
             android:layout_width="match_parent"
             android:layout_height="match_parent"
+            android:gravity="center"
+            android:text="Remember Me" />
+
+        <CheckBox
+            android:id="@+id/rememberMe"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content" />
+
+        <TextView
+            android:id="@+id/forgotPassword"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:gravity="center"
+            android:paddingLeft="30dp"
+            android:text="Forgot Password?" />
 
     </LinearLayout>
 
     <Button
-        android:layout_width="wrap_content"
+        android:id="@+id/loginButton"
+        android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        app:layout_constraintTop_toBottomOf="@+id/onClick" />
+        android:layout_marginTop="244dp"
+        android:background="@drawable/rounded_button"
+        android:text="Login"
+        android:textSize="30dp"
+        app:layout_constraintTop_toBottomOf="@+id/onClick"
+        tools:layout_editor_absoluteX="36dp" />
 
-    <LinearLayout
+
+    <TextView
         android:id="@+id/createAccount"
         android:layout_width="wrap_content"
-        android:layout_height="wrap_content">
-
-        <TextView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-    </LinearLayout>
+        android:layout_height="wrap_content"
+        android:layout_marginTop="20dp"
+        android:text="Create Account"
+        android:textSize="15sp"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintHorizontal_bias="0.5"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/loginButton" />
 
 </androidx.constraintlayout.widget.ConstraintLayout>

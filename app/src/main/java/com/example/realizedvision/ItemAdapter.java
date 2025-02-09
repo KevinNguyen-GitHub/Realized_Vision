@@ -36,6 +36,7 @@ public class ItemAdapter extends RecyclerView.Adapter<ItemViewHolder> {
         Item item = itemList.get(position);
         holder.itemName.setText(item.getName());
         holder.itemPrice.setText(String.format("$%.2f", item.getPrice()));
+        holder.itemDescription.setText(item.getDescription());
 
         // Load image with Glide (or use Picasso)
 //        Glide.with(context)

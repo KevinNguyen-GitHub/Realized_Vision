@@ -10,7 +10,7 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:background="@drawable/logo"
-        android:paddingTop="30dp"
+        android:layout_marginTop="20dp"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintHorizontal_bias="0.5"
         app:layout_constraintStart_toStartOf="parent"
@@ -33,7 +33,8 @@
             android:layout_height="match_parent"
             android:gravity="center"
             android:text="@string/app_name"
-            android:textSize="32sp" />
+            android:textSize="32sp"
+            android:textColor="@color/brown"/>
 
         <EditText
             android:id="@+id/emailEditText"
@@ -43,7 +44,8 @@
             android:gravity="center"
             android:hint="@string/email"
             android:inputType="textEmailAddress"
-            android:textSize="30sp" />
+            android:textSize="30sp"
+            android:textColorHint="@color/black"/>
 
         <EditText
             android:id="@+id/passwordEditText"
@@ -53,7 +55,8 @@
             android:gravity="center"
             android:hint="@string/password"
             android:inputType="textPassword"
-            android:textSize="30sp" />
+            android:textSize="30sp"
+            android:textColorHint="@color/black"/>
 
     </LinearLayout>
 

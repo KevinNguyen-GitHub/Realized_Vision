@@ -37,6 +37,7 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginBottom="20dp"
+            android:hint="@string/first"
             android:autofillHints="first name"
             android:background="@drawable/rounded_edittext"
             android:inputType="textPersonName"
@@ -50,6 +51,7 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginBottom="20dp"
+            android:hint="@string/last"
             android:autofillHints="last name"
             android:background="@drawable/rounded_edittext"
             android:inputType="textPersonName"
@@ -62,6 +64,7 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginBottom="20dp"
+            android:hint="@string/phone"
             android:autofillHints="phone"
             android:background="@drawable/rounded_edittext"
             android:inputType="phone"
@@ -74,6 +77,7 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginBottom="20dp"
+            android:hint="@string/email"
             android:autofillHints="emailAddress"
             android:background="@drawable/rounded_edittext"
             android:inputType="textEmailAddress"
@@ -86,6 +90,7 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginBottom="20dp"
+            android:hint="@string/password"
             android:autofillHints="password"
             android:background="@drawable/rounded_edittext"
             android:inputType="textPassword"
@@ -100,13 +105,14 @@
         android:id="@+id/signUpButton"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginTop="404dp"
+        android:layout_margin="20dp"
+        android:layout_marginTop="256dp"
         android:background="@drawable/rounded_button"
         android:text="@string/sign_up"
         android:textColor="@color/white"
         android:textSize="25sp"
         app:layout_constraintTop_toBottomOf="@+id/information"
-        tools:layout_editor_absoluteX="16dp" />
+        tools:layout_editor_absoluteX="24dp" />
 
 
 </androidx.constraintlayout.widget.ConstraintLayout>

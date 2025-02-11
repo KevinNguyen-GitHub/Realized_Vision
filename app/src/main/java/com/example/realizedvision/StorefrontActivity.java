@@ -112,23 +112,24 @@ public class StorefrontActivity extends AppCompatActivity {
             if (!name.isEmpty() && !description.isEmpty() && !priceString.isEmpty()) {
                 double price = Double.parseDouble(priceString);
                 String userId = currentUser.getUid();
-                CollectionReference storefrontColRef = firestore.collection("Storefront");
-                String itemID = storefrontColRef.document().getId();
-                String imageUrl = "";
 
-                HashMap<String, Object> item = new HashMap<>();
-                item.put("name", name);
-                item.put("description", description);
-                item.put("imageUrl", imageUrl);
-                item.put("price", price);
-                item.put("itemID", itemID);
-                item.put("vendorID", userId);
-
-                storefrontColRef.document(itemID).set(item).addOnSuccessListener(aVoid -> {
-                    Toast.makeText(this, "Item Added Successfully", Toast.LENGTH_SHORT).show();
-                }).addOnFailureListener(e -> {
-                    Toast.makeText(this, "Error Adding Item", Toast.LENGTH_SHORT).show();
-                });
+                // Check if an item with the same name already exists for the vendor
+                firestore.collection("Storefront")
+                        .whereEqualTo("name", name)
+                        .whereEqualTo("vendorID", userId)
+                        .get()
+                        .addOnSuccessListener(querySnapshot -> {
+                            if (!querySnapshot.isEmpty()) {
+                                // Item with the same name exists, show error message
+                                Toast.makeText(this, "Item with this name already exists!", Toast.LENGTH_SHORT).show();
+                            } else {
+                                // No duplicate, proceed with adding the item
+                                addNewItemToFirestore(name, description, price, userId, vendorId);
+                            }
+                        })
+                        .addOnFailureListener(e -> {
+                            Toast.makeText(this, "Error checking existing items.", Toast.LENGTH_SHORT).show();
+                        });
             }
         });
 
@@ -140,25 +141,67 @@ public class StorefrontActivity extends AppCompatActivity {
             dialog.getButton(AlertDialog.BUTTON_NEGATIVE).setTextColor(getResources().getColor(android.R.color.black));
         });
         dialog.show();
-        loadStorefrontItems(vendorId);
     }
+
+    // Helper function to add the item and reload storefront
+    private void addNewItemToFirestore(String name, String description, double price, String userId, String vendorId) {
+        CollectionReference storefrontColRef = firestore.collection("Storefront");
+        String itemID = storefrontColRef.document().getId();
+        String imageUrl = ""; // Placeholder for image URL
+
+        HashMap<String, Object> item = new HashMap<>();
+        item.put("name", name);
+        item.put("description", description);
+        item.put("imageUrl", imageUrl);
+        item.put("price", price);
+        item.put("itemID", itemID);
+        item.put("vendorID", userId);
+
+        storefrontColRef.document(itemID).set(item)
+                .addOnSuccessListener(aVoid -> {
+                    Toast.makeText(this, "Item Added Successfully", Toast.LENGTH_SHORT).show();
+                    loadStorefrontItems(vendorId); // Refresh the storefront after adding
+                })
+                .addOnFailureListener(e -> {
+                    Toast.makeText(this, "Error Adding Item", Toast.LENGTH_SHORT).show();
+                });
+    }
+
 
     private void deleteItem(String vendorId) {
         AlertDialog.Builder builder = new AlertDialog.Builder(this);
         builder.setTitle("Delete Item");
 
         View viewInflated = LayoutInflater.from(this).inflate(R.layout.dialog_delete_item, null);
-        final EditText inputItemId = viewInflated.findViewById(R.id.input_item_id);
+        final EditText inputItem = viewInflated.findViewById(R.id.input_item_id);
 
         builder.setView(viewInflated);
 
         builder.setPositiveButton("Delete", (dialog, which) -> {
-            String itemId = inputItemId.getText().toString().trim();
-            if (!itemId.isEmpty()) {
-                firestore.collection("Storefront").document(itemId).delete().addOnSuccessListener(aVoid -> {
-                    Toast.makeText(this, "Item Deleted Successfully", Toast.LENGTH_SHORT).show();
+            String inputText = inputItem.getText().toString().trim();
+            if (!inputText.isEmpty()) {
+                // Check if input is an item ID
+                DocumentReference itemRef = firestore.collection("Storefront").document(inputText);
+                itemRef.get().addOnSuccessListener(documentSnapshot -> {
+                    if (documentSnapshot.exists()) {
+                        String itemVendorId = documentSnapshot.getString("vendorID");
+
+                        if (itemVendorId != null && itemVendorId.equals(vendorId)) {
+                            // Delete the item by item ID
+                            itemRef.delete().addOnSuccessListener(aVoid -> {
+                                Toast.makeText(this, "Item Deleted Successfully", Toast.LENGTH_SHORT).show();
+                            }).addOnFailureListener(e -> {
+                                Toast.makeText(this, "Error Deleting Item", Toast.LENGTH_SHORT).show();
+                            });
+                        } else {
+                            Toast.makeText(this, "You can only delete your own items.", Toast.LENGTH_SHORT).show();
+                        }
+                    } else {
+                        // If not an item ID, search by name
+                        searchAndDeleteByName(inputText, vendorId);
+                    }
                 }).addOnFailureListener(e -> {
-                    Toast.makeText(this, "Error Deleting Item", Toast.LENGTH_SHORT).show();
+                    Toast.makeText(this, "Error retrieving item data.", Toast.LENGTH_SHORT).show();
                 });
             }
         });
@@ -171,8 +214,33 @@ public class StorefrontActivity extends AppCompatActivity {
             dialog.getButton(AlertDialog.BUTTON_NEGATIVE).setTextColor(getResources().getColor(android.R.color.black));
         });
         dialog.show();
-        loadStorefrontItems(vendorId);
     }
+
+    // Function to delete by item name
+    private void searchAndDeleteByName(String itemName, String vendorId) {
+        firestore.collection("Storefront")
+                .whereEqualTo("name", itemName)
+                .whereEqualTo("vendorID", vendorId) // Ensure only deleting current user's items
+                .get()
+                .addOnSuccessListener(queryDocumentSnapshots -> {
+                    if (!queryDocumentSnapshots.isEmpty()) {
+                        for (DocumentSnapshot doc : queryDocumentSnapshots.getDocuments()) {
+                            doc.getReference().delete().addOnSuccessListener(aVoid -> {
+                                Toast.makeText(this, "Item Deleted Successfully", Toast.LENGTH_SHORT).show();
+                            }).addOnFailureListener(e -> {
+                                Toast.makeText(this, "Error Deleting Item", Toast.LENGTH_SHORT).show();
+                            });
+                        }
+                    } else {
+                        Toast.makeText(this, "Item not found.", Toast.LENGTH_SHORT).show();
+                    }
+                })
+                .addOnFailureListener(e -> {
+                    Toast.makeText(this, "Error searching for item.", Toast.LENGTH_SHORT).show();
+                });
+    }
+
+
 
     private void loadStorefrontItems(String userId) {
         CollectionReference itemsRef = firestore.collection("Storefront");

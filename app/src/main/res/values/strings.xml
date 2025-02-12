@@ -16,4 +16,8 @@
     <string name="realized_vision">Realized Vision</string>
     <string name="profile_name_format">%1$s %2$s</string>
     <string name="posting_content_description">Posting Content Description</string>
+    <string name="Favorites">Favorites</string>
+    <string name="shopping_cart">Shopping Cart</string>
+    <string name="home">Home</string>
+    <string name="Checkout">Checkout</string>
 </resources>

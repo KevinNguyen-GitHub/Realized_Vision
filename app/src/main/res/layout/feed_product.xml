@@ -25,6 +25,13 @@
         android:text="Ceramic Pot"
         android:textStyle="bold"
         android:textSize="16sp" />
+    <TextView
+        android:id="@+id/product_vendor"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="8dp"
+        android:text="George Washington"
+        android:textSize="12sp" />
 
     <TextView
         android:id="@+id/product_price"

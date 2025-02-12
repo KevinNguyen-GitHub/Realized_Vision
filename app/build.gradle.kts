@@ -54,7 +54,6 @@ android {
         }
     }
 }
-
 dependencies {
     // Core Android dependencies
     implementation(libs.androidx.core.ktx)
@@ -87,6 +86,10 @@ dependencies {
     androidTestImplementation(libs.androidx.espresso.core)
     androidTestImplementation(platform(libs.androidx.compose.bom))
     androidTestImplementation(libs.androidx.ui.test.junit4)
+
+    //Glide dependencies
+    implementation(libs.glide)
+    annotationProcessor(libs.glide.compiler)
 }
 java {
     toolchain {

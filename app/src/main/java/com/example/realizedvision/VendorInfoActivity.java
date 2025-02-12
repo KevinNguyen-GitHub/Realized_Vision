@@ -11,22 +11,23 @@ import android.widget.ImageButton;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 
+import com.google.android.gms.tasks.OnFailureListener;
+import com.google.android.gms.tasks.OnSuccessListener;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
-import com.google.firebase.database.DataSnapshot;
-import com.google.firebase.database.DatabaseError;
-import com.google.firebase.database.DatabaseReference;
-import com.google.firebase.database.FirebaseDatabase;
-import com.google.firebase.database.ValueEventListener;
+import com.google.firebase.firestore.DocumentReference;
+import com.google.firebase.firestore.DocumentSnapshot;
+import com.google.firebase.firestore.FirebaseFirestore;
 
 import java.util.HashMap;
 
 public class VendorInfoActivity extends AppCompatActivity {
 
     private FirebaseUser currentUser;
-    private DatabaseReference userDatabaseRef;
+    private FirebaseFirestore firestore;
 
     private EditText etCompanyName, etAddress, etYears;
 
@@ -41,7 +42,7 @@ public class VendorInfoActivity extends AppCompatActivity {
         // Initialize Firebase
         currentUser = FirebaseAuth.getInstance().getCurrentUser();
         if (currentUser != null) {
-            userDatabaseRef = FirebaseDatabase.getInstance().getReference("Users");
+            firestore = FirebaseFirestore.getInstance();
         }
 
         fetchUserData();
@@ -80,31 +81,43 @@ public class VendorInfoActivity extends AppCompatActivity {
         }
 
         String userId = currentUser.getUid();
-        userDatabaseRef.child(userId).child("isVendor").setValue(true);
+        firestore.collection("Users").document(userId)
+                        .update("isVendor", true);
 
         HashMap<String, Object> userMap = new HashMap<>();
         userMap.put("companyName", companyName);
         userMap.put("address", address);
         userMap.put("years", yearsInBusiness);
+        userMap.put("vendorID", userId);
 
-        userDatabaseRef.child(userId).child("companyInfo").setValue(userMap).addOnCompleteListener(updateTask -> {
-            if (updateTask.isSuccessful()) {
-                Toast.makeText(this, "User status updated.", Toast.LENGTH_SHORT).show();
-                finish(); // Go back to previous screen
-            } else {
-                Toast.makeText(this, "Failed to update user status.", Toast.LENGTH_SHORT).show();
-            }
-        });
+
+        firestore.collection("Vendors").document(userId)
+                        .set(userMap)
+                        .addOnSuccessListener(new OnSuccessListener<Void>() {
+                            @Override
+                            public void onSuccess(Void unused) {
+                                Log.d("Firestore", "Updated user status");
+                                finish();
+                            }
+                        })
+                        .addOnFailureListener(new OnFailureListener() {
+                            @Override
+                            public void onFailure(@NonNull Exception e) {
+                                Log.w("Failed to update user status", e);
+                            }
+                        });
     }
     private void fetchUserData() {
         if (currentUser != null) {
             String userId = currentUser.getUid();
 
-            userDatabaseRef.child(userId).addListenerForSingleValueEvent(new ValueEventListener() {
-                @Override
-                public void onDataChange(DataSnapshot snapshot) {
+            DocumentReference userDocRef = firestore.collection("Users").document(userId);
 
-                    if (snapshot.exists() && snapshot.child("isVendor").getValue().equals(true)) {
+            userDocRef.get().addOnCompleteListener(task -> {
+                if (task.isSuccessful()) {
+                    DocumentSnapshot snapshot = task.getResult();
+
+                    if (snapshot.exists() && Boolean.TRUE.equals(snapshot.getBoolean("isVendor"))) {
                         etCompanyName.setVisibility(View.INVISIBLE);
                         etAddress.setVisibility(View.INVISIBLE);
                         etYears.setVisibility(View.INVISIBLE);
@@ -112,17 +125,13 @@ public class VendorInfoActivity extends AppCompatActivity {
                         submitBtn.setVisibility(View.INVISIBLE);
 
                         tvVendorStatus.setVisibility(View.VISIBLE);
-
-                    } else if (snapshot.exists() && snapshot.child("isVendor").getValue().equals(false)){
+                    } else if (snapshot.exists() && Boolean.FALSE.equals(snapshot.getBoolean("isVendor"))) {
 
                     } else {
                         Toast.makeText(VendorInfoActivity.this, "User data not found.", Toast.LENGTH_SHORT).show();
                     }
-                }
-
-                @Override
-                public void onCancelled(DatabaseError error) {
-                    Toast.makeText(VendorInfoActivity.this, "Error: " + error.getMessage(), Toast.LENGTH_SHORT).show();
+                } else {
+                    Toast.makeText(VendorInfoActivity.this, "Error: " + task.getException().getMessage(), Toast.LENGTH_SHORT).show();
                 }
             });
         }

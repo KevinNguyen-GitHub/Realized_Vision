@@ -11,16 +11,14 @@ import androidx.appcompat.app.AppCompatActivity;
 
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
-import com.google.firebase.database.DatabaseReference;
-import com.google.firebase.database.FirebaseDatabase;
-import com.google.firebase.database.DataSnapshot;
-import com.google.firebase.database.DatabaseError;
-import com.google.firebase.database.ValueEventListener;
+import com.google.firebase.firestore.DocumentReference;
+import com.google.firebase.firestore.DocumentSnapshot;
+import com.google.firebase.firestore.FirebaseFirestore;
 
 public class ProfileActivity extends AppCompatActivity {
 
     private TextView profileNameTextView;
-    private DatabaseReference databaseReference;
+    private FirebaseFirestore firestore;
     private FirebaseUser currentUser;
 
     @Override
@@ -30,7 +28,9 @@ public class ProfileActivity extends AppCompatActivity {
 
         // Initialize Firebase
         currentUser = FirebaseAuth.getInstance().getCurrentUser();
-        databaseReference = FirebaseDatabase.getInstance().getReference("Users");
+        if (currentUser != null) {
+            firestore = FirebaseFirestore.getInstance();
+        }
 
         // Initialize views
         profileNameTextView = findViewById(R.id.profile_name);
@@ -49,36 +49,30 @@ public class ProfileActivity extends AppCompatActivity {
         profileIcon.setOnClickListener(view -> navigateTo(ProfileActivity.class));
         settingsIcon.setOnClickListener(view -> navigateTo(SettingsActivity.class));
 
+
         storefrontButton.setOnClickListener(view -> {
             if (currentUser != null) {
                 String userId = currentUser.getUid();
 
-                databaseReference.child(userId).addListenerForSingleValueEvent(new ValueEventListener() {
-                    @Override
-                    public void onDataChange(DataSnapshot snapshot) {
-                        if (snapshot.exists()) {
-                            Boolean isVendor = snapshot.child("isVendor").getValue(Boolean.class);
+                DocumentReference userDocRef = firestore.collection("Users").document(userId);
 
-                            if (isVendor != null && isVendor) {
-                                // User is a vendor, allow access to StorefrontActivity
-                                navigateTo(StorefrontActivity.class);
-                            } else {
-                                // User is NOT a vendor, show error message
-                                Toast.makeText(ProfileActivity.this, "Upgrade to vendor to use this feature.", Toast.LENGTH_SHORT).show();
-                            }
+                userDocRef.get().addOnCompleteListener(task -> {
+                    if (task.isSuccessful()) {
+                        DocumentSnapshot snapshot = task.getResult();
+
+                        if (snapshot.exists() && Boolean.TRUE.equals(snapshot.getBoolean("isVendor"))) {
+                            navigateTo(StorefrontActivity.class);
+                        } else if (snapshot.exists() && Boolean.FALSE.equals(snapshot.getBoolean("isVendor"))) {
+                            Toast.makeText(ProfileActivity.this, "Upgrade to vendor to use this feature.", Toast.LENGTH_SHORT).show();
                         } else {
                             Toast.makeText(ProfileActivity.this, "User data not found.", Toast.LENGTH_SHORT).show();
                         }
-                    }
-
-                    @Override
-                    public void onCancelled(DatabaseError error) {
-                        Toast.makeText(ProfileActivity.this, "Error: " + error.getMessage(), Toast.LENGTH_LONG).show();
+                    } else {
+                        Toast.makeText(ProfileActivity.this, "Error: " + task.getException().getMessage(), Toast.LENGTH_SHORT).show();
                     }
                 });
             }
         });
-
 
         // Fetch user data
         fetchUserData();
@@ -88,13 +82,15 @@ public class ProfileActivity extends AppCompatActivity {
         if (currentUser != null) {
             String userId = currentUser.getUid();
 
-            databaseReference.child(userId).addListenerForSingleValueEvent(new ValueEventListener() {
-                @Override
-                public void onDataChange(DataSnapshot snapshot) {
+            DocumentReference userDocRef = firestore.collection("Users").document(userId);
 
-                    if (snapshot.exists() && snapshot.child("isVendor").getValue().equals(false)) {
-                        String firstName = snapshot.child("firstName").getValue(String.class);
-                        String lastName = snapshot.child("lastName").getValue(String.class);
+            userDocRef.get().addOnCompleteListener(task -> {
+                if (task.isSuccessful()) {
+                    DocumentSnapshot snapshot = task.getResult();
+
+                    if (snapshot.exists() /*&& Boolean.FALSE.equals(snapshot.getBoolean("isVendor"))*/) {
+                        String firstName = snapshot.getString("firstName");
+                        String lastName = snapshot.getString("lastName");
 
                         // Handle null values
                         firstName = (firstName != null) ? firstName : "";
@@ -103,28 +99,15 @@ public class ProfileActivity extends AppCompatActivity {
                         // Use resource string with placeholders
                         String fullName = getString(R.string.profile_name_format, firstName, lastName);
                         profileNameTextView.setText(fullName);
-
-                    } else if (snapshot.exists() && snapshot.child("isVendor").getValue().equals(true)) {
-                        String displayName = snapshot.child("companyInfo").child("companyName").getValue(String.class);
-
-                        // Handle null values
-                        displayName = (displayName != null) ? displayName : "";
-
-                        profileNameTextView.setText(displayName);
-
                     } else {
                         Toast.makeText(ProfileActivity.this, "User data not found.", Toast.LENGTH_SHORT).show();
                     }
-                }
-
-                @Override
-                public void onCancelled(DatabaseError error) {
-                    Toast.makeText(ProfileActivity.this, "Error: " + error.getMessage(), Toast.LENGTH_LONG).show();
+                } else {
+                    Toast.makeText(ProfileActivity.this, "Error: " + task.getException().getMessage(), Toast.LENGTH_SHORT).show();
                 }
             });
         }
     }
-
 
     // Helper function for activity navigation
     private void navigateTo(Class<?> targetActivity) {

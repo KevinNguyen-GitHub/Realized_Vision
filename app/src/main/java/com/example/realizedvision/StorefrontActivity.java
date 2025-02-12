@@ -6,18 +6,21 @@ import android.util.Log;
 import android.widget.Toast;
 
 import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
-import com.google.firebase.database.DataSnapshot;
-import com.google.firebase.database.DatabaseError;
-import com.google.firebase.database.DatabaseReference;
-import com.google.firebase.database.FirebaseDatabase;
-import com.google.firebase.database.ValueEventListener;
-import com.example.realizedvision.ItemAdapter;
+import com.google.firebase.firestore.CollectionReference;
+import com.google.firebase.firestore.DocumentReference;
+import com.google.firebase.firestore.DocumentSnapshot;
+import com.google.firebase.firestore.EventListener;
+import com.google.firebase.firestore.FirebaseFirestore;
+import com.google.firebase.firestore.FirebaseFirestoreException;
+import com.google.firebase.firestore.QuerySnapshot;
+import com.google.firebase.firestore.Source;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -28,7 +31,7 @@ public class StorefrontActivity extends AppCompatActivity {
     private RecyclerView recyclerView;
     private ItemAdapter itemAdapter;
     private List<Item> itemList;
-    private DatabaseReference userDatabaseRef;
+    private FirebaseFirestore firestore;
     private FirebaseUser currentUser;
 
     @Override
@@ -38,7 +41,9 @@ public class StorefrontActivity extends AppCompatActivity {
 
         // Initialize Firebase
         currentUser = FirebaseAuth.getInstance().getCurrentUser();
-        userDatabaseRef = FirebaseDatabase.getInstance().getReference("Users");
+        if (currentUser != null) {
+            firestore = FirebaseFirestore.getInstance();
+        }
 
         // Initialize RecyclerView
         recyclerView = findViewById(R.id.recyclerView);
@@ -53,44 +58,49 @@ public class StorefrontActivity extends AppCompatActivity {
         checkOrPopulateStorefront();
     }
 
+    // Check if the storefront contains any items
     private void checkOrPopulateStorefront() {
         if (currentUser != null) {
             String userId = currentUser.getUid();
-            DatabaseReference storefrontRef = userDatabaseRef.child(userId).child("storefront").child("items");
 
-            // Check if the storefront contains any items
-            storefrontRef.addListenerForSingleValueEvent(new ValueEventListener() {
-                @Override
-                public void onDataChange(@NonNull DataSnapshot snapshot) {
-                    if (!snapshot.exists() || snapshot.getChildrenCount() == 0) {
-                        // Storefront exists but is empty, populate it with 10 default items
-                        populateStorefront(userId);
-                    } else {
-                        // Load existing items
-                        loadStorefrontItems(userId);
-                    }
-                }
+            CollectionReference itemsRef = firestore.collection("Storefront");
 
-                @Override
-                public void onCancelled(@NonNull DatabaseError error) {
-                    Toast.makeText(StorefrontActivity.this, "Error: " + error.getMessage(), Toast.LENGTH_SHORT).show();
-                }
-            });
+            itemsRef.whereEqualTo("vendorID", userId)
+                    .addSnapshotListener(new EventListener<QuerySnapshot>() {
+                        @Override
+                        public void onEvent(@Nullable QuerySnapshot snapshot, @Nullable FirebaseFirestoreException error) {
+                            if (error != null) {
+                                Log.e("Firestore", "Error loading items", error);
+                                return;
+                            }
+
+                            if (snapshot == null || snapshot.isEmpty()) {
+                                Log.d("Firestore", "No items found for this vendor");
+                                populateStorefront(userId);
+                            }
+
+                            loadStorefrontItems(userId);
+                        }
+                    });
         }
     }
 
     private void populateStorefront(String userId) {
-        DatabaseReference storefrontRef = userDatabaseRef.child(userId).child("storefront").child("items");
+        CollectionReference storefrontColRef = firestore.collection("Storefront");
 
-        // Create 10 default items
+        String itemID;
         for (int i = 1; i <= 10; i++) {
+            itemID = storefrontColRef.document().getId();
+
             HashMap<String, Object> item = new HashMap<>();
             item.put("name", "Sample Item " + i);
             item.put("description", "This is a sample item number " + i);
             item.put("price", (double) (5 + i * 2)); // Different prices
             item.put("imageUrl", ""); // No image for now
+            item.put("itemID", itemID);
+            item.put("vendorID", userId);
 
-            storefrontRef.push().setValue(item);
+            storefrontColRef.document(itemID).set(item);
         }
 
         Toast.makeText(StorefrontActivity.this, "10 Sample Items Added to Storefront!", Toast.LENGTH_SHORT).show();
@@ -100,26 +110,30 @@ public class StorefrontActivity extends AppCompatActivity {
     }
 
     private void loadStorefrontItems(String userId) {
-        DatabaseReference itemsRef = userDatabaseRef.child(userId).child("storefront").child("items");
+        CollectionReference itemsRef = firestore.collection("Storefront");
 
-        itemsRef.addValueEventListener(new ValueEventListener() {
-            @Override
-            public void onDataChange(@NonNull DataSnapshot snapshot) {
-                itemList.clear();
-                for (DataSnapshot dataSnapshot : snapshot.getChildren()) {
-                    Item item = dataSnapshot.getValue(Item.class);
-                    if (item != null) {
-                        itemList.add(item);
+        itemsRef.whereEqualTo("vendorID", userId)
+                .addSnapshotListener(new EventListener<QuerySnapshot>() {
+                    @Override
+                    public void onEvent(@Nullable QuerySnapshot snapshot, @Nullable FirebaseFirestoreException error) {
+                        if (error != null) {
+                            Log.e("Firestore", "Error loading items", error);
+                            return;
+                        }
+                        if (snapshot != null) {
+                            itemList.clear();
+
+                            for (DocumentSnapshot itemDoc : snapshot.getDocuments()) {
+                                Item item = itemDoc.toObject(Item.class);
+
+                                if (item != null) {
+                                    itemList.add(item);
+                                }
+                            }
+                            itemAdapter.notifyDataSetChanged();
+                        }
                     }
-                }
-                itemAdapter.notifyDataSetChanged();
-            }
-
-            @Override
-            public void onCancelled(@NonNull DatabaseError error) {
-                Log.e("Firebase", "Error loading items", error.toException());
-            }
-        });
+                });
     }
 }
 

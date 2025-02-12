@@ -75,7 +75,15 @@ public class StorefrontActivity extends AppCompatActivity {
         homeIcon.setOnClickListener(view -> navigateTo(MainActivity.class));
         favoriteIcon.setOnClickListener(view -> navigateTo(FavoritesActivity.class));
         messageIcon.setOnClickListener(view -> navigateTo(MessagesActivity.class));
-        profileIcon.setOnClickListener(view -> navigateTo(ProfileActivity.class));
+
+
+
+
+        profileIcon.setOnClickListener(view -> navigateTo(StorefrontActivity.class));
+
+
+
+
         settingsIcon.setOnClickListener(view -> navigateTo(SettingsActivity.class));
 
 

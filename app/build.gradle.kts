@@ -6,7 +6,7 @@ plugins {
 
 android {
     namespace = "com.example.realizedvision"
-    compileSdk = 34
+    compileSdk = 35
 
     defaultConfig {
         applicationId = "com.csulb.realized_vision"
@@ -63,12 +63,14 @@ dependencies {
     implementation(libs.androidx.appcompat)
     implementation(libs.androidx.constraintlayout)
     implementation(libs.androidx.material3)
+    implementation (libs.androidx.cardview)
 
     // Jetpack Compose dependencies
     implementation(platform(libs.androidx.compose.bom))
     implementation(libs.androidx.ui)
     implementation(libs.androidx.ui.graphics)
     implementation(libs.androidx.ui.tooling.preview)
+    implementation(libs.androidx.recyclerview)
     debugImplementation(libs.androidx.ui.tooling)
     debugImplementation(libs.androidx.ui.test.manifest)
 

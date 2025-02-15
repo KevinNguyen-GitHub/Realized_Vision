@@ -75,7 +75,13 @@ public class SettingsActivity extends AppCompatActivity {
             }
         });
 
-        logoutButton.setOnClickListener(view -> navigateTo(LoginActivity.class));
+        logoutButton.setOnClickListener(view -> {
+            FirebaseAuth.getInstance().signOut(); // Sign out the user
+            Intent intent = new Intent(SettingsActivity.this, LoginActivity.class);
+            intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK); // Clear activity stack
+            startActivity(intent);
+            finish(); // Close current activity
+        });
     }
 
     private void navigateTo(Class<?> targetActivity) {

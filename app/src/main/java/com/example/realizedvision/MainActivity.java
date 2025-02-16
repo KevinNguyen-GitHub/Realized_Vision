@@ -7,14 +7,21 @@ import android.view.View;
 import android.widget.Button;
 import android.widget.ImageView;
 import android.widget.TextView;
+
+import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
+import com.google.firebase.firestore.CollectionReference;
+import com.google.firebase.firestore.DocumentSnapshot;
+import com.google.firebase.firestore.EventListener;
 import com.google.firebase.firestore.FirebaseFirestore;
+import com.google.firebase.firestore.FirebaseFirestoreException;
 import com.google.firebase.firestore.QueryDocumentSnapshot;
+import com.google.firebase.firestore.QuerySnapshot;
 
 import java.math.BigDecimal;
 import java.util.ArrayList;
@@ -22,20 +29,27 @@ import java.util.List;
 
 public class MainActivity extends AppCompatActivity {
     private RecyclerView recyclerView;
-    private ProductAdapter productAdapter;
-    private List<Product> productList;
+    private ItemAdapter itemAdapter;
+    private List<Item> itemList;
+    private FirebaseFirestore firestore;
+    private FirebaseUser currentUser;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
+
+        currentUser = FirebaseAuth.getInstance().getCurrentUser();
+        firestore = FirebaseFirestore.getInstance();
+
+
         recyclerView = findViewById(R.id.mainRecyclerView);
         recyclerView.setLayoutManager(new LinearLayoutManager(this));
 
-        List<Product> productList = new ArrayList<>();
-
-        productAdapter = new ProductAdapter(productList);
-        recyclerView.setAdapter(productAdapter);
+        itemList = new ArrayList<>();
+        itemAdapter = new ItemAdapter(this, itemList);
+        recyclerView.setAdapter(itemAdapter);
+        fetchItemsfromFirestore();
 
         ImageView favoriteIcon = findViewById(R.id.favorites_icon);
         ImageView messageIcon = findViewById(R.id.messages_icon);
@@ -52,16 +66,18 @@ public class MainActivity extends AppCompatActivity {
         startActivity(intent);
     }
 
-    private void fetchProductsfromFirestore(){
+    private void fetchItemsfromFirestore(){
         FirebaseFirestore db = FirebaseFirestore.getInstance();
         db.collection("Storefront").get()
                 .addOnSuccessListener(queryDocumentSnapshots -> {
-                    productList.clear();
+                    Log.d("MainActivity", "Number of items fetched: " + queryDocumentSnapshots.size());
+                    itemList.clear();
                     for(QueryDocumentSnapshot document : queryDocumentSnapshots){
-                        Product product = document.toObject(Product.class);
-                        productList.add(product);
+                        Item item = document.toObject(Item.class);
+                        Log.d("MainActivity", "Item: " + item.getName());
+                        itemList.add(item);
                     }
-                    productAdapter.notifyDataSetChanged();
+                    itemAdapter.notifyDataSetChanged();
                 }).addOnFailureListener(e ->{
                     Log.e("Main Activity", "Error fetching products: " + e.getMessage());
                 });

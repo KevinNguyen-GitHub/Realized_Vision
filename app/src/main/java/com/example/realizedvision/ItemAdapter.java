@@ -9,7 +9,7 @@ import android.widget.ImageView;
 import android.widget.TextView;
 
 import androidx.recyclerview.widget.RecyclerView;
-//import com.bumptech.glide.Glide; // Or use Picasso
+import com.bumptech.glide.Glide; // Or use Picasso
 
 import com.example.realizedvision.R;
 
@@ -36,12 +36,12 @@ public class ItemAdapter extends RecyclerView.Adapter<ItemViewHolder> {
         Item item = itemList.get(position);
         holder.itemName.setText(item.getName());
         holder.itemPrice.setText(String.format("$%.2f", item.getPrice()));
+        holder.itemDescription.setText(item.getDescription());
 
-        // Load image with Glide (or use Picasso)
-//        Glide.with(context)
-//                .load(item.getImageUrl()) // Ensure Item class has getImageUrl()
-//                .placeholder(R.drawable.ic_launcher_background)
-//                .into(holder.itemImage);
+        Glide.with(context)
+                .load(item.getImageUrl()) // Ensure Item class has getImageUrl()
+                .placeholder(R.drawable.ic_placeholder_image)
+                .into(holder.itemImage);
     }
 
     @Override

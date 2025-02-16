@@ -33,7 +33,7 @@ public class FavoriteAdapter extends RecyclerView.Adapter<FavoriteAdapter.Favori
         Favorite favorite = favoriteList.get(position);
 
         // Fetch product data using product_id
-        fetchProductById(favorite.getProduct_id(),
+        fetchProductById(favorite.getItem_id(),
                 product -> {
                     // Bind product data to views
                     holder.productName.setText(product.getProductName());

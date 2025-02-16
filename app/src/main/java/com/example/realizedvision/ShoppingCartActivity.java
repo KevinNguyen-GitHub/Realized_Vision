@@ -8,10 +8,11 @@ import android.widget.ImageView;
 import androidx.appcompat.app.AppCompatActivity;
 
 public class ShoppingCartActivity extends AppCompatActivity{
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_favorites);
+        setContentView(R.layout.activity_shopping_cart);
 
         ImageView homeIcon = findViewById(R.id.home_icon);
         ImageView messageIcon = findViewById(R.id.messages_icon);

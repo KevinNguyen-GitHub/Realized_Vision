@@ -16,5 +16,6 @@ public class ItemViewHolder extends RecyclerView.ViewHolder {
         itemPrice = itemView.findViewById(R.id.item_price);
         itemDescription = itemView.findViewById(R.id.item_description);
         itemImage = itemView.findViewById(R.id.item_image);
+        itemDescription = itemView.findViewById(R.id.item_description);
     }
 }

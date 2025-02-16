@@ -5,92 +5,87 @@ import android.os.Bundle;
 import android.view.View;
 import android.widget.Button;
 import android.widget.ImageButton;
+import android.widget.Toast;
 
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.compose.ui.text.font.FontVariation;
 
 import com.google.firebase.auth.FirebaseAuth;
+import com.google.firebase.auth.FirebaseUser;
+import com.google.firebase.firestore.DocumentReference;
+import com.google.firebase.firestore.DocumentSnapshot;
+import com.google.firebase.firestore.FirebaseFirestore;
 
 public class SettingsActivity extends AppCompatActivity {
+    private FirebaseUser currentUser;
+    private FirebaseFirestore firestore;
+
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_settings);
 
+        currentUser = FirebaseAuth.getInstance().getCurrentUser();
+        if (currentUser != null) {
+            firestore = FirebaseFirestore.getInstance();
+        }
+
+
+
         Button termsAndConditionsButton = findViewById(R.id.tcButton);
-        termsAndConditionsButton.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                Intent intent = new Intent(SettingsActivity.this, TermsAndConditionsActivity.class);
-                startActivity(intent);
-            }
-        });
         Button orderHistoryButton = findViewById(R.id.historyButton);
-        orderHistoryButton.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                Intent intent = new Intent(SettingsActivity.this, OrderHistoryActivity.class);
-                startActivity(intent);
-            }
-        });
         Button changeUsernameButton = findViewById(R.id.changeUsernameButton);
-        changeUsernameButton.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                Intent intent = new Intent(SettingsActivity.this, ChangeNameActivity.class);
-                startActivity(intent);
-            }
-        });
-
         Button changePasswordButton = findViewById(R.id.changePasswordButton);
-        changePasswordButton.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                Intent intent = new Intent(SettingsActivity.this, ChangePasswordActivity.class);
-                startActivity(intent);
-            }
-        });
-
         Button notificationsButton = findViewById(R.id.notificationsButton);
-        notificationsButton.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                Intent intent = new Intent(SettingsActivity.this, NotificationsActivity.class);
-                startActivity(intent);
-            }
-        });
-
         Button vendorInfoButton = findViewById(R.id.upgradeButton);
-        vendorInfoButton.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                Intent intent = new Intent(SettingsActivity.this, VendorInfoActivity.class);
-                startActivity(intent);
-            }
-        });
-
         ImageButton backButton = findViewById(R.id.backButtonChangePass);
-        backButton.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                Intent intent = new Intent(SettingsActivity.this, ProfileActivity.class);
-                startActivity(intent);
-            }
-        });
-
         Button logoutButton = findViewById(R.id.btn_logout);
-        logoutButton.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                FirebaseAuth.getInstance().signOut();
-                Intent intent = new Intent(SettingsActivity.this, LoginActivity.class);
-                startActivity(intent);
-                finish();
+
+
+
+        termsAndConditionsButton.setOnClickListener(view -> navigateTo(TermsAndConditionsActivity.class));
+        orderHistoryButton.setOnClickListener(view -> navigateTo(OrderHistoryActivity.class));
+        changeUsernameButton.setOnClickListener(view -> navigateTo(ChangeNameActivity.class));
+        changePasswordButton.setOnClickListener(view -> navigateTo(ChangePasswordActivity.class));
+        notificationsButton.setOnClickListener(view -> navigateTo(NotificationsActivity.class));
+        vendorInfoButton.setOnClickListener(view -> navigateTo(VendorInfoActivity.class));
+
+        backButton.setOnClickListener(view -> {
+            if (currentUser != null) {
+                String userId = currentUser.getUid();
+
+                DocumentReference userDocRef = firestore.collection("Users").document(userId);
+
+                userDocRef.get().addOnCompleteListener(task -> {
+                    if (task.isSuccessful()) {
+                        DocumentSnapshot snapshot = task.getResult();
+
+                        if (snapshot.exists() && Boolean.TRUE.equals(snapshot.getBoolean("isVendor"))) {
+                            navigateTo(StorefrontActivity.class);
+                        } else if (snapshot.exists() && Boolean.FALSE.equals(snapshot.getBoolean("isVendor"))) {
+                            navigateTo(ProfileActivity.class);
+                        } else {
+                            Toast.makeText(SettingsActivity.this, "User data not found.", Toast.LENGTH_SHORT).show();
+                        }
+                    } else {
+                        Toast.makeText(SettingsActivity.this, "Error: " + task.getException().getMessage(), Toast.LENGTH_SHORT).show();
+                    }
+                });
             }
         });
 
+        logoutButton.setOnClickListener(view -> {
+            FirebaseAuth.getInstance().signOut(); // Sign out the user
+            Intent intent = new Intent(SettingsActivity.this, LoginActivity.class);
+            intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK); // Clear activity stack
+            startActivity(intent);
+            finish(); // Close current activity
+        });
+    }
 
-
+    private void navigateTo(Class<?> targetActivity) {
+        Intent intent = new Intent(SettingsActivity.this, targetActivity);
+        startActivity(intent);
     }
 }

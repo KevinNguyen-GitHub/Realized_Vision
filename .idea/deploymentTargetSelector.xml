@@ -16,7 +16,7 @@
       <SelectionState runConfigName="ViewCalendarActivity">
         <option name="selectionMode" value="DROPDOWN" />
       </SelectionState>
-      <SelectionState runConfigName="StorefrontActivity (1)">
+      <SelectionState runConfigName="ViewClassActivity">
         <option name="selectionMode" value="DROPDOWN" />
       </SelectionState>
     </selectionStates>

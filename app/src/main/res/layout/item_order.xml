@@ -12,16 +12,16 @@
     <RelativeLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:padding="16dp">
+        android:padding="16dp"
+        android:background="@drawable/rounded_button">
 
-        <!-- Order Details -->
-        <TextView
-            android:id="@+id/order_details"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="Order Details"
-            android:textSize="16sp"
-            android:textColor="@android:color/black" />
+        <!-- Item Image -->
+        <ImageView
+            android:id="@+id/item_image"
+            android:layout_width="80dp"
+            android:layout_height="80dp"
+            android:layout_alignParentStart="true"
+            android:src="@drawable/pseudo_image"/>
 
         <!-- Cancel Order Button -->
         <Button
@@ -29,8 +29,37 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:text="Cancel Order"
-            android:layout_below="@id/order_details"
-            android:layout_marginTop="8dp" />
+            android:layout_alignParentEnd="true"
+            android:layout_centerVertical="true"
+            android:background="@drawable/rounded_edittext" />
+
+        <!-- Order Title between the image and the button -->
+        <TextView
+            android:id="@+id/order_title"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Order Title"
+            android:textSize="16sp"
+            android:textColor="@android:color/white"
+            android:layout_toEndOf="@id/item_image"
+            android:layout_toStartOf="@id/cancel_order_button"
+            android:layout_alignParentTop="true"
+            android:layout_marginStart="8dp"
+            android:layout_marginEnd="15dp" />
+
+        <!-- Additional Order Details below the title -->
+        <TextView
+            android:id="@+id/order_details"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="More details about the item can be displayed here."
+            android:textSize="14sp"
+            android:textColor="@color/white"
+            android:layout_below="@id/order_title"
+            android:layout_alignStart="@id/order_title"
+            android:layout_toStartOf="@id/cancel_order_button"
+            android:layout_marginTop="4dp"
+            android:layout_marginEnd="15dp"/>
 
     </RelativeLayout>
 

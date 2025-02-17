@@ -1,0 +1,214 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/calendarLayout"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@color/beige">
+
+
+    <TextView
+        android:id="@+id/monthText"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="16dp"
+        android:gravity="center"
+        android:text="Current Month"
+        android:textColor="@color/black"
+        android:textSize="28sp"
+        android:textStyle="bold"
+        app:layout_constraintTop_toBottomOf="@id/storefront_nav"
+        tools:layout_editor_absoluteX="160dp" />
+
+
+    <com.kizitonwose.calendar.view.CalendarView
+        android:id="@+id/calendarView"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_marginBottom="32dp"
+        app:cv_dayViewResource="@layout/calendar_day_layout"
+        app:cv_monthHeaderResource="@layout/calendar_day_titles_container"
+        app:layout_constraintBottom_toTopOf="@id/bottom_navigation"
+        app:layout_constraintDimensionRatio="1:1"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/profile_header"
+        tools:layout_constraintTop_toBottomOf="@id/storefront_nav" />
+
+    <LinearLayout
+        android:id="@+id/profile_header"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:gravity="center_vertical"
+        android:orientation="horizontal"
+        android:padding="16dp"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent">
+
+        <ImageView
+            android:id="@+id/profile_image"
+            android:layout_width="64dp"
+            android:layout_height="64dp"
+            android:layout_marginEnd="16dp"
+            android:contentDescription="Profile Picture"
+            android:scaleType="centerCrop"
+            android:src="@drawable/ic_user" />
+
+        <TextView
+            android:id="@+id/profile_name"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:background="#BF360C"
+            android:padding="8dp"
+            android:shadowRadius="4"
+
+            android:textColor="@color/white"
+            android:textSize="18sp"
+            android:textStyle="bold" />
+
+        <ImageView
+            android:id="@+id/settings_icon"
+            android:layout_width="48dp"
+            android:layout_height="48dp"
+            android:contentDescription="Settings"
+            android:src="@drawable/ic_settings"
+            app:tint="@color/black" />
+    </LinearLayout>
+
+    <LinearLayout
+        android:id="@+id/storefront_nav"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:background="@color/maroon"
+        android:gravity="center"
+        android:orientation="horizontal"
+        android:padding="8dp"
+        android:weightSum="4"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/profile_header">
+
+
+        <ImageView
+            android:id="@+id/storefront_label"
+            android:layout_width="0dp"
+            android:layout_height="32dp"
+            android:layout_marginEnd="4dp"
+            android:layout_weight="1"
+            android:contentDescription="Storefront"
+            android:scaleType="centerInside"
+            android:src="@drawable/ic_storefront"
+            app:tint="@android:color/white" />
+
+        <View
+            android:layout_width="2dp"
+            android:layout_height="30dp"
+            android:background="@android:color/white" />
+
+        <ImageView
+            android:id="@+id/star_icon"
+            android:layout_width="0dp"
+            android:layout_height="32dp"
+            android:layout_marginEnd="4dp"
+            android:layout_weight="1"
+            android:contentDescription="Favorites"
+            android:scaleType="centerInside"
+            android:src="@drawable/ic_star"
+
+            app:tint="@android:color/white" />
+
+        <View
+            android:layout_width="2dp"
+            android:layout_height="30dp"
+            android:background="@android:color/white" />
+
+        <ImageView
+            android:id="@+id/calendar_icon"
+            android:layout_width="0dp"
+            android:layout_height="32dp"
+            android:layout_marginEnd="4dp"
+            android:layout_weight="1"
+            android:contentDescription="Calendar"
+            android:scaleType="centerInside"
+            android:src="@drawable/ic_calendar"
+
+            app:tint="@android:color/white" />
+
+        <View
+            android:layout_width="2dp"
+            android:layout_height="30dp"
+            android:background="@android:color/white" />
+
+        <ImageView
+            android:id="@+id/book_icon"
+            android:layout_width="0dp"
+            android:layout_height="30dp"
+            android:layout_marginEnd="4dp"
+            android:layout_weight="1"
+            android:contentDescription="Portfolio"
+            android:scaleType="centerInside"
+            android:src="@drawable/ic_book"
+
+            app:tint="@android:color/white" />
+
+        <View
+            android:layout_width="2dp"
+            android:layout_height="30dp"
+            android:background="@android:color/white" />
+    </LinearLayout>
+
+    <LinearLayout
+        android:id="@+id/bottom_navigation"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:background="#BF360C"
+        android:gravity="center"
+        android:orientation="horizontal"
+        android:padding="8dp"
+        android:weightSum="4"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent">
+
+        <ImageView
+            android:id="@+id/home_icon"
+            android:layout_width="32dp"
+            android:layout_height="32dp"
+            android:layout_gravity="center"
+            android:layout_weight="1"
+            android:contentDescription="Home"
+            android:src="@drawable/ic_home" />
+
+        <ImageView
+            android:id="@+id/favorites_icon"
+            android:layout_width="32dp"
+            android:layout_height="32dp"
+            android:layout_gravity="center"
+            android:layout_weight="1"
+            android:contentDescription="@string/favorites"
+            android:src="@drawable/ic_favorite" />
+
+        <ImageView
+            android:id="@+id/messages_icon"
+            android:layout_width="32dp"
+            android:layout_height="32dp"
+            android:layout_gravity="center"
+            android:layout_weight="1"
+            android:contentDescription="@string/message"
+            android:src="@drawable/ic_message" />
+
+        <ImageView
+            android:id="@+id/profile_icon"
+            android:layout_width="32dp"
+            android:layout_height="32dp"
+            android:layout_gravity="center"
+            android:layout_weight="1"
+            android:contentDescription="@string/profile"
+            android:src="@drawable/ic_profile" />
+
+    </LinearLayout>
+
+</androidx.constraintlayout.widget.ConstraintLayout>

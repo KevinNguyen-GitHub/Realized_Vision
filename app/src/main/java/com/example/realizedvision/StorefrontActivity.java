@@ -48,7 +48,7 @@ public class StorefrontActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_vendor_profile); // Ensure correct XML file
-         profileNameTextView = findViewById(R.id.profile_name);
+        profileNameTextView = findViewById(R.id.profile_name);
         // Initialize Firebase
         currentUser = FirebaseAuth.getInstance().getCurrentUser();
         if (currentUser != null) {
@@ -71,10 +71,12 @@ public class StorefrontActivity extends AppCompatActivity {
         ImageView messageIcon = findViewById(R.id.messages_icon);
         ImageView profileIcon = findViewById(R.id.profile_icon);
         ImageView settingsIcon = findViewById(R.id.settings_icon);
+        ImageView calendarIcon = findViewById(R.id.calendar_icon);
 
         homeIcon.setOnClickListener(view -> navigateTo(MainActivity.class));
         favoriteIcon.setOnClickListener(view -> navigateTo(FavoritesActivity.class));
         messageIcon.setOnClickListener(view -> navigateTo(MessagesActivity.class));
+        calendarIcon.setOnClickListener(view -> navigateTo(ViewCalendarActivity.class));
 
 
 

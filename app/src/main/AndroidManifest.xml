@@ -127,6 +127,18 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
+        <activity
+            android:name=".ViewClassActivity"
+            android:exported="true"
+            android:label="Realized Vision"
+            android:theme="@style/Theme.RealizedVision">
+        </activity>
+        <activity
+            android:name=".ViewCalendarActivity"
+            android:exported="true"
+            android:label="Realized Vision"
+            android:theme="@style/Theme.RealizedVision">
+        </activity>
     </application>
 
 </manifest>

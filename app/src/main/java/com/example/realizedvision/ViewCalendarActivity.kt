@@ -6,6 +6,7 @@ import android.graphics.Color
 import android.os.Bundle
 import android.view.Gravity
 import android.view.View
+import android.widget.ImageView
 import android.widget.LinearLayout
 import android.widget.TextView
 import androidx.appcompat.app.AppCompatActivity
@@ -38,6 +39,19 @@ class ViewCalendarActivity : AppCompatActivity() {
 
         calendarView = findViewById(R.id.calendarView)
         monthText = findViewById(R.id.monthText)
+
+        val calendarIcon = findViewById<ImageView>(R.id.calendar_icon)
+        val settingsIcon = findViewById<ImageView>(R.id.settings_icon)
+        val profileImage = findViewById<ImageView>(R.id.profile_image)
+        val profileName = findViewById<TextView>(R.id.profile_name)
+        val storefrontLabel = findViewById<ImageView>(R.id.storefront_label)
+        val starIcon = findViewById<ImageView>(R.id.star_icon)
+
+        calendarIcon.setOnClickListener { view: View? -> navigateTo(ViewCalendarActivity::class.java) }
+        settingsIcon.setOnClickListener { view: View? -> navigateTo(SettingsActivity::class.java) }
+        storefrontLabel.setOnClickListener { view: View? -> navigateTo(StorefrontActivity::class.java) }
+        starIcon.setOnClickListener { view: View? -> navigateTo(FavoritesActivity::class.java) }
+
 
         setupCalendar()
 

@@ -1,6 +1,9 @@
 package com.example.realizedvision
 
+import android.content.Intent
 import android.os.Bundle
+import android.view.View
+import android.widget.ImageView
 import android.widget.TextView
 import androidx.appcompat.app.AppCompatActivity
 import androidx.recyclerview.widget.LinearLayoutManager
@@ -15,6 +18,10 @@ class ViewClassActivity : AppCompatActivity() {
         val selectedDate = intent.getStringExtra("SELECTED_DATE")
         val selectedDateTextView = findViewById<TextView>(R.id.selectedDate)
         selectedDateTextView.text = "Scheduele for\n $selectedDate"
+
+        val calendarIcon = findViewById<ImageView>(R.id.calendar_icon)
+        calendarIcon.setOnClickListener { view: View? -> navigateTo(ViewCalendarActivity::class.java) }
+
 
         // Sample data
         val classList = listOf(
@@ -35,5 +42,9 @@ class ViewClassActivity : AppCompatActivity() {
         // Create and set the adapter
         val adapter = ClassAdapter(classList)
         recyclerView.adapter = adapter
+    }
+    private fun navigateTo(activityClass: Class<*>) {
+        val intent = Intent(this, activityClass)
+        startActivity(intent)
     }
 }

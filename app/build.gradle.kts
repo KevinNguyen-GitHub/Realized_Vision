@@ -47,7 +47,7 @@ android {
     }
 
     composeOptions {
-        kotlinCompilerExtensionVersion = "1.5.15"
+        kotlinCompilerExtensionVersion = "1.5.1"
     }
 
     packaging {
@@ -89,13 +89,7 @@ dependencies {
     implementation("com.kizitonwose.calendar:compose:2.6.2")
     coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.1.4")
 
-    //Google Calendar dependencies
-    implementation("com.google.api-client:google-api-client-android:2.0.0")
-    implementation("com.google.apis:google-api-services-calendar:v3-rev20250115-2.0.0")
-    implementation("com.google.android.libraries.identity.googleid:googleid:1.1.1")
-    implementation("androidx.credentials:credentials:1.3.0")
-    implementation("androidx.credentials:credentials-play-services-auth:1.3.0")
-
+    
     // Testing dependencies
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)

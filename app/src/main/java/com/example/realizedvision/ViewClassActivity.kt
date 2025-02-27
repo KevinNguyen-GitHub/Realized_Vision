@@ -28,6 +28,7 @@ class ViewClassActivity : AppCompatActivity() {
     private lateinit var adapter: ClassAdapter
     private lateinit var recyclerView: RecyclerView
     private var selectedDate: String? = null
+    private var isRemoveMode = false
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -43,13 +44,54 @@ class ViewClassActivity : AppCompatActivity() {
         recyclerView = findViewById(R.id.viewClassRecycler)
         recyclerView.layoutManager = LinearLayoutManager(this)
         adapter = ClassAdapter()
+        adapter.setOnItemClickListener(this)
         recyclerView.adapter = adapter
 
         loadClasses()
 
         val addClassButton = findViewById<Button>(R.id.add_class_button)
         addClassButton.setOnClickListener {showAddClassDialog() }
+        val removeClassButton = findViewById<Button>(R.id.remove_class_button)
+        removeClassButton.setOnClickListener {
+            isRemoveMode = !isRemoveMode
+            if (isRemoveMode) {
+                removeClassButton.text = "Cancel"
+                Toast.makeText(this, "Select a class to remove", Toast.LENGTH_SHORT).show()
+            } else {
+                removeClassButton.text = "Remove"
+            }
+        }
 
+    }
+    //TODO: fix this bug
+    override fun onItemClick(classInfo: ClassInfo) {
+        if (isRemoveMode) {
+            showRemoveConfirmationDialog(classInfo)
+        }
+    }
+
+    private fun showRemoveConfirmationDialog(classInfo: ClassInfo) {
+        val dialog = AlertDialog.Builder(ContextThemeWrapper(this, R.style.CustomAlertDialog))
+            .setTitle("Remove Class")
+            .setMessage("Are you sure you want to remove:\n" +
+                    "\nTitle: ${classInfo.title}" +
+                    "\nDescription: ${classInfo.description}" +
+                    "\nStart Time: ${classInfo.startTime}" +
+                    "\nEnd Time: ${classInfo.endTime}")
+            .setPositiveButton("Yes") { _, _ ->
+                removeClassFromFirestore(classInfo)
+            }
+            .setNegativeButton("No") { dialog, _ ->
+                dialog.dismiss()
+
+            }
+            .create()
+        dialog.show()
+    }
+
+    //TODO: Remove class from firestore
+    private fun removeClassFromFirestore(classInfo: ClassInfo) {
+        firestore.collection("Classes")
     }
 
     private fun loadClasses() {

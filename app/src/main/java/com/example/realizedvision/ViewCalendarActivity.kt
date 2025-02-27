@@ -138,7 +138,7 @@ class ViewCalendarActivity : AppCompatActivity() {
                 container.view.setOnClickListener {
                     val intent = Intent(this@ViewCalendarActivity, ViewClassActivity::class.java)
                     val formatter = DateTimeFormatter.ofPattern("MMMM d, yyyy", Locale.getDefault())
-                    intent.putExtra("SELECTED_DATE", data.date.format(formatter))
+                    intent.putExtra("selectedDate", data.date.format(formatter))
                     startActivity(intent)
                 }
             }

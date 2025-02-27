@@ -1,5 +1,6 @@
 package com.example.realizedvision;
 
+import android.content.Context;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -16,10 +17,14 @@ import java.util.List;
 
 public class FavoriteAdapter extends RecyclerView.Adapter<FavoriteAdapter.FavoriteViewHolder> {
     private List<Favorite> favoriteList;
+    private Context context;
+    private ItemAdapter.OnItemClickListener listener;
 
-    public FavoriteAdapter(List<Favorite> favoriteList) {
+    public FavoriteAdapter(Context context, List<Favorite> favoriteList) {
+        this.context = context;
         this.favoriteList = favoriteList;
     }
+
 
     @NonNull
     @Override
@@ -38,11 +43,19 @@ public class FavoriteAdapter extends RecyclerView.Adapter<FavoriteAdapter.Favori
                     // Bind product data to views
                     holder.productName.setText(product.getProductName());
                     holder.productDescription.setText(product.getDescription());
-                    Glide.with(holder.itemView.getContext())
+                    Glide.with(context)
                             .load(product.getImageUrl())
                             .placeholder(R.drawable.ic_placeholder_image) // Placeholder while loading
                             .error(R.drawable.ic_placeholder_image) // Error image if loading fails
                             .into(holder.productImage);
+
+                    fetchVendorById(product.getVendorId(),
+                            vendor -> {
+                        holder.productVendor.setText(vendor.getCompanyName());
+                            },exception ->{
+                        Log.e("Favorite Adapter", "Error fetching vendor" + exception.getMessage());
+                            }
+                            );
                 },
                 exception -> {
                     // Handle error fetching product

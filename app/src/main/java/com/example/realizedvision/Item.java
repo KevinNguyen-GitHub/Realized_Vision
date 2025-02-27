@@ -7,6 +7,8 @@ public class Item {
     private String description;
     private double price;
     private String imageUrl; // Or a drawable resource ID
+
+    private boolean isFavorite;
     public Item(){
         //default constructor
     }
@@ -36,5 +38,9 @@ public class Item {
 
     public String getImageUrl() {
         return imageUrl;
+    }
+    public boolean isFavorite(){return isFavorite;}
+    public void setFavorite(boolean favorite){
+        isFavorite = favorite;
     }
 }

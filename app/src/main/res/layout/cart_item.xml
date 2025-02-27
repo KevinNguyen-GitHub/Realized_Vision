@@ -58,10 +58,10 @@
             android:src="@drawable/ic_favorite" />
 
         <ImageView
-            android:id="@+id/cart_icon"
+            android:id="@+id/remove_icon"
             android:layout_width="24dp"
             android:layout_height="24dp"
             android:layout_marginTop="8dp"
-            android:src="@drawable/ic_cart" />
+            android:src="@drawable/ic_remove" />
     </LinearLayout>
 </LinearLayout>

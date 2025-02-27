@@ -2,24 +2,24 @@
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
+    android:background="@drawable/rounded_edittext"
     android:orientation="horizontal">
 
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_marginBottom="16dp"
-        android:background="@drawable/rounded_edittext"
         android:elevation="4dp"
         android:orientation="horizontal"
         android:padding="16dp">
 
         <ImageView
-            android:id="@+id/product_image"
+            android:id="@+id/item_image"
             android:layout_width="100dp"
             android:layout_height="100dp"
-            android:contentDescription="Product Image"
             android:scaleType="centerCrop"
-            android:src="@drawable/ic_placeholder_image" />
+            android:src="@drawable/ic_placeholder_image"
+            android:contentDescription="@string/item_image"/>
 
         <LinearLayout
             android:layout_width="0dp"
@@ -38,16 +38,16 @@
                 android:textStyle="bold" />
 
             <TextView
-                android:id="@+id/product_vendor"
+                android:id="@+id/vendor_name"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:text="Luigi" />
+                android:text="@string/product_vendor" />
 
             <TextView
                 android:id="@+id/product_description"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:text="Description"
+                android:text="@string/product_description"
                 android:textColor="@color/gray"
                 android:textSize="14sp" />
         </LinearLayout>

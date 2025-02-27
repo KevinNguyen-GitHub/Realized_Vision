@@ -21,4 +21,7 @@
     <string name="home">Home</string>
     <string name="Checkout">Checkout</string>
     <string name="web_client_id">13504432131-gn4q36nf3tvnodj7vnc0abmebm9csb53.apps.googleusercontent.com</string>
+    <string name="item_image">Item Image</string>
+    <string name="product_vendor">Product Vendor</string>
+    <string name="product_description">Product description</string>
 </resources>

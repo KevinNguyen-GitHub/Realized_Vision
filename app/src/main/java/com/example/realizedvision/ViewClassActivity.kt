@@ -21,7 +21,7 @@ import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
 
-class ViewClassActivity : AppCompatActivity() {
+class ViewClassActivity : AppCompatActivity(), ClassAdapter.OnItemClickListener {
 
     private lateinit var firestore: FirebaseFirestore
     private lateinit var auth: FirebaseAuth
@@ -63,7 +63,7 @@ class ViewClassActivity : AppCompatActivity() {
         }
 
     }
-    //TODO: fix this bug
+
     override fun onItemClick(classInfo: ClassInfo) {
         if (isRemoveMode) {
             showRemoveConfirmationDialog(classInfo)
@@ -89,17 +89,31 @@ class ViewClassActivity : AppCompatActivity() {
         dialog.show()
     }
 
-    //TODO: Remove class from firestore
     private fun removeClassFromFirestore(classInfo: ClassInfo) {
         firestore.collection("Classes")
+            .document(classInfo.classID)
+            .delete()
+            .addOnSuccessListener {
+                Toast.makeText(this, "Class removed successfully.", Toast.LENGTH_SHORT).show()
+                loadClasses()
+            }
+            .addOnFailureListener { e ->
+                Log.w("ViewClassActivity", "Error removing document", e)
+                Toast.makeText(this, "Failed to remove class.", Toast.LENGTH_SHORT).show()
+            }
     }
 
     private fun loadClasses() {
         val currentUser = auth.currentUser
         if (currentUser != null) {
             val vendorId = currentUser.uid
+            val startOfDayTimestamp = getStartOfDayTimestamp(selectedDate!!)
+            val endOfDayTimestamp = getEndOfDayTimestamp(selectedDate!!)
             firestore.collection("Classes")
                 .whereEqualTo("vendorID", vendorId)
+                .whereGreaterThanOrEqualTo("startTime", startOfDayTimestamp)
+                .whereLessThanOrEqualTo("startTime", endOfDayTimestamp)
+                .orderBy("startTime")
                 .get()
                 .addOnSuccessListener { documents ->
                     val classes = documents.mapNotNull { document ->
@@ -126,6 +140,31 @@ class ViewClassActivity : AppCompatActivity() {
                     Toast.makeText(this, "Error getting classes", Toast.LENGTH_SHORT).show()
                 }
         }
+    }
+
+    //Helper functions that get the start and end time for a given day
+    private fun getStartOfDayTimestamp(dateString: String): Timestamp {
+        val formatter = SimpleDateFormat("MMMM dd, yyyy", Locale.getDefault())
+        val date = formatter.parse(dateString) ?: Date()
+        val calendar = Calendar.getInstance()
+        calendar.time = date
+        calendar.set(Calendar.HOUR_OF_DAY, 0)
+        calendar.set(Calendar.MINUTE, 0)
+        calendar.set(Calendar.SECOND, 0)
+        calendar.set(Calendar.MILLISECOND, 0)
+        return Timestamp(calendar.time)
+    }
+
+    private fun getEndOfDayTimestamp(dateString: String): Timestamp {
+        val formatter = SimpleDateFormat("MMMM dd, yyyy", Locale.getDefault())
+        val date = formatter.parse(dateString) ?: Date()
+        val calendar = Calendar.getInstance()
+        calendar.time = date
+        calendar.set(Calendar.HOUR_OF_DAY, 23)
+        calendar.set(Calendar.MINUTE, 59)
+        calendar.set(Calendar.SECOND, 59)
+        calendar.set(Calendar.MILLISECOND, 999)
+        return Timestamp(calendar.time)
     }
 
     private fun formatTimestampTo12Hour(timestamp: Timestamp): String {

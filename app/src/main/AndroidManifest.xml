@@ -37,6 +37,11 @@
             android:label="Realized Vision"
             android:theme="@style/Theme.RealizedVision">
         </activity>
+        <activity android:name=".ShoppingCartActivity"
+            android:exported="true"
+            android:label="Realized Vision"
+            android:theme="@style/Theme.RealizedVision">
+        </activity>
         <activity android:name=".ChangePasswordActivity"
             android:exported="true"
             android:label="Realized Vision"

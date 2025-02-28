@@ -9,8 +9,12 @@ import android.view.View
 import android.widget.ImageView
 import android.widget.LinearLayout
 import android.widget.TextView
+import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
+import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.firestore.FirebaseFirestore
+import com.google.firebase.firestore.QuerySnapshot
 import com.kizitonwose.calendar.core.CalendarDay
 import com.kizitonwose.calendar.core.CalendarMonth
 import com.kizitonwose.calendar.core.DayPosition
@@ -19,8 +23,10 @@ import com.kizitonwose.calendar.view.MonthDayBinder
 import com.kizitonwose.calendar.view.MonthHeaderFooterBinder
 import com.kizitonwose.calendar.view.MonthScrollListener
 import java.time.DayOfWeek
+import java.time.Instant
 import java.time.LocalDate
 import java.time.YearMonth
+import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 import java.time.format.TextStyle
 import java.util.Locale
@@ -31,11 +37,16 @@ class ViewCalendarActivity : AppCompatActivity() {
     private lateinit var calendarView : CalendarView
     private lateinit var monthText: TextView
     private val today = LocalDate.now()
+    private lateinit var auth: FirebaseAuth
+    private lateinit var firestore: FirebaseFirestore
+    private var daysWithClasses: MutableSet<LocalDate> = mutableSetOf()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_view_calendar)
 
+        firestore = FirebaseFirestore.getInstance()
+        auth = FirebaseAuth.getInstance()
 
         calendarView = findViewById(R.id.calendarView)
         monthText = findViewById(R.id.monthText)
@@ -53,12 +64,40 @@ class ViewCalendarActivity : AppCompatActivity() {
         starIcon.setOnClickListener { view: View? -> navigateTo(FavoritesActivity::class.java) }
 
 
-        setupCalendar()
+        loadCalendarData()
 
 
     }
+//todo get the days that contain startDates and then pass them to setUp calendar to highlight days with classes
+    private fun loadCalendarData() {
+        val currentUser = auth.currentUser
+        if (currentUser != null) {
+            val vendorId = currentUser.uid
+            firestore.collection("Classes")
+                .whereEqualTo("vendorID", vendorId)
+                .get()
+                .addOnSuccessListener { documents ->
+                    processClassData(documents)
+                    setupCalendar()
+                }
+                .addOnFailureListener { exception ->
+                    Toast.makeText(this, "Error getting classes", Toast.LENGTH_SHORT).show()
+                }
+        }
+    }
 
-
+    private fun processClassData(documents: QuerySnapshot) {
+        daysWithClasses.clear()
+        for (document in documents) {
+            val startTimeTimestamp = document.getTimestamp("startTime")
+            startTimeTimestamp?.let { timestamp ->
+                val localDate = Instant.ofEpochSecond(timestamp.seconds)
+                    .atZone(ZoneId.systemDefault())
+                    .toLocalDate()
+                daysWithClasses.add(localDate)
+            }
+        }
+    }
 
 
     private fun navigateTo(activityClass: Class<*>) {
@@ -84,11 +123,25 @@ class ViewCalendarActivity : AppCompatActivity() {
                 container.textView.background = null
 
                 if (data.position == DayPosition.MonthDate) {
-                    if (data.date == today) {
+                    if (data.date == today && daysWithClasses.contains(data.date)) {
                         container.textView.setTextColor(Color.WHITE)
                         container.textView.background = ContextCompat.getDrawable(
                             this@ViewCalendarActivity,
-                            R.drawable.solid_circle
+                            R.drawable.class_today
+                        )
+                    }
+                    else if (data.date == today) {
+                        container.textView.setTextColor(Color.WHITE)
+                        container.textView.background = ContextCompat.getDrawable(
+                            this@ViewCalendarActivity,
+                            R.drawable.inset_solid_circle
+                        )
+                    } else if (daysWithClasses.contains(data.date)){
+                        container.textView.setTextColor(ContextCompat.getColor(
+                            this@ViewCalendarActivity, R.color.maroon))
+                        container.textView.background = ContextCompat.getDrawable(
+                            this@ViewCalendarActivity,
+                            R.drawable.inset_outline_circle
                         )
                     } else {
                         container.textView.setTextColor(Color.BLACK)
@@ -129,7 +182,6 @@ class ViewCalendarActivity : AppCompatActivity() {
                 }
             }
         }
-
 
         calendarView.monthScrollListener = object : MonthScrollListener {
             override fun invoke(month: CalendarMonth) {

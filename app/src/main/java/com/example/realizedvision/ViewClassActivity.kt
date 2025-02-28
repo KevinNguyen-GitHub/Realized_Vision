@@ -142,7 +142,8 @@ class ViewClassActivity : AppCompatActivity(), ClassAdapter.OnItemClickListener 
         }
     }
 
-    //Helper functions that get the start and end time for a given day
+    //Helper functions that get the start and end time
+    //of a given day for database queries
     private fun getStartOfDayTimestamp(dateString: String): Timestamp {
         val formatter = SimpleDateFormat("MMMM dd, yyyy", Locale.getDefault())
         val date = formatter.parse(dateString) ?: Date()

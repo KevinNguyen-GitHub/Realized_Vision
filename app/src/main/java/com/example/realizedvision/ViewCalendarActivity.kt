@@ -6,6 +6,7 @@ import android.graphics.Color
 import android.os.Bundle
 import android.view.Gravity
 import android.view.View
+import android.widget.Button
 import android.widget.ImageView
 import android.widget.LinearLayout
 import android.widget.TextView
@@ -46,20 +47,18 @@ class ViewCalendarActivity : AppCompatActivity() {
         val profileName = findViewById<TextView>(R.id.profile_name)
         val storefrontLabel = findViewById<ImageView>(R.id.storefront_label)
         val starIcon = findViewById<ImageView>(R.id.star_icon)
+        val editAvailability = findViewById<Button>(R.id.btnEditAvailability)
 
         calendarIcon.setOnClickListener { view: View? -> navigateTo(ViewCalendarActivity::class.java) }
         settingsIcon.setOnClickListener { view: View? -> navigateTo(SettingsActivity::class.java) }
         storefrontLabel.setOnClickListener { view: View? -> navigateTo(StorefrontActivity::class.java) }
         starIcon.setOnClickListener { view: View? -> navigateTo(FavoritesActivity::class.java) }
-
+        editAvailability.setOnClickListener { view: View? -> navigateTo(EditAvailability::class.java) }
 
         setupCalendar()
 
 
     }
-
-
-
 
     private fun navigateTo(activityClass: Class<*>) {
         val intent = Intent(this, activityClass)

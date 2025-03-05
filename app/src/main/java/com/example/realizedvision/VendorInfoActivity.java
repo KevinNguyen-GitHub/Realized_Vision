@@ -88,10 +88,10 @@ public class VendorInfoActivity extends AppCompatActivity {
         userMap.put("companyName", companyName);
         userMap.put("address", address);
         userMap.put("years", yearsInBusiness);
+        userMap.put("vendorID", userId);
 
 
-        firestore.collection("Users").document(userId)
-                        .collection("Company").document("Info")
+        firestore.collection("Vendors").document(userId)
                         .set(userMap)
                         .addOnSuccessListener(new OnSuccessListener<Void>() {
                             @Override
@@ -106,6 +106,7 @@ public class VendorInfoActivity extends AppCompatActivity {
                                 Log.w("Failed to update user status", e);
                             }
                         });
+        navigateTo(StorefrontActivity.class);
     }
     private void fetchUserData() {
         if (currentUser != null) {
@@ -136,4 +137,9 @@ public class VendorInfoActivity extends AppCompatActivity {
             });
         }
     }
+    private void navigateTo(Class<?> targetActivity) {
+        Intent intent = new Intent(VendorInfoActivity.this, targetActivity);
+        startActivity(intent);
+    }
+
 }

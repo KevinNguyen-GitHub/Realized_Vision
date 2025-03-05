@@ -5,14 +5,14 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:background="@color/beige"
-    tools:context=".FavoritesActivity"
+    tools:context=".ShoppingCartActivity"
     >
     <TextView
         android:id="@+id/favorites_text"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         app:layout_constraintTop_toTopOf="parent"
-        android:text="@string/Favorites"
+        android:text="@string/shopping_cart"
         android:textSize="30sp"
         android:textColor="@color/black"
         android:textStyle="bold"
@@ -26,17 +26,17 @@
         app:layout_constraintTop_toBottomOf="@id/favorites_text"
         android:padding="3dp"
         >
-    <Button
-        android:id="@+id/favorites_button"
-        app:layout_constraintTop_toTopOf="parent"
-        android:layout_width="0sp"
-        android:layout_height="wrap_content"
-        android:layout_weight="1"
-        android:text="@string/Favorites"
-        android:textColor="@color/black"
-        android:textSize="17sp"
-        android:paddingTop="10dp"
-        android:paddingBottom="10dp"/>
+        <Button
+            android:id="@+id/favorites_button"
+            app:layout_constraintTop_toTopOf="parent"
+            android:layout_width="0sp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="@string/Favorites"
+            android:textColor="@color/black"
+            android:textSize="17sp"
+            android:paddingTop="10dp"
+            android:paddingBottom="10dp"/>
         <Button
             android:id="@+id/cart_button"
             android:layout_width="0sp"
@@ -48,16 +48,29 @@
     </LinearLayout>
 
     <androidx.recyclerview.widget.RecyclerView
-        android:id="@+id/favoritesRecyclerView"
-        android:layout_width="match_parent"
+        android:id="@+id/cartRecyclerView"
+        android:layout_width="0dp"
         android:layout_height="0dp"
-        android:padding="10dp"
+        android:padding="15dp"
+        app:layout_constraintBottom_toTopOf="@id/checkoutButton"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@id/favorites_header"
+        app:layout_constraintHeight_default="wrap" />
+
+    <Button
+        android:id="@+id/checkoutButton"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:textAlignment="center"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintBottom_toTopOf="@id/bottom_navigation"
-
-        >
-
-    </androidx.recyclerview.widget.RecyclerView>
+        android:text="@string/Checkout"
+        android:textStyle="bold"
+        android:textSize="16sp"
+        android:padding="15dp"
+        />
 
     <LinearLayout
         android:id="@+id/bottom_navigation"

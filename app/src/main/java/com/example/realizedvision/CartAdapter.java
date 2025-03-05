@@ -13,19 +13,19 @@ import androidx.recyclerview.widget.RecyclerView;
 import com.bumptech.glide.Glide; // Or use Picasso
 
 import java.util.List;
-public class ItemAdapter extends RecyclerView.Adapter<ItemAdapter.ItemViewHolder> {
+public class CartAdapter extends RecyclerView.Adapter<CartAdapter.ItemViewHolder> {
     private List<Item> itemList;
     private Context context;
     private OnItemClickListener listener;
 
     public interface OnItemClickListener{
         void onFavoriteClick(int position);
-        void onCartClick(int position);
+        void onRemoveClick(int position);
 
         void onItemClick(int position);
     }
 
-    public ItemAdapter(Context context, List<Item> itemList) {
+    public CartAdapter(Context context, List<Item> itemList) {
         this.context = context;
         this.itemList = itemList;
         setHasStableIds(true); // Optimization for RecyclerView
@@ -39,7 +39,7 @@ public class ItemAdapter extends RecyclerView.Adapter<ItemAdapter.ItemViewHolder
     @Override
     public ItemViewHolder onCreateViewHolder(ViewGroup parent, int viewType) {
         View itemView = LayoutInflater.from(parent.getContext())
-                .inflate(R.layout.item, parent, false);
+                .inflate(R.layout.cart_item, parent, false);
         return new ItemViewHolder(itemView, listener);
     }
 
@@ -75,7 +75,7 @@ public class ItemAdapter extends RecyclerView.Adapter<ItemAdapter.ItemViewHolder
     }
     public static class ItemViewHolder extends RecyclerView.ViewHolder {
         public TextView itemName, itemPrice, itemDescription;
-        public ImageView itemImage, favoriteIcon, cartIcon;
+        public ImageView itemImage, favoriteIcon, removeIcon;
 
         public ItemViewHolder(View itemView, OnItemClickListener listener) {
             super(itemView);
@@ -84,7 +84,7 @@ public class ItemAdapter extends RecyclerView.Adapter<ItemAdapter.ItemViewHolder
             itemDescription = itemView.findViewById(R.id.item_description);
             itemImage = itemView.findViewById(R.id.item_image);
             favoriteIcon = itemView.findViewById(R.id.favorite_icon);
-            cartIcon = itemView.findViewById(R.id.cart_icon);
+            removeIcon = itemView.findViewById(R.id.remove_icon);
 
             favoriteIcon.setOnClickListener(z -> {
                 if(listener != null){
@@ -104,21 +104,21 @@ public class ItemAdapter extends RecyclerView.Adapter<ItemAdapter.ItemViewHolder
                     }
                 }
             });
-            cartIcon.setOnClickListener(z -> {
+            removeIcon.setOnClickListener(z -> {
                 if(listener!= null){
                     int position = getAbsoluteAdapterPosition();
                     if(position != RecyclerView.NO_POSITION){
-                        cartIcon.animate()
+                        removeIcon.animate()
                                 .scaleX(1.2f)
                                 .scaleY(1.2f)
                                 .setDuration(200)
-                                .withEndAction(() -> cartIcon.animate()
+                                .withEndAction(() -> removeIcon.animate()
                                         .scaleX(1f)
                                         .scaleY(1f)
                                         .setDuration(200)
                                         .start())
                                 .start();
-                        listener.onCartClick(position);
+                        listener.onRemoveClick(position);
                     }
                 }
             });

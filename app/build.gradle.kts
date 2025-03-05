@@ -2,11 +2,12 @@ plugins {
     alias(libs.plugins.jetbrains.kotlin.android)
     id("com.android.application")
     id("com.google.gms.google-services")
+    alias(libs.plugins.kotlin.compose)
 }
 
 android {
     namespace = "com.example.realizedvision"
-    compileSdk = 34
+    compileSdk = 35
 
     defaultConfig {
         applicationId = "com.csulb.realized_vision"
@@ -32,12 +33,13 @@ android {
     }
 
     compileOptions {
+        isCoreLibraryDesugaringEnabled = true
         sourceCompatibility = JavaVersion.VERSION_1_8
         targetCompatibility = JavaVersion.VERSION_1_8
     }
 
     kotlinOptions {
-        jvmTarget = "1.8"
+        jvmTarget = "1.8" //used to be "1.8"
     }
 
     buildFeatures {
@@ -51,10 +53,11 @@ android {
     packaging {
         resources {
             excludes += "/META-INF/{AL2.0,LGPL2.1}"
+            excludes.add("META-INF/INDEX.LIST")
+            excludes.add("META-INF/DEPENDENCIES")
         }
     }
 }
-
 dependencies {
     // Core Android dependencies
     implementation(libs.androidx.core.ktx)
@@ -81,12 +84,22 @@ dependencies {
     implementation(libs.firebase.firestore)
     implementation(libs.firebase.database)
 
+    // Custom Calendar dependencies
+    implementation("com.kizitonwose.calendar:view:2.6.2")
+    implementation("com.kizitonwose.calendar:compose:2.6.2")
+    coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.1.4")
+
+    
     // Testing dependencies
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
     androidTestImplementation(platform(libs.androidx.compose.bom))
     androidTestImplementation(libs.androidx.ui.test.junit4)
+
+    //Glide dependencies
+    implementation(libs.glide)
+    annotationProcessor(libs.glide.compiler)
 }
 java {
     toolchain {

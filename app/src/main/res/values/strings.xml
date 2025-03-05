@@ -15,4 +15,13 @@
     <string name="login_now">Login Now</string>
     <string name="realized_vision">Realized Vision</string>
     <string name="profile_name_format">%1$s %2$s</string>
+    <string name="posting_content_description">Posting Content Description</string>
+    <string name="Favorites">Favorites</string>
+    <string name="shopping_cart">Shopping Cart</string>
+    <string name="home">Home</string>
+    <string name="Checkout">Checkout</string>
+    <string name="web_client_id">13504432131-gn4q36nf3tvnodj7vnc0abmebm9csb53.apps.googleusercontent.com</string>
+    <string name="item_image">Item Image</string>
+    <string name="product_vendor">Product Vendor</string>
+    <string name="product_description">Product description</string>
 </resources>

@@ -1,9 +1,12 @@
 package com.example.realizedvision;
 
+import android.content.Intent;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.View;
 import android.widget.Button;
+import android.widget.ImageButton;
+import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.appcompat.app.AppCompatActivity;
@@ -11,25 +14,34 @@ import androidx.appcompat.app.AppCompatActivity;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
 import com.google.firebase.firestore.FirebaseFirestore;
+import com.google.firebase.firestore.SetOptions;
 import com.kizitonwose.calendar.core.CalendarDay;
 import com.kizitonwose.calendar.view.CalendarView;
 import com.kizitonwose.calendar.view.MonthDayBinder;
 
 import java.time.DayOfWeek;
 import java.time.LocalDate;
+import java.time.Year;
 import java.time.YearMonth;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Locale;
 import java.util.Set;
+
+import kotlin.Unit;
 
 
 public class EditAvailability extends AppCompatActivity {
 
     private CalendarView calendarView;
     private Button btnSave;
+    private TextView monthTextView;
     private FirebaseFirestore firestore;
     private FirebaseUser currentUser;
+    private DateTimeFormatter monthFormat = DateTimeFormatter.ofPattern("MMMM yyyy", Locale.getDefault());
     private Set<LocalDate> selectedDates = new HashSet<>();
 
     @Override
@@ -37,8 +49,13 @@ public class EditAvailability extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_editcalendar);
 
+
+        ImageButton backButton = findViewById(R.id.backButtonChangePass);
+
         calendarView = findViewById(R.id.editCalendarView);
+        monthTextView = findViewById(R.id.monthTextView);
         btnSave = findViewById(R.id.btnSaveAvailability);
+
         // Initialize Firebase
         currentUser = FirebaseAuth.getInstance().getCurrentUser();
         if (currentUser != null) {
@@ -46,6 +63,14 @@ public class EditAvailability extends AppCompatActivity {
         }
 
         setupCalendar();
+
+        calendarView.setMonthScrollListener(calendarMonth -> {
+            monthTextView.setText(monthFormat.format(calendarMonth.getYearMonth()));
+            return Unit.INSTANCE;
+        });
+
+
+        backButton.setOnClickListener(view -> navigateTo(ViewCalendarActivity.class));
 
         btnSave.setOnClickListener(v -> saveAvailabilityToDatabase());
     }
@@ -55,6 +80,8 @@ public class EditAvailability extends AppCompatActivity {
         YearMonth endMonth = currentMonth.plusMonths(12); // Show 12 months from now
 
         calendarView.setup(currentMonth, endMonth, DayOfWeek.SUNDAY);
+
+        monthTextView.setText(monthFormat.format(currentMonth));
 
         calendarView.setDayBinder(new MonthDayBinder<DayViewContainer>() {
             @Override
@@ -90,23 +117,32 @@ public class EditAvailability extends AppCompatActivity {
     }
 
     private void saveAvailabilityToDatabase() {
+        if (currentUser == null) {
+            Toast.makeText(this, "User not logged in", Toast.LENGTH_SHORT).show();
+            return;
+        }
         List<String> formattedDates = new ArrayList<>();
         for (LocalDate date : selectedDates) {
             formattedDates.add(date.toString()); // Convert to String
         }
-
-        firestore.collection("vendors").document(String.valueOf(currentUser))
-                .update("availableDates", formattedDates)
+        String userID = currentUser.getUid();
+        firestore.collection("Vendors").document(userID)
+                .set(Collections.singletonMap("Availabilities", formattedDates), SetOptions.merge())
                 .addOnSuccessListener(aVoid -> Toast.makeText(this, "Availability Saved!", Toast.LENGTH_SHORT).show())
                 .addOnFailureListener(e -> Log.e("Calendar", "Error saving dates"));
     }
 
     private void loadAvailabilityFromDatabase() {
-        firestore.collection("vendors").document(String.valueOf(currentUser))
+        if (currentUser == null) {
+            Toast.makeText(this, "User not logged in", Toast.LENGTH_SHORT).show();
+            return;
+        }
+        String userID = currentUser.getUid();
+        firestore.collection("Vendors").document(userID)
                 .get()
                 .addOnSuccessListener(documentSnapshot -> {
                     if (documentSnapshot.exists()) {
-                        List<String> availableDates = (List<String>) documentSnapshot.get("availableDates");
+                        List<String> availableDates = (List<String>) documentSnapshot.get("Availabilities");
                         if (availableDates != null) {
                             for (String dateStr : availableDates) {
                                 selectedDates.add(LocalDate.parse(dateStr));
@@ -116,5 +152,9 @@ public class EditAvailability extends AppCompatActivity {
                     }
                 })
                 .addOnFailureListener(e -> Log.e("Calendar", "Error loading dates", e));
+    }
+    private void navigateTo(Class<?> targetActivity) {
+        Intent intent = new Intent(EditAvailability.this, targetActivity);
+        startActivity(intent);
     }
 }

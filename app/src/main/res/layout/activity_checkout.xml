@@ -2,97 +2,121 @@
 <androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/checkoutLayout"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:background="@color/beige"
-    tools:context=".CheckoutActivity"
-    >
+    tools:context=".CheckoutActivity">
+
     <TextView
         android:id="@+id/checkout_text"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        app:layout_constraintTop_toTopOf="parent"
         android:text="@string/Checkout"
-        android:textSize="30sp"
-        android:textColor="@color/black"
-        android:textStyle="bold"
         android:textAlignment="center"
-        />
-
-    <androidx.recyclerview.widget.RecyclerView
-        android:id="@+id/checkoutRecycler"
-        android:layout_width="0dp"
-        android:layout_height="0dp"
-        android:padding="15dp"
-        app:layout_constraintBottom_toTopOf="@id/bottom_navigation"
+        android:textColor="@color/black"
+        android:textSize="30sp"
+        android:textStyle="bold"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@id/checkout_text"
-        app:layout_constraintHeight_default="wrap" />
+        app:layout_constraintTop_toTopOf="parent" />
 
-    <Button
+    <TextView
+        android:id="@+id/select_payment_method"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:textAlignment="center"
-        app:layout_constraintStart_toStartOf="parent"
+        android:text="Payment Method"
+        android:textColor="@color/black"
         app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintTop_toBottomOf="@id/checkoutRecycler"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/checkout_subtotal" />
+
+    <ExpandableListView
+        android:id="@+id/orderSummaryExpandableList"
+        android:layout_width="0dp"
+        android:layout_height="0dp"
+        android:layout_marginBottom="200dp"
         app:layout_constraintBottom_toTopOf="@id/bottom_navigation"
-        android:text="Pay Now"
-        android:textStyle="bold"
-        android:textSize="20sp"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintHorizontal_bias="0.0"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/checkout_text">
+
+    </ExpandableListView>
+
+    <TextView
+        android:id="@+id/checkout_subtotal"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Subtotal for _ items"
+        android:textColor="@color/black"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/orderSummaryExpandableList" />
+
+    <Button
+        android:id="@+id/pay_now_button"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="20dp"
         android:padding="15dp"
-        />
+        android:text="Pay Now"
+        android:textAlignment="center"
+        android:textSize="20sp"
+        android:textStyle="bold"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/checkout_subtotal" />
 
     <LinearLayout
         android:id="@+id/bottom_navigation"
         android:layout_width="0dp"
         android:layout_height="wrap_content"
-        android:orientation="horizontal"
         android:background="#BF360C"
-        android:padding="8dp"
         android:gravity="center"
+        android:orientation="horizontal"
+        android:padding="8dp"
+        android:weightSum="4"
         app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
-        android:weightSum="4">
+        app:layout_constraintStart_toStartOf="parent">
 
 
         <ImageView
             android:id="@+id/home_icon"
             android:layout_width="32dp"
             android:layout_height="32dp"
+            android:layout_gravity="center"
             android:layout_weight="1"
-            android:src="@drawable/ic_home"
             android:contentDescription="@string/home"
-            android:layout_gravity="center"/>
+            android:src="@drawable/ic_home" />
 
         <ImageView
             android:id="@+id/favorites_icon"
             android:layout_width="32dp"
             android:layout_height="32dp"
+            android:layout_gravity="center"
             android:layout_weight="1"
-            android:src="@drawable/ic_favorite"
             android:contentDescription="@string/favorites"
-            android:layout_gravity="center"/>
+            android:src="@drawable/ic_favorite" />
 
         <ImageView
             android:id="@+id/messages_icon"
             android:layout_width="32dp"
             android:layout_height="32dp"
+            android:layout_gravity="center"
             android:layout_weight="1"
-            android:src="@drawable/ic_message"
             android:contentDescription="@string/message"
-            android:layout_gravity="center"/>
+            android:src="@drawable/ic_message" />
 
         <ImageView
             android:id="@+id/profile_icon"
             android:layout_width="32dp"
             android:layout_height="32dp"
+            android:layout_gravity="center"
             android:layout_weight="1"
-            android:src="@drawable/ic_profile"
             android:contentDescription="@string/profile"
-            android:layout_gravity="center"/>
+            android:src="@drawable/ic_profile" />
     </LinearLayout>
 
 </androidx.constraintlayout.widget.ConstraintLayout>

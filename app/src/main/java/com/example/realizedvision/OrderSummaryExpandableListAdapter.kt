@@ -78,13 +78,13 @@ class OrderSummaryExpandableListAdapter(
 
         val itemNameTextView = view?.findViewById<TextView>(R.id.item_name)
         val itemPriceTextView = view?.findViewById<TextView>(R.id.item_price)
-        val itemDescriptionTextView = view?.findViewById<TextView>(R.id.item_description)
+        val itemDescriptionTextView = view?.findViewById<TextView>(R.id.item_quantity)
         val itemImageView = view?.findViewById<ImageView>(R.id.item_image)
 
 
         itemNameTextView?.text = item.getName()
         itemPriceTextView?.text = String.format("$%.2f", item.getPrice())
-        itemDescriptionTextView?.text = item.getDescription()
+        itemDescriptionTextView?.text = String.format("Qty: %d", item.getQuantity())
 
 
         Glide.with(context)

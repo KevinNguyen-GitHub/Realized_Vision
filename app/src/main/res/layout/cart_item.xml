@@ -36,14 +36,15 @@
             android:layout_height="wrap_content"
             android:text="$10.00"
             android:textSize="16sp" />
+
         <TextView
-            android:id="@+id/item_description"
+            android:id="@+id/item_quantity"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="8dp"
-            android:text="Item description"
-            android:textSize="14sp"
-            android:textColor="@color/gray" />
+            android:text="Qty: -1"
+            android:textColor="@color/gray"
+            android:textSize="14sp" />
     </LinearLayout>
     <LinearLayout
         android:layout_width="wrap_content"

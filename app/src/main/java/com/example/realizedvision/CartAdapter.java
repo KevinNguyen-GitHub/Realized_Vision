@@ -50,6 +50,7 @@ public class CartAdapter extends RecyclerView.Adapter<CartAdapter.ItemViewHolder
         holder.itemName.setText(item.getName());
         holder.itemPrice.setText(String.format("$%.2f", item.getPrice()));
         holder.itemDescription.setText(item.getDescription());
+        holder.itemQuantity.setText("Qty: " + item.getQuantity());
 
         Glide.with(context)
                 .load(item.getImageUrl()) // Ensure Item class has getImageUrl()
@@ -74,7 +75,7 @@ public class CartAdapter extends RecyclerView.Adapter<CartAdapter.ItemViewHolder
         return position;
     }
     public static class ItemViewHolder extends RecyclerView.ViewHolder {
-        public TextView itemName, itemPrice, itemDescription;
+        public TextView itemName, itemPrice, itemDescription, itemQuantity;
         public ImageView itemImage, favoriteIcon, removeIcon;
 
         public ItemViewHolder(View itemView, OnItemClickListener listener) {
@@ -85,6 +86,7 @@ public class CartAdapter extends RecyclerView.Adapter<CartAdapter.ItemViewHolder
             itemImage = itemView.findViewById(R.id.item_image);
             favoriteIcon = itemView.findViewById(R.id.favorite_icon);
             removeIcon = itemView.findViewById(R.id.remove_icon);
+            itemQuantity = itemView.findViewById(R.id.item_quantity);
 
             favoriteIcon.setOnClickListener(z -> {
                 if(listener != null){

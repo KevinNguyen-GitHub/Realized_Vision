@@ -12,8 +12,10 @@ import androidx.compose.ui.semantics.text
 import androidx.lifecycle.lifecycleScope
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
+import com.stripe.android.PaymentConfiguration
 import com.stripe.android.paymentsheet.PaymentSheet
 import com.stripe.android.paymentsheet.PaymentSheetResult
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.launch
@@ -28,6 +30,7 @@ class CheckoutActivity : AppCompatActivity() {
     private lateinit var paymentIntentClientSecret: String
     private val stripeApiService = NetworkModule.provideStripeApiService()
     private lateinit var payNowButton: Button
+    private var subtotal: Double = 0.0
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -38,10 +41,33 @@ class CheckoutActivity : AppCompatActivity() {
         payNowButton = findViewById(R.id.pay_now_button)
 
         paymentSheet = PaymentSheet(this, ::onPaymentSheetResult)
-
+        fetchStripeConfig()
         fetchShoppingCart()
         payNowButton.setOnClickListener {
             createPaymentIntent()
+        }
+    }
+    private fun fetchStripeConfig() {
+        CoroutineScope(Dispatchers.Main).launch {
+            try {
+                val response = withContext(Dispatchers.IO) {
+                    stripeApiService.getStripeConfig()
+                }
+                if (response.isSuccessful) {
+                    val config = response.body()
+                    val publishableKey = config?.stripePublishableKey
+                    if (publishableKey != null) {
+                        PaymentConfiguration.init(applicationContext, publishableKey)
+                        Log.d("MyApplication", "Stripe PaymentConfiguration initialized successfully")
+                    } else {
+                        Log.e("MyApplication", "Publishable key is null")
+                    }
+                } else {
+                    Log.e("MyApplication", "Error fetching Stripe config: ${response.errorBody()?.string()}")
+                }
+            } catch (e: Exception) {
+                Log.e("MyApplication", "Exception fetching Stripe config", e)
+            }
         }
     }
 
@@ -70,23 +96,22 @@ class CheckoutActivity : AppCompatActivity() {
     }
 
     private fun updateUI(items: List<Item>) {
-        // Set up the adapter
-        val adapter = OrderSummaryExpandableListAdapter(this, "Order Summary", items)
+
+        val adapter = OrderSummaryExpandableListAdapter(this, "Order Summary for ${items.size} items", items)
         orderSummaryExpandableList.setAdapter(adapter)
 
-        // Set the subtotal text
-        val subtotal = items.sumOf { it.getPrice() }
-        checkoutSubtotal.text = "Subtotal: $${String.format("%.2f", subtotal)}"
+        subtotal = items.sumOf { it.getPrice() }
+        checkoutSubtotal.text = "Total: $${String.format("%.2f", subtotal)}"
 
-        // Expand the list by default
-        orderSummaryExpandableList.expandGroup(0)
+        orderSummaryExpandableList.expandGroup(1)
     }
 
     private fun createPaymentIntent() {
         lifecycleScope.launch {
             try {
+                val amountInCents = (subtotal * 100).toLong()
                 val request = CreatePaymentIntentRequest(
-                    amount = 1000, // Example: $10.00 (in cents)
+                    amount = amountInCents,
                     currency = "usd",
                     automatic_payment_methods = AutomaticPaymentMethods()
                 )

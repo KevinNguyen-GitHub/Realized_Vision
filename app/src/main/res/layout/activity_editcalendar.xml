@@ -36,6 +36,6 @@
     android:id="@+id/btnSaveAvailability"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
-    android:text="Save Availability"
+    android:text="Save"
     android:layout_marginTop="16dp"/>
 </LinearLayout>

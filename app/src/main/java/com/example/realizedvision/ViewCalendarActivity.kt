@@ -10,8 +10,12 @@ import android.widget.Button
 import android.widget.ImageView
 import android.widget.LinearLayout
 import android.widget.TextView
+import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
+import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.auth.FirebaseUser
+import com.google.firebase.firestore.FirebaseFirestore
 import com.kizitonwose.calendar.core.CalendarDay
 import com.kizitonwose.calendar.core.CalendarMonth
 import com.kizitonwose.calendar.core.DayPosition
@@ -32,11 +36,22 @@ class ViewCalendarActivity : AppCompatActivity() {
     private lateinit var calendarView : CalendarView
     private lateinit var monthText: TextView
     private val today = LocalDate.now()
+    private lateinit var firestore: FirebaseFirestore
+    private lateinit var currentUser: FirebaseUser
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_view_calendar)
 
+        // Initialize Firebase
+        currentUser = FirebaseAuth.getInstance().currentUser!!
+        firestore = FirebaseFirestore.getInstance()
+
+        // Check if currentUser is null (better way of ensuring it's not null)
+        if (currentUser == null) {
+            Toast.makeText(this, "User not logged in", Toast.LENGTH_SHORT).show()
+            return
+        }
 
         calendarView = findViewById(R.id.calendarView)
         monthText = findViewById(R.id.monthText)
@@ -48,12 +63,38 @@ class ViewCalendarActivity : AppCompatActivity() {
         val storefrontLabel = findViewById<ImageView>(R.id.storefront_label)
         val starIcon = findViewById<ImageView>(R.id.star_icon)
         val editAvailability = findViewById<Button>(R.id.btnEditAvailability)
+        val bookDate = findViewById<Button>(R.id.btnBookDate)
 
         calendarIcon.setOnClickListener { view: View? -> navigateTo(ViewCalendarActivity::class.java) }
         settingsIcon.setOnClickListener { view: View? -> navigateTo(SettingsActivity::class.java) }
         storefrontLabel.setOnClickListener { view: View? -> navigateTo(StorefrontActivity::class.java) }
         starIcon.setOnClickListener { view: View? -> navigateTo(FavoritesActivity::class.java) }
+
+        val userId = currentUser.uid
+        val userDocRef = firestore.collection("Users").document(userId)
+
+        userDocRef.get().addOnCompleteListener { task ->
+            if (task.isSuccessful) {
+                val snapshot = task.result
+                if (snapshot != null && snapshot.exists()) {
+                    val isVendor = snapshot.getBoolean("isVendor") // Assuming this field exists in the Firestore user document
+
+                    if (isVendor == true) {
+                        // User is a vendor: Show the "editAvailability" button and hide the "bookDate" button
+                        editAvailability.visibility = View.VISIBLE
+                    } else {
+                        // User is not a vendor: Hide the "editAvailability" button and show the "bookDate" button
+                        editAvailability.visibility = View.GONE
+                        bookDate.visibility = View.VISIBLE
+                    }
+                }
+            } else {
+                Toast.makeText(this, "Error fetching user data", Toast.LENGTH_SHORT).show()
+            }
+        }
+
         editAvailability.setOnClickListener { view: View? -> navigateTo(EditAvailability::class.java) }
+        bookDate.setOnClickListener{view: View? -> navigateTo(BookingAvailability::class.java)}
 
         setupCalendar()
 

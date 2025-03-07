@@ -40,6 +40,7 @@ public class ProfileActivity extends AppCompatActivity {
         ImageView messageIcon = findViewById(R.id.messages_icon);
         ImageView profileIcon = findViewById(R.id.profile_icon);
         ImageView settingsIcon = findViewById(R.id.settings_icon);
+        ImageView bookIcon = findViewById(R.id.book_icon);
 
         // Set navigation
         homeIcon.setOnClickListener(view -> navigateTo(MainActivity.class));
@@ -47,6 +48,7 @@ public class ProfileActivity extends AppCompatActivity {
         messageIcon.setOnClickListener(view -> navigateTo(MessagesActivity.class));
         profileIcon.setOnClickListener(view -> navigateTo(ProfileActivity.class));
         settingsIcon.setOnClickListener(view -> navigateTo(SettingsActivity.class));
+        bookIcon.setOnClickListener(view -> navigateTo(StorefrontActivity.class));
 
         // Fetch user data
         fetchUserData();

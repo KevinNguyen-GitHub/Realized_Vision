@@ -222,4 +222,17 @@
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"/>
 
+    <Button
+        android:id="@+id/btnBookDate"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Book a Date"
+        tools:layout_editor_absoluteX="146dp"
+        tools:layout_editor_absoluteY="616dp"
+        app:layout_constraintBottom_toBottomOf="@id/calendarView"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        android:visibility="invisible"/>
+
+
 </androidx.constraintlayout.widget.ConstraintLayout>

@@ -62,6 +62,7 @@ public class ShoppingCartActivity extends AppCompatActivity implements CartAdapt
         favoritesButton.setOnClickListener(view -> navigateTo(FavoritesActivity.class));
         messageIcon.setOnClickListener(view -> navigateTo(MessagesActivity.class));
         profileIcon.setOnClickListener(view -> navigateTo(ProfileActivity.class));
+        checkoutButton.setOnClickListener(view -> navigateTo(CheckoutActivity.class));
 
     }
     //   Helper function for activity navigation

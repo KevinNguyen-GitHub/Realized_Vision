@@ -77,13 +77,13 @@ class ViewCalendarActivity : AppCompatActivity() {
             if (task.isSuccessful) {
                 val snapshot = task.result
                 if (snapshot != null && snapshot.exists()) {
-                    val isVendor = snapshot.getBoolean("isVendor") // Assuming this field exists in the Firestore user document
+                    val isVendor = snapshot.getBoolean("isVendor")
 
                     if (isVendor == true) {
-                        // User is a vendor: Show the "editAvailability" button and hide the "bookDate" button
+                        // If user is vendor then edit availabilties
                         editAvailability.visibility = View.VISIBLE
                     } else {
-                        // User is not a vendor: Hide the "editAvailability" button and show the "bookDate" button
+                        // If user is not vendor then show book a date
                         editAvailability.visibility = View.GONE
                         bookDate.visibility = View.VISIBLE
                     }

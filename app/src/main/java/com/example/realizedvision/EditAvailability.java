@@ -53,6 +53,7 @@ public class EditAvailability extends AppCompatActivity {
         setContentView(R.layout.activity_editcalendar);
 
 
+        // Sets variables or views
         ImageButton backButton = findViewById(R.id.backButtonChangePass);
 
         calendarView = findViewById(R.id.editCalendarView);
@@ -74,7 +75,7 @@ public class EditAvailability extends AppCompatActivity {
 
     private void setupCalendar() {
         YearMonth currentMonth = YearMonth.now();
-        YearMonth endMonth = currentMonth.plusMonths(12); // Show 12 months from now
+        YearMonth endMonth = currentMonth.plusMonths(12);
 
         calendarView.setup(currentMonth, endMonth, DayOfWeek.SUNDAY);
 

@@ -112,8 +112,8 @@ public class ShoppingCartAdapter extends RecyclerView.Adapter<ShoppingCartAdapte
                     int position = getAbsoluteAdapterPosition();
                     if (position != RecyclerView.NO_POSITION) {
                         incrementIcon.animate()
-                                .scaleX(1.2f)
-                                .scaleY(1.2f)
+                                .scaleX(0.8f)
+                                .scaleY(0.8f)
                                 .setDuration(200)
                                 .withEndAction(() -> incrementIcon.animate()
                                         .scaleX(1f)
@@ -130,8 +130,8 @@ public class ShoppingCartAdapter extends RecyclerView.Adapter<ShoppingCartAdapte
                     int position = getAbsoluteAdapterPosition();
                     if(position != RecyclerView.NO_POSITION){
                         removeIcon.animate()
-                                .scaleX(1.2f)
-                                .scaleY(1.2f)
+                                .scaleX(0.8f)
+                                .scaleY(0.8f)
                                 .setDuration(200)
                                 .withEndAction(() -> removeIcon.animate()
                                         .scaleX(1f)

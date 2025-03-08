@@ -28,7 +28,20 @@
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@+id/classTitle" />
 
+    <EditText
+        android:id="@+id/editClassSizeLimit"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:ems="10"
+        android:hint="Size Limit"
+        android:inputType="number"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/classTimeslot" />
+
     <LinearLayout
+        android:id="@+id/classTimeslot"
         android:layout_width="0dp"
         android:layout_height="77dp"
         android:orientation="horizontal"

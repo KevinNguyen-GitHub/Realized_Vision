@@ -66,9 +66,13 @@ class ViewCalendarActivity : AppCompatActivity() {
 
         loadCalendarData()
 
-
     }
-//todo get the days that contain startDates and then pass them to setUp calendar to highlight days with classes
+
+    override fun onRestart() {
+        super.onRestart()
+        loadCalendarData()
+    }
+
     private fun loadCalendarData() {
         val currentUser = auth.currentUser
         if (currentUser != null) {

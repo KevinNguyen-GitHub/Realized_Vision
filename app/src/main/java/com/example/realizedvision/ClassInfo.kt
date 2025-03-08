@@ -6,5 +6,7 @@ data class ClassInfo(
     val title: String = " ",
     val description: String = " ",
     val startTime: String = " ",
-    val endTime: String = " "
+    val endTime: String = " ",
+    val currentSeats: Long = 0,
+    val sizeLimit: Long = 0
 )

@@ -100,10 +100,10 @@ class CheckoutActivity : AppCompatActivity() {
         val adapter = OrderSummaryExpandableListAdapter(this, "Order Summary for ${items.size} items", items)
         orderSummaryExpandableList.setAdapter(adapter)
 
-        subtotal = items.sumOf { it.getPrice() }
+        subtotal = items.sumOf { it.getPrice() * it.getQuantity() }
         checkoutSubtotal.text = "Total: $${String.format("%.2f", subtotal)}"
 
-        orderSummaryExpandableList.expandGroup(1)
+        orderSummaryExpandableList.expandGroup(0)
     }
 
     private fun createPaymentIntent() {

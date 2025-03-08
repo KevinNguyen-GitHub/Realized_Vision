@@ -4,11 +4,8 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.TextView
-import androidx.compose.ui.semantics.text
 import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
-import java.text.SimpleDateFormat
-import java.util.Locale
 
 class ClassAdapter : ListAdapter<ClassInfo, ClassAdapter.ClassViewHolder>(ClassDiffCallback()) {
 
@@ -26,6 +23,7 @@ class ClassAdapter : ListAdapter<ClassInfo, ClassAdapter.ClassViewHolder>(ClassD
         val titleTextView: TextView = itemView.findViewById(R.id.classDetailTitle)
         val descriptionTextView: TextView = itemView.findViewById(R.id.classDetailDescription)
         val timeslotTextView: TextView = itemView.findViewById(R.id.classDetailTimeSlot)
+        val sizeLimitTextView: TextView = itemView.findViewById(R.id.classDetailSeatInfo)
 
         fun bind(classData: ClassInfo) {
             titleTextView.text = classData.title
@@ -36,6 +34,11 @@ class ClassAdapter : ListAdapter<ClassInfo, ClassAdapter.ClassViewHolder>(ClassD
             val endTimeFormatted = classData.endTime
             val timeSlot = "$startTimeFormatted - $endTimeFormatted"
             timeslotTextView.text = timeSlot
+
+            val currentSeats = classData.currentSeats
+            val sizeLimit = classData.sizeLimit
+            val seatInfo = "$currentSeats/$sizeLimit Seats Reserved"
+            sizeLimitTextView.text = seatInfo
 
         }
         init {

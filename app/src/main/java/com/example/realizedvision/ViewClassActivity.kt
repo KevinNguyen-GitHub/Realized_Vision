@@ -126,8 +126,10 @@ class ViewClassActivity : AppCompatActivity(), ClassAdapter.OnItemClickListener 
                             val endTimeTimestamp = document.getTimestamp("endTime") ?: return@mapNotNull null
                             val startTime = formatTimestampTo12Hour(startTimeTimestamp)
                             val endTime = formatTimestampTo12Hour(endTimeTimestamp)
+                            val sizeLimit = document.getLong("sizeLimit") ?: 0
+                            val currentSeats = document.getLong("currentSeats") ?: 0
 
-                            ClassInfo(classID, vendorID, title, description, startTime, endTime)
+                            ClassInfo(classID, vendorID, title, description, startTime, endTime, currentSeats, sizeLimit)
                         } catch (e: Exception) {
                             Log.e("ViewClassActivity", "Error parsing document: ${document.id}", e)
                             null
@@ -180,6 +182,7 @@ class ViewClassActivity : AppCompatActivity(), ClassAdapter.OnItemClickListener 
         val descriptionEdit = dialogView.findViewById<EditText>(R.id.classDescription)
         val startEdit = dialogView.findViewById<EditText>(R.id.classStartTime)
         val endEdit = dialogView.findViewById<EditText>(R.id.classEndTime)
+        val sizeLimitEdit = dialogView.findViewById<EditText>(R.id.editClassSizeLimit)
 
         startEdit.setOnClickListener { showTimePickerDialog(startEdit) }
         endEdit.setOnClickListener { showTimePickerDialog(endEdit) }
@@ -192,9 +195,16 @@ class ViewClassActivity : AppCompatActivity(), ClassAdapter.OnItemClickListener 
                 val description = descriptionEdit.text.toString()
                 val startTime = startEdit.text.toString()
                 val endTime = endEdit.text.toString()
+                val sizeLimitString = sizeLimitEdit.text.toString()
 
-                if (title.isNotEmpty() && description.isNotEmpty() && startTime.isNotEmpty() && endTime.isNotEmpty()) {
-                    addClassToFirestore(title, description, startTime, endTime)
+                if (title.isNotEmpty() && description.isNotEmpty() && startTime.isNotEmpty() && endTime.isNotEmpty() && sizeLimitString.isNotEmpty()) {
+                    val sizeLimit = sizeLimitString.toLongOrNull()
+                    if (sizeLimit != null){
+                        addClassToFirestore(title, description, startTime, endTime, sizeLimit)
+                    }
+                    else{
+                        Toast.makeText(this, "Invalid size limit.", Toast.LENGTH_SHORT).show()
+                    }
                 } else {
                     Toast.makeText(this, "Please fill in all fields.", Toast.LENGTH_SHORT).show()
                 }
@@ -234,7 +244,7 @@ class ViewClassActivity : AppCompatActivity(), ClassAdapter.OnItemClickListener 
         timePickerDialog.show()
     }
 
-    private fun addClassToFirestore(title: String, description: String, startTime: String, endTime: String) {
+    private fun addClassToFirestore(title: String, description: String, startTime: String, endTime: String, sizeLimit: Long) {
         val currentUser = auth.currentUser
         if (currentUser != null) {
             val vendorId = currentUser.uid
@@ -246,12 +256,15 @@ class ViewClassActivity : AppCompatActivity(), ClassAdapter.OnItemClickListener 
                 "title" to title,
                 "description" to description,
                 "startTime" to startTimestamp,
-                "endTime" to endTimestamp
+                "endTime" to endTimestamp,
+                "sizeLimit" to sizeLimit,
+                "currentSeats" to 0L
             )
 
             firestore.collection("Classes")
                 .add(classData)
                 .addOnSuccessListener { documentReference ->
+                    Log.d("ViewClassActivity", "Document added with ID: ${documentReference.id}")
                     documentReference.update("classID", documentReference.id)
                     Toast.makeText(this, "Class added successfully.", Toast.LENGTH_SHORT).show()
                     loadClasses() // Refresh the list

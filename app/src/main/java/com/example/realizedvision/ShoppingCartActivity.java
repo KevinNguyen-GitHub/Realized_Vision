@@ -14,6 +14,7 @@ import androidx.recyclerview.widget.RecyclerView;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
 import com.google.firebase.firestore.CollectionReference;
+import com.google.firebase.firestore.DocumentReference;
 import com.google.firebase.firestore.DocumentSnapshot;
 import com.google.firebase.firestore.FirebaseFirestore;
 import com.google.firebase.firestore.QueryDocumentSnapshot;
@@ -21,9 +22,9 @@ import com.google.firebase.firestore.QueryDocumentSnapshot;
 import java.util.ArrayList;
 import java.util.List;
 
-public class ShoppingCartActivity extends AppCompatActivity implements CartAdapter.OnItemClickListener{
+public class ShoppingCartActivity extends AppCompatActivity implements ShoppingCartAdapter.OnItemClickListener{
     private RecyclerView recyclerView;
-    private CartAdapter cartAdapter;
+    private ShoppingCartAdapter shoppingCartAdapter;
     private List<Item> cartList;
     private FirebaseFirestore firestore;
     private FirebaseUser currentUser;
@@ -41,10 +42,10 @@ public class ShoppingCartActivity extends AppCompatActivity implements CartAdapt
         recyclerView.setLayoutManager(new LinearLayoutManager(this));
 
         cartList = new ArrayList<>();
-        cartAdapter = new CartAdapter(this, cartList);
-        recyclerView.setAdapter(cartAdapter);
+        shoppingCartAdapter = new ShoppingCartAdapter(this, cartList);
+        recyclerView.setAdapter(shoppingCartAdapter);
 
-        cartAdapter.setOnItemClickListener(this);
+        shoppingCartAdapter.setOnItemClickListener(this);
 
         fetchShoppingCartfromFirestore();
 
@@ -99,7 +100,7 @@ public class ShoppingCartActivity extends AppCompatActivity implements CartAdapt
                                         item.setFavorite(false);
                                     }
                                     cartList.add(item);
-                                    cartAdapter.notifyDataSetChanged();
+                                    shoppingCartAdapter.notifyDataSetChanged();
                                 }).addOnFailureListener(e ->{
                                     Log.d("Main Activity", "Error checking favorites", e);
                                 });
@@ -115,7 +116,7 @@ public class ShoppingCartActivity extends AppCompatActivity implements CartAdapt
     public void onFavoriteClick(int position) {
         Item item = cartList.get(position);
         item.setFavorite(!item.isFavorite());
-        cartAdapter.notifyItemChanged(position);
+        shoppingCartAdapter.notifyItemChanged(position);
 
         String itemId = item.getItemID();
         String userID = currentUser.getUid();
@@ -158,27 +159,43 @@ public class ShoppingCartActivity extends AppCompatActivity implements CartAdapt
     @Override
     public void onRemoveClick(int position) {
         Item item = cartList.get(position);
-        Log.d("Shopping Cart Activity", "Cart button clicked for: " + item.getName());
-
-        String itemId = item.getItemID();
         String userID = currentUser.getUid();
-        CollectionReference cartRef = FirebaseFirestore.getInstance()
-                .collection("Users")
-                .document(userID)
-                .collection("Shopping Cart");
+        CollectionReference cartRef = firestore.collection("Users").document(userID).collection("Shopping Cart");
+        String itemId = item.getItemID();
+        DocumentReference itemRef = cartRef.document(itemId);
 
-        cartRef.document(itemId).get().addOnCompleteListener(task -> {
+        itemRef.get().addOnCompleteListener(task -> {
             if (task.isSuccessful()) {
                 DocumentSnapshot document = task.getResult();
                 if (document.exists()) {
-                    cartRef.document(itemId).delete()
-                                    .addOnSuccessListener(avoid ->{
-                                        cartList.remove(position);
-                                        cartAdapter.notifyDataSetChanged();
-                                    }).addOnFailureListener(e ->{
-                                        Log.e("Shopping Cart Activity", "Failed to remove item", e);
-                            });
-                    Toast.makeText(ShoppingCartActivity.this, "Item removed from shopping cart", Toast.LENGTH_SHORT).show();
+                    Long quantity = document.getLong("quantity");
+                    if (quantity != null && quantity > 1) {
+                        // Decrement quantity
+                        itemRef.update("quantity", quantity - 1)
+                                .addOnSuccessListener(aVoid -> {
+                                    item.setQuantity(quantity - 1);
+                                    shoppingCartAdapter.notifyItemChanged(position);
+                                    Log.d("ShoppingCartActivity", "Quantity decremented for: " + item.getName());
+                                    Toast.makeText(ShoppingCartActivity.this, "Quantity decremented", Toast.LENGTH_SHORT).show();
+                                })
+                                .addOnFailureListener(e -> {
+                                    Log.e("ShoppingCartActivity", "Failed to decrement quantity", e);
+                                    Toast.makeText(ShoppingCartActivity.this, "Failed to decrement quantity", Toast.LENGTH_SHORT).show();
+                                });
+                    } else {
+                        // Remove item
+                        cartRef.document(itemId).delete()
+                                .addOnSuccessListener(aVoid -> {
+                                    cartList.remove(position);
+                                    shoppingCartAdapter.notifyDataSetChanged();
+                                    Log.d("ShoppingCartActivity", "Item removed: " + item.getName());
+                                    Toast.makeText(ShoppingCartActivity.this, "Item removed from cart", Toast.LENGTH_SHORT).show();
+                                })
+                                .addOnFailureListener(e -> {
+                                    Log.e("ShoppingCartActivity", "Failed to remove item", e);
+                                    Toast.makeText(ShoppingCartActivity.this, "Failed to remove item", Toast.LENGTH_SHORT).show();
+                                });
+                    }
                 }
             } else {
                 Log.e("Shopping Cart Activity", "Failed to check shopping cart", task.getException());
@@ -187,6 +204,40 @@ public class ShoppingCartActivity extends AppCompatActivity implements CartAdapt
         });
     }
 
+    @Override
+    public void onIncrementClick(int position) {
+        Item item = cartList.get(position);
+        String userID = currentUser.getUid();
+        CollectionReference cartRef = firestore.collection("Users").document(userID).collection("Shopping Cart");
+        String itemId = item.getItemID();
+        DocumentReference itemRef = cartRef.document(itemId);
+
+        itemRef.get().addOnCompleteListener(task -> {
+            if (task.isSuccessful()) {
+                DocumentSnapshot document = task.getResult();
+                if (document.exists()) {
+                    Long quantity = document.getLong("quantity");
+                    if (quantity != null) {
+                        // Increment quantity
+                        itemRef.update("quantity", quantity + 1)
+                                .addOnSuccessListener(aVoid -> {
+                                    item.setQuantity(quantity + 1);
+                                    shoppingCartAdapter.notifyItemChanged(position);
+                                    Log.d("ShoppingCartActivity", "Quantity incremented for: " + item.getName());
+                                    Toast.makeText(ShoppingCartActivity.this, "Quantity incremented", Toast.LENGTH_SHORT).show();
+                                })
+                                .addOnFailureListener(e -> {
+                                    Log.e("ShoppingCartActivity", "Failed to increment quantity", e);
+                                    Toast.makeText(ShoppingCartActivity.this, "Failed to increment quantity", Toast.LENGTH_SHORT).show();
+                                });
+                    }
+                }
+            } else {
+                Log.e("ShoppingCartActivity", "Failed to get item", task.getException());
+                Toast.makeText(ShoppingCartActivity.this, "Failed to get item", Toast.LENGTH_SHORT).show();
+            }
+        });
+    }
     @Override
     public void onItemClick(int position) {
         Item item = cartList.get(position);

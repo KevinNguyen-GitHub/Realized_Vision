@@ -84,7 +84,7 @@ class ViewCalendarActivity : AppCompatActivity() {
                     processClassData(documents)
                     setupCalendar()
                 }
-                .addOnFailureListener { exception ->
+                .addOnFailureListener { _ ->
                     Toast.makeText(this, "Error getting classes", Toast.LENGTH_SHORT).show()
                 }
         }
@@ -156,7 +156,7 @@ class ViewCalendarActivity : AppCompatActivity() {
                     val intent = Intent(this@ViewCalendarActivity, ViewClassActivity::class.java)
                     val formatter = DateTimeFormatter.ofPattern("MMMM d, yyyy", Locale.getDefault())
                     intent.putExtra("selectedDate", data.date.format(formatter))
-                    intent.putExtra("selectedProfileId", auth.currentUser?.uid)
+                    intent.putExtra("selectedProfileId", "HFRgKpDsOwWvwg32icAu7103f7w2")
                     startActivity(intent)
                 }
             }

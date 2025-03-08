@@ -8,21 +8,22 @@
 
     <LinearLayout
         android:id="@+id/vendor_add_delete"
-        android:layout_width="401dp"
-        android:layout_height="57dp"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
         android:gravity="center_vertical"
         android:orientation="horizontal"
         android:padding="16dp"
-        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintBottom_toTopOf="@id/bottom_navigation"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/viewClassRecycler"
         app:layout_constraintVertical_bias="0.928">
 
         <Button
             android:id="@+id/add_class_button"
-            android:layout_width="292dp"
-            android:layout_height="36dp"
+            android:layout_width="wrap_content"
+            android:layout_height="match_parent"
+            android:layout_marginRight="5dp"
             android:layout_weight="1"
             android:background="@drawable/rounded_button"
             android:text="Add"
@@ -30,8 +31,9 @@
 
         <Button
             android:id="@+id/remove_class_button"
-            android:layout_width="291dp"
-            android:layout_height="36dp"
+            android:layout_width="wrap_content"
+            android:layout_height="match_parent"
+            android:layout_marginLeft="5dp"
             android:layout_weight="1"
             android:background="@drawable/rounded_button"
             android:text="Remove"
@@ -218,8 +220,8 @@
 
     <androidx.recyclerview.widget.RecyclerView
         android:id="@+id/viewClassRecycler"
-        android:layout_width="409dp"
-        android:layout_height="537dp"
+        android:layout_width="0dp"
+        android:layout_height="0dp"
         android:padding="16dp"
         android:scrollbars="vertical"
         app:layout_constraintBottom_toTopOf="@id/vendor_add_delete"

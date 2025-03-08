@@ -11,7 +11,7 @@ android {
 
     defaultConfig {
         applicationId = "com.csulb.realized_vision"
-        minSdk = 23
+        minSdk = 24
         targetSdk = 34
         versionCode = 1
         versionName = "1.0"
@@ -74,6 +74,7 @@ dependencies {
     implementation(libs.androidx.ui.tooling.preview)
     implementation(libs.material)
     implementation(libs.androidx.recyclerview)
+    implementation(libs.androidx.legacy.support.v4)
     debugImplementation(libs.androidx.ui.tooling)
     debugImplementation(libs.androidx.ui.test.manifest)
 
@@ -89,6 +90,12 @@ dependencies {
     implementation("com.kizitonwose.calendar:compose:2.6.2")
     coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.1.4")
 
+    //stripe + retrofit + OkHttp dependencies
+    implementation("com.stripe:stripe-android:21.6.0")
+    implementation("com.squareup.retrofit2:retrofit:2.11.0")
+    implementation("com.squareup.retrofit2:converter-gson:2.11.0")
+    implementation("com.squareup.okhttp3:okhttp:4.12.0")
+    implementation("com.squareup.okhttp3:logging-interceptor:4.12.0")
     
     // Testing dependencies
     testImplementation(libs.junit)

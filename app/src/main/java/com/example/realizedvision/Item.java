@@ -6,6 +6,7 @@ public class Item {
     private String name;
     private String description;
     private double price;
+    private long quantity;
     private String imageUrl; // Or a drawable resource ID
 
     private boolean isFavorite;
@@ -19,6 +20,7 @@ public class Item {
         this.name = name;
         this.price = price;
         this.imageUrl = imageUrl;
+        this.quantity = 1;
     }
 
     // Getters and setters
@@ -42,5 +44,11 @@ public class Item {
     public boolean isFavorite(){return isFavorite;}
     public void setFavorite(boolean favorite){
         isFavorite = favorite;
+    }
+    public long getQuantity() {
+        return quantity;
+    }
+    public void setQuantity(long quantity) {
+        this.quantity = quantity;
     }
 }

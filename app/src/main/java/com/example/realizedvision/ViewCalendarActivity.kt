@@ -156,6 +156,7 @@ class ViewCalendarActivity : AppCompatActivity() {
                     val intent = Intent(this@ViewCalendarActivity, ViewClassActivity::class.java)
                     val formatter = DateTimeFormatter.ofPattern("MMMM d, yyyy", Locale.getDefault())
                     intent.putExtra("selectedDate", data.date.format(formatter))
+                    intent.putExtra("selectedProfileId", auth.currentUser?.uid)
                     startActivity(intent)
                 }
             }

@@ -31,7 +31,7 @@ class ViewClassActivity : AppCompatActivity(), ClassAdapter.OnItemClickListener 
     private lateinit var recyclerView: RecyclerView
     private var selectedDate: String? = null
     private var isRemoveMode = false
-    private var viewingUserId: String? = null
+    private var selectedProfileId: String? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -40,7 +40,8 @@ class ViewClassActivity : AppCompatActivity(), ClassAdapter.OnItemClickListener 
         firestore = FirebaseFirestore.getInstance()
         auth = FirebaseAuth.getInstance()
 
-        viewingUserId = intent.getStringExtra("viewingUserId") ?: auth.currentUser?.uid
+        selectedProfileId = intent.getStringExtra("selectedProfileId") ?: auth.currentUser?.uid
+        //viewingUserId = testUserId
 
         selectedDate = intent.getStringExtra("selectedDate")
         val selectedDateTextView = findViewById<TextView>(R.id.selectedDate)
@@ -48,7 +49,7 @@ class ViewClassActivity : AppCompatActivity(), ClassAdapter.OnItemClickListener 
 
         recyclerView = findViewById(R.id.viewClassRecycler)
         recyclerView.layoutManager = LinearLayoutManager(this)
-        adapter = ClassAdapter(viewingUserId != auth.currentUser?.uid)
+        adapter = ClassAdapter(selectedProfileId != auth.currentUser?.uid)
         adapter.setOnItemClickListener(this)
         recyclerView.adapter = adapter
 
@@ -57,7 +58,7 @@ class ViewClassActivity : AppCompatActivity(), ClassAdapter.OnItemClickListener 
         val addClassButton = findViewById<Button>(R.id.add_class_button)
         val removeClassButton = findViewById<Button>(R.id.remove_class_button)
 
-        if(viewingUserId != auth.currentUser?.uid) {
+        if(selectedProfileId != auth.currentUser?.uid) {
             addClassButton.visibility = View.GONE
             removeClassButton.visibility = View.GONE
         }
@@ -114,45 +115,52 @@ class ViewClassActivity : AppCompatActivity(), ClassAdapter.OnItemClickListener 
 
     private fun reserveSeat(classInfo: ClassInfo) {
         val currentUser = auth.currentUser ?: return
-        val userRef = firestore.collection("users").document(currentUser.uid)
-        userRef.get().addOnSuccessListener { documentSnapshot ->
-            if(documentSnapshot.exists()){
-                val firstName = documentSnapshot.getString("firstName") ?: ""
-                val lastName = documentSnapshot.getString("lastName") ?: ""
+        val userRef = firestore.collection("Users").document(currentUser.uid)
+        val classRef = firestore.collection("Classes").document(classInfo.classID)
+        val seatsRef = classRef.collection("Seats").document(currentUser.uid)
 
-                val classRef = firestore.collection("Classes").document(classInfo.classID)
-                firestore.runTransaction { transaction ->
-                    val classSnapshot = transaction.get(classRef)
-                    val currentSeats = classSnapshot.getLong("currentSeats") ?: 0
-                    val sizeLimit = classSnapshot.getLong("sizeLimit") ?: 0
+        seatsRef.get().addOnSuccessListener { seatSnapshot ->
+            if (seatSnapshot.exists()) {
+                Toast.makeText(this, "Seat already reserved", Toast.LENGTH_SHORT).show()
+                return@addOnSuccessListener
+            }
 
-                    if (currentSeats < sizeLimit) {
-                        transaction.update(classRef, "currentSeats", FieldValue.increment(1))
+            userRef.get().addOnSuccessListener { documentSnapshot ->
+                if (documentSnapshot.exists()) {
+                    val firstName = documentSnapshot.getString("firstName") ?: ""
+                    val lastName = documentSnapshot.getString("lastName") ?: ""
 
-                        val seatData = hashMapOf(
-                            "userId" to currentUser.uid,
-                            "firstName" to firstName,
-                            "lastName" to lastName,
-                            "email" to currentUser.email
-                        )
-                        val seatsRef = classRef.collection("Seats").document(currentUser.uid)
-                        transaction.set(seatsRef, seatData)
-                        true
-                    } else {
-                        false
+                    firestore.runTransaction { transaction ->
+                        val classSnapshot = transaction.get(classRef)
+                        val currentSeats = classSnapshot.getLong("currentSeats") ?: 0
+                        val sizeLimit = classSnapshot.getLong("sizeLimit") ?: 0
+
+                        if (currentSeats < sizeLimit) {
+                            transaction.update(classRef, "currentSeats", FieldValue.increment(1))
+
+                            val seatData = hashMapOf(
+                                "userId" to currentUser.uid,
+                                "firstName" to firstName,
+                                "lastName" to lastName,
+                                "email" to currentUser.email
+                            )
+                            transaction.set(seatsRef, seatData)
+                            true
+                        } else {
+                            false
+                        }
+                    }.addOnSuccessListener { result ->
+                        if (result) {
+                            Toast.makeText(this, "Seat Reserved!", Toast.LENGTH_SHORT).show()
+                            loadClasses()
+                        } else {
+                            Toast.makeText(this, "Class Full!", Toast.LENGTH_SHORT).show()
+                        }
+                    }.addOnFailureListener { e ->
+                        Log.w("ViewClassActivity", "Error reserving seat", e)
+                        Toast.makeText(this, "Reservation Failed", Toast.LENGTH_SHORT).show()
                     }
-                }.addOnSuccessListener { result ->
-                    if(result){
-                        Toast.makeText(this, "Seat Reserved!", Toast.LENGTH_SHORT).show()
-                        loadClasses()
-                    } else{
-                        Toast.makeText(this, "Class Full!", Toast.LENGTH_SHORT).show()
-                    }
-                }.addOnFailureListener { e ->
-                    Log.w("ViewClassActivity", "Error reserving seat", e)
-                    Toast.makeText(this, "Reservation Failed", Toast.LENGTH_SHORT).show()
                 }
-
             }
         }
     }
@@ -193,7 +201,7 @@ class ViewClassActivity : AppCompatActivity(), ClassAdapter.OnItemClickListener 
     private fun loadClasses() {
         val currentUser = auth.currentUser
         if (currentUser != null) {
-            val vendorId = currentUser.uid
+            val vendorId = selectedProfileId
             val startOfDayTimestamp = getStartOfDayTimestamp(selectedDate!!)
             val endOfDayTimestamp = getEndOfDayTimestamp(selectedDate!!)
             firestore.collection("Classes")

@@ -55,6 +55,7 @@
         android:id="@+id/textView10"
         android:layout_width="0dp"
         android:layout_height="wrap_content"
+        android:layout_marginTop="8dp"
         android:background="@color/maroon"
         android:gravity="center"
         android:padding="8dp"
@@ -63,19 +64,35 @@
         android:textSize="18sp"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@id/profile_header"
-        android:layout_marginTop="8dp" />
+        app:layout_constraintTop_toBottomOf="@id/profile_header" />
 
     <!-- RecyclerView for Items -->
     <androidx.recyclerview.widget.RecyclerView
         android:id="@+id/recyclerView"
-        android:layout_width="0dp"
-        android:layout_height="0dp"
-        android:padding="16dp"
-        app:layout_constraintTop_toBottomOf="@id/textView10"
-        app:layout_constraintStart_toStartOf="parent"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        app:layout_constraintBottom_toTopOf="@id/bottom_navigation"
         app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintBottom_toTopOf="@id/bottom_navigation" />
+        app:layout_constraintHorizontal_bias="1.0"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/textView10"
+        app:layout_constraintVertical_bias="0.0" />
+
+    <!-- Commission Request -->
+    <com.google.android.material.button.MaterialButton
+        android:id="@+id/RequestButton"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Commission Request"
+        android:textColor="@color/white"
+        app:cornerRadius="16dp"
+        android:background="@drawable/rounded_button"
+        app:layout_constraintBottom_toTopOf="@id/bottom_navigation"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintHorizontal_bias="0.5"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/recyclerView" />
+
 
     <!-- Bottom Navigation -->
     <LinearLayout

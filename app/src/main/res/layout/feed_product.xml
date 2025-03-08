@@ -1,0 +1,46 @@
+<!-- item_posting.xml -->
+<LinearLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:layout_marginBottom="16dp"
+    android:background="@drawable/rounded_edittext"
+    android:elevation="4dp"
+    android:orientation="vertical"
+    android:padding="16dp">
+
+    <ImageView
+        android:id="@+id/product_image"
+        android:layout_width="match_parent"
+        android:layout_height="150dp"
+        android:contentDescription="Posting Image"
+        android:scaleType="fitCenter"
+        android:src="@drawable/ic_placeholder_image" />
+
+    <TextView
+        android:id="@+id/product_name"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="8dp"
+        android:text="Ceramic Pot"
+        android:textStyle="bold"
+        android:textSize="16sp" />
+
+    <TextView
+        android:id="@+id/product_price"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="4dp"
+        android:text="$80"
+        android:textSize="14sp"
+        android:textColor="@color/green" />
+
+    <TextView
+        android:id="@+id/product_description"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="8dp"
+        android:text="Hand painted ceramic pot with engraved designs"
+        android:textSize="14sp"
+        android:textColor="@color/gray" />
+</LinearLayout>

@@ -5,5 +5,6 @@
         <item name="colorPrimary">@color/white</item>
         <item name="colorPrimaryDark">@color/black</item>
         <item name="colorAccent">@color/beige</item>
+        <item name="textAllCaps">false</item>
     </style>
 </resources>

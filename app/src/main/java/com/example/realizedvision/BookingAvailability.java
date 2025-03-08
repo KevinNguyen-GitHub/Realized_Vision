@@ -55,6 +55,9 @@ public class BookingAvailability extends AppCompatActivity {
 
         calendarView = findViewById(R.id.editCalendarView);
         monthTextView = findViewById(R.id.monthTextView);
+        btnSave = findViewById(R.id.btnSaveAvailability);
+
+        btnSave.setVisibility(View.INVISIBLE);
 
         // Initialize Firebase
         currentUser = FirebaseAuth.getInstance().getCurrentUser();
@@ -74,21 +77,25 @@ public class BookingAvailability extends AppCompatActivity {
         backButton.setOnClickListener(view -> navigateTo(ViewCalendarActivity.class));
     }
     private void setupCalendar() {
+        // Date setup
         YearMonth currentMonth = YearMonth.now();
-        YearMonth endMonth = currentMonth.plusMonths(12); // Show 12 months from now
+        YearMonth endMonth = currentMonth.plusMonths(12);
 
         calendarView.setup(currentMonth, endMonth, DayOfWeek.SUNDAY);
 
         monthTextView.setText(monthFormat.format(currentMonth));
 
+        // Load existing bookings from DB
         loadAvailabilities();
         loadBookedDates();
 
+        // Allow users to scroll through months
         calendarView.setMonthScrollListener(calendarMonth -> {
             monthTextView.setText(monthFormat.format(calendarMonth.getYearMonth()));
             return Unit.INSTANCE;
         });
 
+        // Set up for individual dates on calendar
         calendarView.setDayBinder(new MonthDayBinder<DayViewContainer>() {
             @Override
             public DayViewContainer create(View view) {
@@ -197,6 +204,7 @@ public class BookingAvailability extends AppCompatActivity {
                 .get()
                 .addOnSuccessListener(queryDocumentSnapshots -> {
                     for (DocumentSnapshot document : queryDocumentSnapshots.getDocuments()) {
+                        // Deletes DB reference and updates booked dates array and calendar accordingly
                         document.getReference().delete()
                                 .addOnSuccessListener(aVoid -> {
                                     bookedDates.remove(date);
@@ -209,6 +217,7 @@ public class BookingAvailability extends AppCompatActivity {
                 .addOnFailureListener(e -> Log.e("Calendar", "Error finding booking", e));
     }
     private void showCancelDialog(LocalDate date) {
+        // Confirmation Popup
         AlertDialog dialog = new AlertDialog.Builder(this)
                 .setTitle("Cancel Booking")
                 .setMessage("Are you sure you want to cancel your booking on " + date.toString() + "?")
@@ -235,7 +244,6 @@ public class BookingAvailability extends AppCompatActivity {
                 .setNegativeButton("No", null)
                 .create();
 
-        // Change button colors when the dialog is shown
         dialog.setOnShowListener(dialogInterface -> {
             Button yesButton = dialog.getButton(AlertDialog.BUTTON_POSITIVE);
             Button noButton = dialog.getButton(AlertDialog.BUTTON_NEGATIVE);

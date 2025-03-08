@@ -7,10 +7,11 @@ import android.widget.TextView
 import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
 
-class ClassAdapter : ListAdapter<ClassInfo, ClassAdapter.ClassViewHolder>(ClassDiffCallback()) {
+class ClassAdapter(private val isViewingOtherAccount: Boolean) : ListAdapter<ClassInfo, ClassAdapter.ClassViewHolder>(ClassDiffCallback()) {
 
     interface OnItemClickListener {
         fun onItemClick(classInfo: ClassInfo)
+        fun onReserveClick(classInfo: ClassInfo)
     }
 
     private var listener: OnItemClickListener? = null
@@ -19,11 +20,12 @@ class ClassAdapter : ListAdapter<ClassInfo, ClassAdapter.ClassViewHolder>(ClassD
         this.listener = listener
     }
 
-    class ClassViewHolder(itemView: View, private val listener: OnItemClickListener?) : RecyclerView.ViewHolder(itemView) {
+    class ClassViewHolder(itemView: View, private val listener: OnItemClickListener?, private val isViewingOtherAccount: Boolean) : RecyclerView.ViewHolder(itemView) {
         val titleTextView: TextView = itemView.findViewById(R.id.classDetailTitle)
         val descriptionTextView: TextView = itemView.findViewById(R.id.classDetailDescription)
         val timeslotTextView: TextView = itemView.findViewById(R.id.classDetailTimeSlot)
         val sizeLimitTextView: TextView = itemView.findViewById(R.id.classDetailSeatInfo)
+        val reserveButton: TextView = itemView.findViewById(R.id.reserveButton)
 
         fun bind(classData: ClassInfo) {
             titleTextView.text = classData.title
@@ -39,14 +41,25 @@ class ClassAdapter : ListAdapter<ClassInfo, ClassAdapter.ClassViewHolder>(ClassD
             val sizeLimit = classData.sizeLimit
             val seatInfo = "$currentSeats/$sizeLimit Seats Reserved"
             sizeLimitTextView.text = seatInfo
+            if (isViewingOtherAccount) {
+                reserveButton.visibility = View.VISIBLE
+                reserveButton.text = "Reserve"
+            } else {
+                reserveButton.visibility = View.VISIBLE
+                reserveButton.text = "View Seats"
+            }
 
         }
         init {
-            itemView.setOnClickListener {
+            reserveButton.setOnClickListener {
                 val position = getBindingAdapterPosition()
                 if (position != RecyclerView.NO_POSITION) {
                     val classData = itemView.tag as ClassInfo
-                    listener?.onItemClick(classData)
+                    if (isViewingOtherAccount) {
+                        listener?.onReserveClick(classData)
+                    } else {
+                        listener?.onItemClick(classData)
+                    }
                 }
             }
         }
@@ -54,7 +67,7 @@ class ClassAdapter : ListAdapter<ClassInfo, ClassAdapter.ClassViewHolder>(ClassD
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ClassViewHolder {
         val itemView = LayoutInflater.from(parent.context).inflate(R.layout.view_class, parent, false)
-        return ClassViewHolder(itemView, listener)
+        return ClassViewHolder(itemView, listener, isViewingOtherAccount)
     }
 
     override fun onBindViewHolder(holder: ClassViewHolder, position: Int) {

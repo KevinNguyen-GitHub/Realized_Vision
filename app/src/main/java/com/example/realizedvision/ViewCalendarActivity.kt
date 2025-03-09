@@ -76,7 +76,7 @@ class ViewCalendarActivity : AppCompatActivity() {
     private fun loadCalendarData() {
         val currentUser = auth.currentUser
         if (currentUser != null) {
-            val vendorId = currentUser.uid
+            val vendorId = "HFRgKpDsOwWvwg32icAu7103f7w2"
             firestore.collection("Classes")
                 .whereEqualTo("vendorID", vendorId)
                 .get()

@@ -14,8 +14,8 @@ import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
 import com.google.firebase.auth.FirebaseAuth
-import com.google.firebase.auth.FirebaseUser
 import com.google.firebase.firestore.FirebaseFirestore
+import com.google.firebase.firestore.QuerySnapshot
 import com.kizitonwose.calendar.core.CalendarDay
 import com.kizitonwose.calendar.core.CalendarMonth
 import com.kizitonwose.calendar.core.DayPosition
@@ -24,8 +24,10 @@ import com.kizitonwose.calendar.view.MonthDayBinder
 import com.kizitonwose.calendar.view.MonthHeaderFooterBinder
 import com.kizitonwose.calendar.view.MonthScrollListener
 import java.time.DayOfWeek
+import java.time.Instant
 import java.time.LocalDate
 import java.time.YearMonth
+import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 import java.time.format.TextStyle
 import java.util.Locale
@@ -36,22 +38,18 @@ class ViewCalendarActivity : AppCompatActivity() {
     private lateinit var calendarView : CalendarView
     private lateinit var monthText: TextView
     private val today = LocalDate.now()
+
+    private lateinit var auth: FirebaseAuth
     private lateinit var firestore: FirebaseFirestore
-    private lateinit var currentUser: FirebaseUser
+    private var daysWithClasses: MutableSet<LocalDate> = mutableSetOf()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_view_calendar)
 
-        // Initialize Firebase
-        currentUser = FirebaseAuth.getInstance().currentUser!!
-        firestore = FirebaseFirestore.getInstance()
 
-        // Check if currentUser is null (better way of ensuring it's not null)
-        if (currentUser == null) {
-            Toast.makeText(this, "User not logged in", Toast.LENGTH_SHORT).show()
-            return
-        }
+        firestore = FirebaseFirestore.getInstance()
+        auth = FirebaseAuth.getInstance()
 
         calendarView = findViewById(R.id.calendarView)
         monthText = findViewById(R.id.monthText)
@@ -73,31 +71,45 @@ class ViewCalendarActivity : AppCompatActivity() {
         val userId = currentUser.uid
         val userDocRef = firestore.collection("Users").document(userId)
 
-        userDocRef.get().addOnCompleteListener { task ->
-            if (task.isSuccessful) {
-                val snapshot = task.result
-                if (snapshot != null && snapshot.exists()) {
-                    val isVendor = snapshot.getBoolean("isVendor")
 
-                    if (isVendor == true) {
-                        // If user is vendor then edit availabilties
-                        editAvailability.visibility = View.VISIBLE
-                    } else {
-                        // If user is not vendor then show book a date
-                        editAvailability.visibility = View.GONE
-                        bookDate.visibility = View.VISIBLE
-                    }
+        loadCalendarData()
+
+    }
+
+    override fun onRestart() {
+        super.onRestart()
+        loadCalendarData()
+    }
+
+    private fun loadCalendarData() {
+        val currentUser = auth.currentUser
+        if (currentUser != null) {
+            val vendorId = currentUser.uid
+            firestore.collection("Classes")
+                .whereEqualTo("vendorID", vendorId)
+                .get()
+                .addOnSuccessListener { documents ->
+                    processClassData(documents)
+                    setupCalendar()
                 }
-            } else {
-                Toast.makeText(this, "Error fetching user data", Toast.LENGTH_SHORT).show()
+                .addOnFailureListener { _ ->
+                    Toast.makeText(this, "Error getting classes", Toast.LENGTH_SHORT).show()
+                }
+        }
+    }
+
+    private fun processClassData(documents: QuerySnapshot) {
+        daysWithClasses.clear()
+        for (document in documents) {
+            val startTimeTimestamp = document.getTimestamp("startTime")
+            startTimeTimestamp?.let { timestamp ->
+                val localDate = Instant.ofEpochSecond(timestamp.seconds)
+                    .atZone(ZoneId.systemDefault())
+                    .toLocalDate()
+                daysWithClasses.add(localDate)
             }
         }
-
-        editAvailability.setOnClickListener { view: View? -> navigateTo(EditAvailability::class.java) }
-        bookDate.setOnClickListener{view: View? -> navigateTo(BookingAvailability::class.java)}
-
-        setupCalendar()
-
+    }
 
     }
 
@@ -124,11 +136,25 @@ class ViewCalendarActivity : AppCompatActivity() {
                 container.textView.background = null
 
                 if (data.position == DayPosition.MonthDate) {
-                    if (data.date == today) {
+                    if (data.date == today && daysWithClasses.contains(data.date)) {
                         container.textView.setTextColor(Color.WHITE)
                         container.textView.background = ContextCompat.getDrawable(
                             this@ViewCalendarActivity,
-                            R.drawable.solid_circle
+                            R.drawable.class_today
+                        )
+                    }
+                    else if (data.date == today) {
+                        container.textView.setTextColor(Color.WHITE)
+                        container.textView.background = ContextCompat.getDrawable(
+                            this@ViewCalendarActivity,
+                            R.drawable.inset_solid_circle
+                        )
+                    } else if (daysWithClasses.contains(data.date)){
+                        container.textView.setTextColor(ContextCompat.getColor(
+                            this@ViewCalendarActivity, R.color.maroon))
+                        container.textView.background = ContextCompat.getDrawable(
+                            this@ViewCalendarActivity,
+                            R.drawable.inset_outline_circle
                         )
                     } else {
                         container.textView.setTextColor(Color.BLACK)
@@ -138,7 +164,8 @@ class ViewCalendarActivity : AppCompatActivity() {
                 container.view.setOnClickListener {
                     val intent = Intent(this@ViewCalendarActivity, ViewClassActivity::class.java)
                     val formatter = DateTimeFormatter.ofPattern("MMMM d, yyyy", Locale.getDefault())
-                    intent.putExtra("SELECTED_DATE", data.date.format(formatter))
+                    intent.putExtra("selectedDate", data.date.format(formatter))
+                    intent.putExtra("selectedProfileId", "HFRgKpDsOwWvwg32icAu7103f7w2")
                     startActivity(intent)
                 }
             }
@@ -169,7 +196,6 @@ class ViewCalendarActivity : AppCompatActivity() {
                 }
             }
         }
-
 
         calendarView.monthScrollListener = object : MonthScrollListener {
             override fun invoke(month: CalendarMonth) {

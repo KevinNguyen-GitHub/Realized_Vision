@@ -13,7 +13,7 @@ import androidx.recyclerview.widget.RecyclerView;
 import com.bumptech.glide.Glide; // Or use Picasso
 
 import java.util.List;
-public class CartAdapter extends RecyclerView.Adapter<CartAdapter.ItemViewHolder> {
+public class ShoppingCartAdapter extends RecyclerView.Adapter<ShoppingCartAdapter.ItemViewHolder> {
     private List<Item> itemList;
     private Context context;
     private OnItemClickListener listener;
@@ -21,11 +21,11 @@ public class CartAdapter extends RecyclerView.Adapter<CartAdapter.ItemViewHolder
     public interface OnItemClickListener{
         void onFavoriteClick(int position);
         void onRemoveClick(int position);
-
+        void onIncrementClick(int position);
         void onItemClick(int position);
     }
 
-    public CartAdapter(Context context, List<Item> itemList) {
+    public ShoppingCartAdapter(Context context, List<Item> itemList) {
         this.context = context;
         this.itemList = itemList;
         setHasStableIds(true); // Optimization for RecyclerView
@@ -49,7 +49,8 @@ public class CartAdapter extends RecyclerView.Adapter<CartAdapter.ItemViewHolder
         Item item = itemList.get(position);
         holder.itemName.setText(item.getName());
         holder.itemPrice.setText(String.format("$%.2f", item.getPrice()));
-        holder.itemDescription.setText(item.getDescription());
+        //holder.itemDescription.setText(item.getDescription());
+        holder.itemQuantity.setText("Qty: " + item.getQuantity());
 
         Glide.with(context)
                 .load(item.getImageUrl()) // Ensure Item class has getImageUrl()
@@ -74,17 +75,19 @@ public class CartAdapter extends RecyclerView.Adapter<CartAdapter.ItemViewHolder
         return position;
     }
     public static class ItemViewHolder extends RecyclerView.ViewHolder {
-        public TextView itemName, itemPrice, itemDescription;
-        public ImageView itemImage, favoriteIcon, removeIcon;
+        public TextView itemName, itemPrice, itemQuantity;
+        public ImageView itemImage, favoriteIcon, removeIcon, incrementIcon;
 
         public ItemViewHolder(View itemView, OnItemClickListener listener) {
             super(itemView);
             itemName = itemView.findViewById(R.id.item_name);
             itemPrice = itemView.findViewById(R.id.item_price);
-            itemDescription = itemView.findViewById(R.id.item_description);
+            //itemDescription = itemView.findViewById(R.id.item_description);
             itemImage = itemView.findViewById(R.id.item_image);
             favoriteIcon = itemView.findViewById(R.id.favorite_icon);
             removeIcon = itemView.findViewById(R.id.remove_icon);
+            incrementIcon = itemView.findViewById(R.id.increment_icon);
+            itemQuantity = itemView.findViewById(R.id.item_quantity);
 
             favoriteIcon.setOnClickListener(z -> {
                 if(listener != null){
@@ -104,13 +107,31 @@ public class CartAdapter extends RecyclerView.Adapter<CartAdapter.ItemViewHolder
                     }
                 }
             });
+            incrementIcon.setOnClickListener(z -> {
+                if (listener != null) {
+                    int position = getAbsoluteAdapterPosition();
+                    if (position != RecyclerView.NO_POSITION) {
+                        incrementIcon.animate()
+                                .scaleX(0.8f)
+                                .scaleY(0.8f)
+                                .setDuration(200)
+                                .withEndAction(() -> incrementIcon.animate()
+                                        .scaleX(1f)
+                                        .scaleY(1f)
+                                        .setDuration(200)
+                                        .start())
+                                .start();
+                        listener.onIncrementClick(position);
+                    }
+                }
+            });
             removeIcon.setOnClickListener(z -> {
                 if(listener!= null){
                     int position = getAbsoluteAdapterPosition();
                     if(position != RecyclerView.NO_POSITION){
                         removeIcon.animate()
-                                .scaleX(1.2f)
-                                .scaleY(1.2f)
+                                .scaleX(0.8f)
+                                .scaleY(0.8f)
                                 .setDuration(200)
                                 .withEndAction(() -> removeIcon.animate()
                                         .scaleX(1f)
@@ -132,7 +153,6 @@ public class CartAdapter extends RecyclerView.Adapter<CartAdapter.ItemViewHolder
             });
         }
     }
-
 }
 
 

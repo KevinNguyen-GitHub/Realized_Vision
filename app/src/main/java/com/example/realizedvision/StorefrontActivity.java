@@ -196,6 +196,7 @@ public class StorefrontActivity extends AppCompatActivity {
         item.put("price", price);
         item.put("itemID", itemID);
         item.put("vendorID", userId);
+        item.put("quantity", 1);
 
         storefrontColRef.document(itemID).set(item)
                 .addOnSuccessListener(aVoid -> {

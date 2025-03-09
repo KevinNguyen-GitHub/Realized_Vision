@@ -33,6 +33,15 @@
         android:textColor="@color/black"
         android:textSize="16sp" />
 
+    <TextView
+        android:id="@+id/classDetailSeatInfo"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="8dp"
+        android:text="x/x Seats"
+        android:textColor="@color/black"
+        android:textSize="16sp" />
+
     <Button
         android:id="@+id/reserveButton"
         android:layout_width="match_parent"
@@ -41,6 +50,7 @@
         android:layout_marginTop="10dp"
         android:background="@drawable/rounded_button"
         android:text="Reserve"
-        android:textColor="@color/white" />
+        android:textColor="@color/white"
+        android:textSize="24sp" />
 
 </LinearLayout>

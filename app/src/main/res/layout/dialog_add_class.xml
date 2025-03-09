@@ -7,13 +7,12 @@
     android:padding="16dp">
 
     <EditText
-        android:id="@+id/classTItle"
+        android:id="@+id/classTitle"
         android:layout_width="0dp"
         android:layout_height="70dp"
         android:ems="10"
         android:hint="Title"
         android:inputType="text"
-        android:text="Title"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent" />
@@ -25,32 +24,49 @@
         android:ems="10"
         android:hint="Description"
         android:inputType="text|textMultiLine"
-        android:text="Description"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/classTItle" />
+        app:layout_constraintTop_toBottomOf="@+id/classTitle" />
 
     <EditText
-        android:id="@+id/classStartTime"
-        android:layout_width="0dp"
-        android:layout_height="70dp"
+        android:id="@+id/editClassSizeLimit"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
         android:ems="10"
-        android:hint="Start"
-        android:inputType="time"
-        tools:layout_editor_absoluteX="-2dp"
-        tools:layout_editor_absoluteY="156dp" />
-
-    <EditText
-        android:id="@+id/classEndTime"
-        android:layout_width="0dp"
-        android:layout_height="70dp"
-        android:layout_marginTop="156dp"
-        android:ems="10"
-        android:hint="End"
-        android:inputType="time"
+        android:hint="Size Limit"
+        android:inputType="number"
+        app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintHorizontal_bias="1.0"
-        app:layout_constraintStart_toEndOf="@id/classStartTime"
-        app:layout_constraintTop_toTopOf="parent" />
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/classTimeslot" />
+
+    <LinearLayout
+        android:id="@+id/classTimeslot"
+        android:layout_width="0dp"
+        android:layout_height="77dp"
+        android:orientation="horizontal"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/classDescription">
+
+        <EditText
+            android:id="@+id/classStartTime"
+            android:layout_width="175dp"
+            android:layout_height="70dp"
+            android:layout_marginStart="8dp"
+            android:ems="10"
+            android:hint="Start"
+            android:inputType="time" />
+
+        <EditText
+            android:id="@+id/classEndTime"
+            android:layout_width="wrap_content"
+            android:layout_height="70dp"
+            android:layout_marginEnd="8dp"
+            android:ems="10"
+            android:hint="End"
+            android:inputType="time" />
+
+    </LinearLayout>
 
 </androidx.constraintlayout.widget.ConstraintLayout>

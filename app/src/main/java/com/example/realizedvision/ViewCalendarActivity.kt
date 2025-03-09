@@ -68,8 +68,8 @@ class ViewCalendarActivity : AppCompatActivity() {
         storefrontLabel.setOnClickListener { view: View? -> navigateTo(StorefrontActivity::class.java) }
         starIcon.setOnClickListener { view: View? -> navigateTo(FavoritesActivity::class.java) }
 
-        val userId = currentUser.uid
-        val userDocRef = firestore.collection("Users").document(userId)
+        //val userId = currentUser.uid
+        //val userDocRef = firestore.collection("Users").document(userId)
 
 
         loadCalendarData()
@@ -111,7 +111,6 @@ class ViewCalendarActivity : AppCompatActivity() {
         }
     }
 
-    }
 
     private fun navigateTo(activityClass: Class<*>) {
         val intent = Intent(this, activityClass)

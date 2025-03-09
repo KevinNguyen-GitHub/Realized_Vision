@@ -40,7 +40,7 @@ public class ProfileActivity extends AppCompatActivity {
         ImageView messageIcon = findViewById(R.id.messages_icon);
         ImageView profileIcon = findViewById(R.id.profile_icon);
         ImageView settingsIcon = findViewById(R.id.settings_icon);
-        Button storefrontButton = findViewById(R.id.storefrontButton);
+        ImageView bookIcon = findViewById(R.id.book_icon);
 
         // Set navigation
         homeIcon.setOnClickListener(view -> navigateTo(MainActivity.class));
@@ -48,31 +48,7 @@ public class ProfileActivity extends AppCompatActivity {
         messageIcon.setOnClickListener(view -> navigateTo(MessagesActivity.class));
         profileIcon.setOnClickListener(view -> navigateTo(ProfileActivity.class));
         settingsIcon.setOnClickListener(view -> navigateTo(SettingsActivity.class));
-
-
-        storefrontButton.setOnClickListener(view -> {
-            if (currentUser != null) {
-                String userId = currentUser.getUid();
-
-                DocumentReference userDocRef = firestore.collection("Users").document(userId);
-
-                userDocRef.get().addOnCompleteListener(task -> {
-                    if (task.isSuccessful()) {
-                        DocumentSnapshot snapshot = task.getResult();
-
-                        if (snapshot.exists() && Boolean.TRUE.equals(snapshot.getBoolean("isVendor"))) {
-                            navigateTo(StorefrontActivity.class);
-                        } else if (snapshot.exists() && Boolean.FALSE.equals(snapshot.getBoolean("isVendor"))) {
-                            Toast.makeText(ProfileActivity.this, "Upgrade to vendor to use this feature.", Toast.LENGTH_SHORT).show();
-                        } else {
-                            Toast.makeText(ProfileActivity.this, "User data not found.", Toast.LENGTH_SHORT).show();
-                        }
-                    } else {
-                        Toast.makeText(ProfileActivity.this, "Error: " + task.getException().getMessage(), Toast.LENGTH_SHORT).show();
-                    }
-                });
-            }
-        });
+        bookIcon.setOnClickListener(view -> navigateTo(StorefrontActivity.class));
 
         // Fetch user data
         fetchUserData();

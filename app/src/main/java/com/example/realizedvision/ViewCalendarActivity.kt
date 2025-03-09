@@ -6,6 +6,7 @@ import android.graphics.Color
 import android.os.Bundle
 import android.view.Gravity
 import android.view.View
+import android.widget.Button
 import android.widget.ImageView
 import android.widget.LinearLayout
 import android.widget.TextView
@@ -37,6 +38,7 @@ class ViewCalendarActivity : AppCompatActivity() {
     private lateinit var calendarView : CalendarView
     private lateinit var monthText: TextView
     private val today = LocalDate.now()
+
     private lateinit var auth: FirebaseAuth
     private lateinit var firestore: FirebaseFirestore
     private var daysWithClasses: MutableSet<LocalDate> = mutableSetOf()
@@ -44,6 +46,7 @@ class ViewCalendarActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_view_calendar)
+
 
         firestore = FirebaseFirestore.getInstance()
         auth = FirebaseAuth.getInstance()
@@ -57,11 +60,16 @@ class ViewCalendarActivity : AppCompatActivity() {
         val profileName = findViewById<TextView>(R.id.profile_name)
         val storefrontLabel = findViewById<ImageView>(R.id.storefront_label)
         val starIcon = findViewById<ImageView>(R.id.star_icon)
+        val editAvailability = findViewById<Button>(R.id.btnEditAvailability)
+        val bookDate = findViewById<Button>(R.id.btnBookDate)
 
         calendarIcon.setOnClickListener { view: View? -> navigateTo(ViewCalendarActivity::class.java) }
         settingsIcon.setOnClickListener { view: View? -> navigateTo(SettingsActivity::class.java) }
         storefrontLabel.setOnClickListener { view: View? -> navigateTo(StorefrontActivity::class.java) }
         starIcon.setOnClickListener { view: View? -> navigateTo(FavoritesActivity::class.java) }
+
+        val userId = currentUser.uid
+        val userDocRef = firestore.collection("Users").document(userId)
 
 
         loadCalendarData()
@@ -103,6 +111,7 @@ class ViewCalendarActivity : AppCompatActivity() {
         }
     }
 
+    }
 
     private fun navigateTo(activityClass: Class<*>) {
         val intent = Intent(this, activityClass)

@@ -43,11 +43,13 @@ public class StorefrontActivity extends AppCompatActivity {
     private FirebaseFirestore firestore;
     private FirebaseUser currentUser;
     private TextView profileNameTextView;
+    private String vendorId;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_vendor_profile); // Ensure correct XML file
+        setContentView(R.layout.activity_vendor_profile);
+
         profileNameTextView = findViewById(R.id.profile_name);
         // Initialize Firebase
         currentUser = FirebaseAuth.getInstance().getCurrentUser();
@@ -88,19 +90,47 @@ public class StorefrontActivity extends AppCompatActivity {
 
         settingsIcon.setOnClickListener(view -> navigateTo(SettingsActivity.class));
 
+        // Template for demo purposes
+        String userId = currentUser.getUid();
 
+        DocumentReference userDocRef = firestore.collection("Users").document(userId);
+
+        userDocRef.get().addOnCompleteListener(task -> {
+            if (task.isSuccessful()) {
+                DocumentSnapshot snapshot = task.getResult();
+
+                if (snapshot.exists() && Boolean.TRUE.equals(snapshot.getBoolean("isVendor"))) {
+                    vendorId = currentUser.getUid();
+                } else if (snapshot.exists() && Boolean.FALSE.equals(snapshot.getBoolean("isVendor"))) {
+                    vendorId = "wP1b2zpnIcasqu9yE9lB4ymTxY63";
+                } else {
+                    Toast.makeText(StorefrontActivity.this, "User data not found.", Toast.LENGTH_SHORT).show();
+                }
+
+                if (vendorId != null) {
+                    Log.d("Debug", "Vendor ID set: " + vendorId);
+                    loadStorefrontItems(vendorId);  // Move inside to ensure vendorId is set
+                    fetchUserData();
+                } else {
+                    Log.e("Error", "vendorId is still null!");
+                }
+
+            } else {
+                Toast.makeText(StorefrontActivity.this, "Error: " + task.getException().getMessage(), Toast.LENGTH_SHORT).show();
+            }
+        });
 
         //Listens for if user clicks add button, if they do then envoke add item function for popup and adding of
         //item to database and visible for recycler view for this specific user
-        String vendorId = currentUser.getUid();
-        loadStorefrontItems(vendorId);
+
+        //loadStorefrontItems(vendorId);
         Button addButton = findViewById(R.id.add_button);
         addButton.setOnClickListener(view -> addItem(vendorId));
 
         Button deleteButton = findViewById(R.id.delete_button);
         deleteButton.setOnClickListener(view -> deleteItem(vendorId));
 
-        fetchUserData();
+        //fetchUserData();
     }
 
     private void addItem(String vendorId) {
@@ -282,7 +312,7 @@ public class StorefrontActivity extends AppCompatActivity {
     private void fetchUserData() {
 
         if (currentUser != null) {
-            String userId = currentUser.getUid();
+            String userId = vendorId;
 
             DocumentReference userDocRef = firestore.collection("Vendors").document(userId);
 

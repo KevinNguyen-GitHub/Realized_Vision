@@ -45,6 +45,7 @@ public class StorefrontActivity extends AppCompatActivity {
     private TextView profileNameTextView;
     private String vendorId;
 
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -141,6 +142,7 @@ public class StorefrontActivity extends AppCompatActivity {
         final EditText inputName = viewInflated.findViewById(R.id.input_name);
         final EditText inputDescription = viewInflated.findViewById(R.id.input_description);
         final EditText inputPrice = viewInflated.findViewById(R.id.input_price);
+        final EditText inputCategory = viewInflated.findViewById(R.id.input_category);
 
         builder.setView(viewInflated);
 
@@ -148,8 +150,9 @@ public class StorefrontActivity extends AppCompatActivity {
             String name = inputName.getText().toString().trim();
             String description = inputDescription.getText().toString().trim();
             String priceString = inputPrice.getText().toString().trim();
+            String category = inputCategory.getText().toString().trim();
 
-            if (!name.isEmpty() && !description.isEmpty() && !priceString.isEmpty()) {
+            if (!name.isEmpty() && !description.isEmpty() && !priceString.isEmpty() && !category.isEmpty()) {
                 double price = Double.parseDouble(priceString);
                 String userId = currentUser.getUid();
 
@@ -164,7 +167,7 @@ public class StorefrontActivity extends AppCompatActivity {
                                 Toast.makeText(this, "Item with this name already exists!", Toast.LENGTH_SHORT).show();
                             } else {
                                 // No duplicate, proceed with adding the item
-                                addNewItemToFirestore(name, description, price, userId, vendorId);
+                                addNewItemToFirestore(name, description, price, category, userId, vendorId);
                             }
                         })
                         .addOnFailureListener(e -> {
@@ -184,7 +187,7 @@ public class StorefrontActivity extends AppCompatActivity {
     }
 
     // Helper function to add the item and reload storefront
-    private void addNewItemToFirestore(String name, String description, double price, String userId, String vendorId) {
+    private void addNewItemToFirestore(String name, String description, double price,String category, String userId, String vendorId) {
         CollectionReference storefrontColRef = firestore.collection("Storefront");
         String itemID = storefrontColRef.document().getId();
         String imageUrl = ""; // Placeholder for image URL
@@ -194,6 +197,7 @@ public class StorefrontActivity extends AppCompatActivity {
         item.put("description", description);
         item.put("imageUrl", imageUrl);
         item.put("price", price);
+        item.put("category", category);
         item.put("itemID", itemID);
         item.put("vendorID", userId);
         item.put("quantity", 1);

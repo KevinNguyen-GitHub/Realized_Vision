@@ -1,16 +1,26 @@
 package com.example.realizedvision;
 
+import android.content.Context;
 import android.content.Intent;
+import android.graphics.Color;
+import android.graphics.drawable.ColorDrawable;
 import android.os.Bundle;
+import android.util.DisplayMetrics;
 import android.util.Log;
+import android.view.Gravity;
+import android.view.LayoutInflater;
+import android.view.View;
 import android.widget.Button;
 import android.widget.ImageView;
+import android.widget.PopupWindow;
+import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
+import com.bumptech.glide.Glide;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
 import com.google.firebase.firestore.CollectionReference;
@@ -241,8 +251,69 @@ public class ShoppingCartActivity extends AppCompatActivity implements ShoppingC
     @Override
     public void onItemClick(int position) {
         Item item = cartList.get(position);
-        Intent intent = new Intent(ShoppingCartActivity.this, ExpandItem.class);
-        intent.putExtra("item_id", item.getItemID()); // Pass the item ID to the details activity
+
+        LayoutInflater inflater = (LayoutInflater) getSystemService(Context.LAYOUT_INFLATER_SERVICE);
+        View popupView = inflater.inflate(R.layout.expand_item, null);
+
+        ImageView popupItemImage = popupView.findViewById(R.id.item_image);
+        TextView popupItemName = popupView.findViewById(R.id.item_name);
+        TextView popupItemPrice = popupView.findViewById(R.id.item_price);
+        TextView popupItemDesc = popupView.findViewById(R.id.item_description);
+        TextView popupVendorName = popupView.findViewById(R.id.item_vendor);
+        Button popupAddtoCart = popupView.findViewById(R.id.popup_cart_button);
+        Button popupAddFavorites = popupView.findViewById(R.id.popup_favorite_button);
+
+        popupAddtoCart.setOnClickListener(view ->{onIncrementClick(position);});
+        popupAddFavorites.setOnClickListener(view ->{onFavoriteClick(position);});
+
+        popupVendorName.setOnClickListener(view ->{
+            navigateToVendorStorefront(item.getVendorID());
+        });
+
+
+        popupItemName.setText(item.getName());
+        popupItemPrice.setText(String.format("$%.2f", item.getPrice()));
+        popupItemDesc.setText(item.getDescription());
+
+        //Load image
+        Glide.with(this)
+                .load(item.getImageUrl())
+                .placeholder(R.drawable.ic_placeholder_image)
+                .error(R.drawable.ic_placeholder_image)
+                .into(popupItemImage);
+
+        VendorUtils.fetchVendorName(item.getVendorID(), new VendorUtils.onVendorFetchedListener() {
+            @Override
+            public void onVendorFetched(String vendorName) {
+                if (vendorName != null) {
+                    popupVendorName.setText(vendorName);
+                } else {
+                    popupVendorName.setText("Vendor not found");
+                }
+            }
+        });
+
+        DisplayMetrics displayMetrics = new DisplayMetrics();
+        getWindowManager().getDefaultDisplay().getMetrics(displayMetrics);
+        int screenWidth = displayMetrics.widthPixels;
+        int screenHeight = displayMetrics.heightPixels;
+
+        // Calculate popup dimensions (80% of screen width, 70% of screen height)
+        int popupWidth = (int) (screenWidth * 0.8);
+        int popupHeight = (int) (screenHeight * 0.7);
+
+        PopupWindow popupWindow = new PopupWindow(
+                popupView, popupWidth, popupHeight, true);
+
+        popupWindow.setBackgroundDrawable(new ColorDrawable(Color.TRANSPARENT));
+        popupWindow.showAtLocation(recyclerView, Gravity.CENTER, 0,0);
+
+
+    }
+
+    private void navigateToVendorStorefront(String vendorID) {
+        Intent intent = new Intent(ShoppingCartActivity.this, StorefrontActivity.class);
+        intent.putExtra("vendorID", vendorID); // Pass the vendor ID to the storefront activity
         startActivity(intent);
     }
 

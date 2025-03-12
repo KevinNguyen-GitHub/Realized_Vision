@@ -3,44 +3,47 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:orientation="vertical"
-    android:padding="16dp">
+    android:padding="16dp"
+    android:background="@color/white">
 
-    <!-- Product Image -->
+    <!-- Item Image -->
     <ImageView
-        android:id="@+id/product_image"
+        android:id="@+id/item_image"
         android:layout_width="match_parent"
         android:layout_height="200dp"
         android:scaleType="centerCrop"
         android:src="@drawable/ic_placeholder_image" />
 
-    <!-- Product Name -->
+    <!-- Item Name -->
     <TextView
-        android:id="@+id/product_name"
+        android:id="@+id/item_name"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="Product Name"
+        android:text="Item Name"
         android:textSize="24sp"
         android:textStyle="bold"
         android:layout_marginTop="16dp" />
-<!--    Product Vendor  -->
+
+    <!-- Item Vendor -->
     <TextView
-        android:id="@+id/product_vendor"
+        android:id="@+id/item_vendor"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="@string/product_vendor"/>
+        android:text="Vendor Name"
+        android:textSize="20sp" />
 
-    <!-- Product Price -->
+    <!-- Item Price -->
     <TextView
-        android:id="@+id/product_price"
+        android:id="@+id/item_price"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:text="$10.00"
         android:textSize="20sp"
         android:layout_marginTop="8dp" />
 
-    <!-- Product Description -->
+    <!-- Item Description -->
     <TextView
-        android:id="@+id/product_description"
+        android:id="@+id/item_description"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:text="Product description goes here."
@@ -49,7 +52,7 @@
 
     <!-- Add to Cart Button -->
     <Button
-        android:id="@+id/add_to_cart_button"
+        android:id="@+id/popup_cart_button"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:text="Add to Cart"
@@ -57,7 +60,7 @@
 
     <!-- Favorite Button -->
     <Button
-        android:id="@+id/favorite_button"
+        android:id="@+id/popup_favorite_button"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:text="Add to Favorites"

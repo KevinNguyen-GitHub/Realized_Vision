@@ -50,6 +50,8 @@ class ViewCalendarActivity : AppCompatActivity() {
 
         firestore = FirebaseFirestore.getInstance()
         auth = FirebaseAuth.getInstance()
+        val currentUser = auth.currentUser
+
 
         calendarView = findViewById(R.id.calendarView)
         monthText = findViewById(R.id.monthText)

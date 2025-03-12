@@ -27,6 +27,15 @@
         android:minLines="3"/>
 
     <EditText
+        android:id="@+id/input_category"
+        android:layout_width="0dp"
+        android:layout_height="70dp"
+        android:hint="Category"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/input_description"/>
+
+    <EditText
         android:id="@+id/input_price"
         android:layout_width="0dp"
         android:layout_height="70dp"
@@ -34,6 +43,6 @@
         android:inputType="numberDecimal"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintTop_toBottomOf="@id/input_description"/>
+        app:layout_constraintTop_toBottomOf="@id/input_category"/>
 
 </androidx.constraintlayout.widget.ConstraintLayout>

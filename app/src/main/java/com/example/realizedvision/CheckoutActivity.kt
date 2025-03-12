@@ -1,5 +1,6 @@
 package com.example.realizedvision
 
+import android.content.Intent
 import android.os.Bundle
 import android.util.Log
 import android.widget.Button
@@ -30,6 +31,7 @@ class CheckoutActivity : AppCompatActivity() {
     private lateinit var paymentIntentClientSecret: String
     private val stripeApiService = NetworkModule.provideStripeApiService()
     private lateinit var payNowButton: Button
+    private lateinit var backButton: Button
     private var subtotal: Double = 0.0
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -39,12 +41,17 @@ class CheckoutActivity : AppCompatActivity() {
         orderSummaryExpandableList = findViewById(R.id.orderSummaryExpandableList)
         checkoutSubtotal = findViewById(R.id.checkout_subtotal)
         payNowButton = findViewById(R.id.pay_now_button)
+        backButton = findViewById(R.id.backButtonCheckout)
 
         paymentSheet = PaymentSheet(this, ::onPaymentSheetResult)
         fetchStripeConfig()
         fetchShoppingCart()
         payNowButton.setOnClickListener {
             createPaymentIntent()
+        }
+        backButton.setOnClickListener{
+            val intent = Intent(this, ShoppingCartActivity::class.java)
+            startActivity(intent)
         }
     }
     private fun fetchStripeConfig() {

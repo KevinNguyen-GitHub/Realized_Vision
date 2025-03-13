@@ -5,6 +5,7 @@ import android.os.Bundle
 import android.util.Log
 import android.widget.Button
 import android.widget.ExpandableListView
+import android.widget.ImageButton
 import android.widget.TextView
 import androidx.activity.result.launch
 import androidx.appcompat.app.AppCompatActivity
@@ -31,7 +32,7 @@ class CheckoutActivity : AppCompatActivity() {
     private lateinit var paymentIntentClientSecret: String
     private val stripeApiService = NetworkModule.provideStripeApiService()
     private lateinit var payNowButton: Button
-    private lateinit var backButton: Button
+    private lateinit var backButton: ImageButton
     private var subtotal: Double = 0.0
 
     override fun onCreate(savedInstanceState: Bundle?) {

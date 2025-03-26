@@ -14,6 +14,7 @@ import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
 import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.auth.FirebaseUser
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.QuerySnapshot
 import com.kizitonwose.calendar.core.CalendarDay
@@ -41,6 +42,7 @@ class ViewCalendarActivity : AppCompatActivity() {
 
     private lateinit var auth: FirebaseAuth
     private lateinit var firestore: FirebaseFirestore
+
     private var daysWithClasses: MutableSet<LocalDate> = mutableSetOf()
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -70,8 +72,34 @@ class ViewCalendarActivity : AppCompatActivity() {
         storefrontLabel.setOnClickListener { view: View? -> navigateTo(StorefrontActivity::class.java) }
         starIcon.setOnClickListener { view: View? -> navigateTo(FavoritesActivity::class.java) }
 
-        //val userId = currentUser.uid
-        //val userDocRef = firestore.collection("Users").document(userId)
+        val userId: String? = currentUser?.uid
+        if (userId != null) {
+            val userDocRef = firestore.collection("Users").document(userId)
+
+            userDocRef.get().addOnCompleteListener { task ->
+                if (task.isSuccessful) {
+                    val snapshot = task.result
+                    if (snapshot != null && snapshot.exists()) {
+                        val isVendor =
+                            snapshot.getBoolean("isVendor") // Assuming this field exists in the Firestore user document
+
+                        if (isVendor == true) {
+                            // User is a vendor: Show the "editAvailability" button and hide the "bookDate" button
+                            editAvailability.visibility = View.VISIBLE
+                        } else {
+                            // User is not a vendor: Hide the "editAvailability" button and show the "bookDate" button
+                            editAvailability.visibility = View.GONE
+                            bookDate.visibility = View.VISIBLE
+                        }
+                    }
+                } else {
+                    Toast.makeText(this, "Error fetching user data", Toast.LENGTH_SHORT).show()
+                }
+            }
+        }else{}
+
+        editAvailability.setOnClickListener { view: View? -> navigateTo(EditAvailability::class.java) }
+        bookDate.setOnClickListener{view: View? -> navigateTo(BookingAvailability::class.java)}
 
 
         loadCalendarData()

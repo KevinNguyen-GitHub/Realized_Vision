@@ -7,20 +7,21 @@ import android.widget.Button
 import android.widget.ExpandableListView
 import android.widget.ImageButton
 import android.widget.TextView
-import androidx.activity.result.launch
 import androidx.appcompat.app.AppCompatActivity
-import androidx.compose.ui.semantics.error
-import androidx.compose.ui.semantics.text
 import androidx.lifecycle.lifecycleScope
 import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.firestore.DocumentReference
 import com.google.firebase.firestore.FirebaseFirestore
+import com.google.firebase.firestore.QuerySnapshot
 import com.stripe.android.PaymentConfiguration
 import com.stripe.android.paymentsheet.PaymentSheet
 import com.stripe.android.paymentsheet.PaymentSheetResult
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.withContext
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
+import java.util.Date
+
 
 class CheckoutActivity : AppCompatActivity() {
 
@@ -148,6 +149,9 @@ class CheckoutActivity : AppCompatActivity() {
         when (paymentSheetResult) {
             is PaymentSheetResult.Completed -> {
                 Log.d("CheckoutActivity", "Payment completed")
+                addOrderToHistory()
+                val intent = Intent(this, MainActivity::class.java)
+                startActivity(intent)
             }
             is PaymentSheetResult.Canceled -> {
                 Log.d("CheckoutActivity", "Payment canceled")
@@ -156,6 +160,40 @@ class CheckoutActivity : AppCompatActivity() {
                 Log.e("CheckoutActivity", "Payment failed", paymentSheetResult.error)
             }
         }
+    }
+    private fun addOrderToHistory(){
+        val userId = auth.currentUser?.uid
+        if (userId == null) {
+            Log.e("CheckoutActivity", "User not logged in")
+            return
+        }
+
+        // Gets the shopping cart items
+        db.collection("Users").document(userId).collection("Shopping Cart").get()
+            .addOnSuccessListener { queryDocumentSnapshots: QuerySnapshot ->
+                val items: MutableList<Map<String, Any>?> = ArrayList()
+                for (document in queryDocumentSnapshots) {
+                    items.add(document.data)
+                }
+
+                // Creates a new order document
+                val order: MutableMap<String, Any> = HashMap()
+                order["userId"] = userId
+                order["items"] = items
+                order["timestamp"] = Date()
+
+                db.collection("Order History").add(order)
+                    .addOnSuccessListener { documentReference: DocumentReference? ->
+                        for (document in queryDocumentSnapshots) {
+                            db.collection("Users").document(userId).collection("Shopping Cart")
+                                .document(document.id)
+                                .delete()
+                        }
+                    }
+                    .addOnFailureListener { e: java.lang.Exception? -> println("Shopping cart is empty for user: $e")}
+            }
+            .addOnFailureListener { e: java.lang.Exception? -> println("Error retrieving shopping cart for user: $e")}
+
     }
 
 }

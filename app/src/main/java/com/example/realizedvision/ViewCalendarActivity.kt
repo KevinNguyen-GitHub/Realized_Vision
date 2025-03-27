@@ -14,7 +14,6 @@ import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
 import com.google.firebase.auth.FirebaseAuth
-import com.google.firebase.auth.FirebaseUser
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.QuerySnapshot
 import com.kizitonwose.calendar.core.CalendarDay
@@ -52,7 +51,6 @@ class ViewCalendarActivity : AppCompatActivity() {
 
         firestore = FirebaseFirestore.getInstance()
         auth = FirebaseAuth.getInstance()
-        val currentUser = auth.currentUser
 
 
         calendarView = findViewById(R.id.calendarView)
@@ -72,7 +70,7 @@ class ViewCalendarActivity : AppCompatActivity() {
         storefrontLabel.setOnClickListener { view: View? -> navigateTo(StorefrontActivity::class.java) }
         starIcon.setOnClickListener { view: View? -> navigateTo(FavoritesActivity::class.java) }
 
-        val userId: String? = currentUser?.uid
+        val userId = auth.currentUser?.uid
         if (userId != null) {
             val userDocRef = firestore.collection("Users").document(userId)
 

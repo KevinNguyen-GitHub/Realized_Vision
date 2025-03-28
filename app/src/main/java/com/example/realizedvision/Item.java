@@ -5,6 +5,7 @@ public class Item {
     private String vendorID;
     private String name;
     private String description;
+    private String category;
     private double price;
     private long quantity;
     private String imageUrl; // Or a drawable resource ID
@@ -13,12 +14,13 @@ public class Item {
     public Item(){
         //default constructor
     }
-    public Item(String itemID, String vendorID, String description, String name, double price, String imageUrl) {
+    public Item(String itemID, String vendorID, String description, String name, String category, double price, String imageUrl) {
         this.itemID = itemID;
         this.vendorID = vendorID;
         this.description = description;
         this.name = name;
         this.price = price;
+        this.category = category;
         this.imageUrl = imageUrl;
         this.quantity = 1;
     }
@@ -36,6 +38,7 @@ public class Item {
     public double getPrice() {
         return price;
     }
+    public String getCategory(){return category;}
     private void setPrice(double price){this.price = price;}
 
     public String getImageUrl() {

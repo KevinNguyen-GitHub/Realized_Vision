@@ -1,25 +1,29 @@
-
 package com.example.realizedvision;
-
-import android.content.Intent;
-import android.os.Bundle;
-import android.util.Log;
-import android.widget.Button;
-import android.widget.ImageView;
-import android.widget.TextView;
-import android.widget.Toast;
 import android.app.AlertDialog;
-import android.content.DialogInterface;
+import android.content.Context;
+import android.content.Intent;
+import android.graphics.Color;
+import android.graphics.drawable.ColorDrawable;
+import android.os.Bundle;
+import android.util.DisplayMetrics;
+import android.util.Log;
+import android.view.Gravity;
 import android.view.LayoutInflater;
 import android.view.View;
+import android.view.ViewGroup;
+import android.widget.Button;
 import android.widget.EditText;
+import android.widget.ImageView;
+import android.widget.PopupWindow;
+import android.widget.TextView;
+import android.widget.Toast;
 
-import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
+import com.bumptech.glide.Glide;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
 import com.google.firebase.firestore.CollectionReference;
@@ -28,110 +32,48 @@ import com.google.firebase.firestore.DocumentSnapshot;
 import com.google.firebase.firestore.EventListener;
 import com.google.firebase.firestore.FirebaseFirestore;
 import com.google.firebase.firestore.FirebaseFirestoreException;
+import com.google.firebase.firestore.QueryDocumentSnapshot;
 import com.google.firebase.firestore.QuerySnapshot;
-import com.google.firebase.firestore.Source;
 
+import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 
-public class StorefrontActivity extends AppCompatActivity {
-
-    private RecyclerView recyclerView;
-    private ItemAdapter itemAdapter;
-    private List<Item> itemList;
+public class MainVendorActivity extends AppCompatActivity{
     private FirebaseFirestore firestore;
     private FirebaseUser currentUser;
-    private TextView profileNameTextView;
     private String vendorId;
-
+    private TextView profileNameTextView;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_vendor_profile);
+        setContentView(R.layout.activity_vendormain);
 
-        profileNameTextView = findViewById(R.id.profile_name);
-        // Initialize Firebase
+//        Connect to db, find user instance
         currentUser = FirebaseAuth.getInstance().getCurrentUser();
-        if (currentUser != null) {
-            firestore = FirebaseFirestore.getInstance();
-        }
+        firestore = FirebaseFirestore.getInstance();
+        vendorId = currentUser.getUid();
 
-        // Initialize RecyclerView
-        recyclerView = findViewById(R.id.recyclerView);
-        recyclerView.setLayoutManager(new LinearLayoutManager(this));
-
-        // Initialize item list and adapter
-        itemList = new ArrayList<>();
-        itemAdapter = new ItemAdapter(this, itemList, false);
-        recyclerView.setAdapter(itemAdapter);
-
-
-
-        ImageView homeIcon = findViewById(R.id.home_icon);
-        ImageView favoriteIcon = findViewById(R.id.favorites_icon);
         ImageView messageIcon = findViewById(R.id.messages_icon);
         ImageView profileIcon = findViewById(R.id.profile_icon);
-        ImageView settingsIcon = findViewById(R.id.settings_icon);
-        ImageView calendarIcon = findViewById(R.id.calendar_icon);
 
-        homeIcon.setOnClickListener(view -> navigateTo(MainActivity.class));
-        favoriteIcon.setOnClickListener(view -> navigateTo(FavoritesActivity.class));
+        Button addItemButton = findViewById(R.id.add_item_button);
+        Button deleteItemButton = findViewById(R.id.delete_item_button);
+        Button viewOrdersButton = findViewById(R.id.view_orders_button);
+        profileNameTextView = findViewById(R.id.main_vendor_name);
+
+//        Clicking on add or delete buttons
+        addItemButton.setOnClickListener(v -> addItem(vendorId));
+        deleteItemButton.setOnClickListener(v -> deleteItem(vendorId));
+//        viewOrdersButton.setOnClickListener(v -> navigateTo(OrderHistoryActivity.class));
+
+//        Navigate to desired elements when clicked
         messageIcon.setOnClickListener(view -> navigateTo(MessagesActivity.class));
-        calendarIcon.setOnClickListener(view -> navigateTo(ViewCalendarActivity.class));
-
-
-
-
         profileIcon.setOnClickListener(view -> navigateTo(StorefrontActivity.class));
 
-
-
-
-        settingsIcon.setOnClickListener(view -> navigateTo(SettingsActivity.class));
-
-        // Template for demo purposes
-        String userId = currentUser.getUid();
-
-        DocumentReference userDocRef = firestore.collection("Users").document(userId);
-
-        userDocRef.get().addOnCompleteListener(task -> {
-            if (task.isSuccessful()) {
-                DocumentSnapshot snapshot = task.getResult();
-
-                if (snapshot.exists() && Boolean.TRUE.equals(snapshot.getBoolean("isVendor"))) {
-                    vendorId = currentUser.getUid();
-                } else if (snapshot.exists() && Boolean.FALSE.equals(snapshot.getBoolean("isVendor"))) {
-                    vendorId = "wP1b2zpnIcasqu9yE9lB4ymTxY63";
-                } else {
-                    Toast.makeText(StorefrontActivity.this, "User data not found.", Toast.LENGTH_SHORT).show();
-                }
-
-                if (vendorId != null) {
-                    Log.d("Debug", "Vendor ID set: " + vendorId);
-                    loadStorefrontItems(vendorId);  // Move inside to ensure vendorId is set
-                    fetchUserData();
-                } else {
-                    Log.e("Error", "vendorId is still null!");
-                }
-
-            } else {
-                Toast.makeText(StorefrontActivity.this, "Error: " + task.getException().getMessage(), Toast.LENGTH_SHORT).show();
-            }
-        });
-
-        //Listens for if user clicks add button, if they do then envoke add item function for popup and adding of
-        //item to database and visible for recycler view for this specific user
-
-        //loadStorefrontItems(vendorId);
-        Button addButton = findViewById(R.id.add_button);
-        addButton.setOnClickListener(view -> addItem(vendorId));
-
-        Button deleteButton = findViewById(R.id.delete_button);
-        deleteButton.setOnClickListener(view -> deleteItem(vendorId));
-
-        //fetchUserData();
+        fetchUserData();
     }
 
     private void addItem(String vendorId) {
@@ -205,13 +147,11 @@ public class StorefrontActivity extends AppCompatActivity {
         storefrontColRef.document(itemID).set(item)
                 .addOnSuccessListener(aVoid -> {
                     Toast.makeText(this, "Item Added Successfully", Toast.LENGTH_SHORT).show();
-                    loadStorefrontItems(vendorId); // Refresh the storefront after adding
                 })
                 .addOnFailureListener(e -> {
                     Toast.makeText(this, "Error Adding Item", Toast.LENGTH_SHORT).show();
                 });
     }
-
 
     private void deleteItem(String vendorId) {
         AlertDialog.Builder builder = new AlertDialog.Builder(this);
@@ -285,34 +225,6 @@ public class StorefrontActivity extends AppCompatActivity {
                 });
     }
 
-
-
-    private void loadStorefrontItems(String userId) {
-        CollectionReference itemsRef = firestore.collection("Storefront");
-
-        itemsRef.whereEqualTo("vendorID", userId)
-                .addSnapshotListener(new EventListener<QuerySnapshot>() {
-                    @Override
-                    public void onEvent(@Nullable QuerySnapshot snapshot, @Nullable FirebaseFirestoreException error) {
-                        if (error != null) {
-                            Log.e("Firestore", "Error loading items", error);
-                            return;
-                        }
-                        if (snapshot != null) {
-                            itemList.clear();
-
-                            for (DocumentSnapshot itemDoc : snapshot.getDocuments()) {
-                                Item item = itemDoc.toObject(Item.class);
-
-                                if (item != null) {
-                                    itemList.add(item);
-                                }
-                            }
-                            itemAdapter.notifyDataSetChanged();
-                        }
-                    }
-                });
-    }
     private void fetchUserData() {
 
         if (currentUser != null) {
@@ -332,30 +244,20 @@ public class StorefrontActivity extends AppCompatActivity {
 
                         // Use resource string with placeholders
                         String displayCompanyName = getString(R.string.profile_name_format, companyName, "");
-                        profileNameTextView.setText(displayCompanyName);
+                        profileNameTextView.setText("Welcome, " + displayCompanyName);
                     } else {
-                        Toast.makeText(StorefrontActivity.this, "User data not found.", Toast.LENGTH_SHORT).show();
+                        Toast.makeText(MainVendorActivity.this, "User data not found.", Toast.LENGTH_SHORT).show();
                     }
                 } else {
-                    Toast.makeText(StorefrontActivity.this, "Error: " + task.getException().getMessage(), Toast.LENGTH_SHORT).show();
+                    Toast.makeText(MainVendorActivity.this, "Error: " + task.getException().getMessage(), Toast.LENGTH_SHORT).show();
                 }
             });
         }
     }
 
+    //   Helper function for activity navigation
     private void navigateTo(Class<?> targetActivity) {
-        Intent intent = new Intent(StorefrontActivity.this, targetActivity);
+        Intent intent = new Intent(MainVendorActivity.this, targetActivity);
         startActivity(intent);
     }
 }
-
-
-
-
-
-
-
-
-
-
-

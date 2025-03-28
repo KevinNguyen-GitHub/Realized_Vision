@@ -49,7 +49,7 @@ public class FavoritesActivity extends AppCompatActivity implements ItemAdapter.
         recyclerView.setLayoutManager(new LinearLayoutManager(this));
 
         favorites = new ArrayList<>();
-        favoritesAdapter = new ItemAdapter(this, favorites);
+        favoritesAdapter = new ItemAdapter(this, favorites, false);
         recyclerView.setAdapter(favoritesAdapter);
 
         favoritesAdapter.setOnItemClickListener(this);

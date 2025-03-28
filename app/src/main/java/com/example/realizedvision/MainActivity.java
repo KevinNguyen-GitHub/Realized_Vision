@@ -41,6 +41,7 @@ public class MainActivity extends AppCompatActivity implements ItemAdapter.OnIte
     private RecyclerView recyclerView;
     private ItemAdapter itemAdapter;
     private List<Item> itemList;
+    private List<Item> itemListFilter;
     private FirebaseFirestore firestore;
     private FirebaseUser currentUser;
 
@@ -53,11 +54,13 @@ public class MainActivity extends AppCompatActivity implements ItemAdapter.OnIte
         currentUser = FirebaseAuth.getInstance().getCurrentUser();
         firestore = FirebaseFirestore.getInstance();
 
+
 //      Create recycler view to hold elements
         recyclerView = findViewById(R.id.mainRecyclerView);
         recyclerView.setLayoutManager(new LinearLayoutManager(this));
         itemList = new ArrayList<>();
-        itemAdapter = new ItemAdapter(this, itemList);
+        itemListFilter = new ArrayList<>();
+        itemAdapter = new ItemAdapter(this, itemList, true);
         recyclerView.setAdapter(itemAdapter);
 
         itemAdapter.setOnItemClickListener(this);
@@ -65,9 +68,23 @@ public class MainActivity extends AppCompatActivity implements ItemAdapter.OnIte
 
         fetchItemsfromFirestore();
 
+        ImageView homeIcon = findViewById(R.id.home_icon);
         ImageView favoriteIcon = findViewById(R.id.favorites_icon);
         ImageView messageIcon = findViewById(R.id.messages_icon);
         ImageView profileIcon = findViewById(R.id.profile_icon);
+
+        //filter buttons
+        Button artFilter = findViewById(R.id.filter_artwork);
+        Button metalFilter = findViewById(R.id.filter_metalwork);
+        Button woodFilter = findViewById(R.id.filter_woodwork);
+        ImageView resetFilter = findViewById(R.id.resetFilterIcon);
+
+        artFilter.setOnClickListener(view -> itemAdapter.getFilter().filter("Art"));
+        metalFilter.setOnClickListener(view -> itemAdapter.getFilter().filter("Metalwork"));
+        woodFilter.setOnClickListener(view -> itemAdapter.getFilter().filter("Woodwork"));
+        resetFilter.setOnClickListener(view -> fetchItemsfromFirestore());
+
+
 //        Navigate to desired elements when clicked
         favoriteIcon.setOnClickListener(view -> navigateTo(FavoritesActivity.class));
         messageIcon.setOnClickListener(view -> navigateTo(MessagesActivity.class));
@@ -81,6 +98,7 @@ public class MainActivity extends AppCompatActivity implements ItemAdapter.OnIte
         startActivity(intent);
     }
 
+
 //    Retrieving items from database, adding them to item list to display
     private void fetchItemsfromFirestore(){
         FirebaseFirestore db = FirebaseFirestore.getInstance();
@@ -88,11 +106,9 @@ public class MainActivity extends AppCompatActivity implements ItemAdapter.OnIte
 
         db.collection("Storefront").get()
                 .addOnSuccessListener(queryDocumentSnapshots -> {
-                    Log.d("MainActivity", "Number of items fetched: " + queryDocumentSnapshots.size());
                     itemList.clear();
                     for(QueryDocumentSnapshot document : queryDocumentSnapshots){
                         Item item = document.toObject(Item.class);
-                        Log.d("MainActivity", "Item: " + item.getName());
                         String itemId = item.getItemID();
 
                         db.collection("Users")
@@ -108,6 +124,7 @@ public class MainActivity extends AppCompatActivity implements ItemAdapter.OnIte
                                         item.setFavorite(false);
                                     }
                                     itemList.add(item);
+                                    itemListFilter.add(item);
                                     itemAdapter.notifyDataSetChanged();
                                 }).addOnFailureListener(e ->{
                                     Log.d("Main Activity", "Error checking favorites", e);

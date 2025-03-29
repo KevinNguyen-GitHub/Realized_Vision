@@ -70,14 +70,12 @@ public class StorefrontActivity extends AppCompatActivity {
 
 
         ImageView homeIcon = findViewById(R.id.home_icon);
-        ImageView favoriteIcon = findViewById(R.id.favorites_icon);
         ImageView messageIcon = findViewById(R.id.messages_icon);
         ImageView profileIcon = findViewById(R.id.profile_icon);
         ImageView settingsIcon = findViewById(R.id.settings_icon);
         ImageView calendarIcon = findViewById(R.id.calendar_icon);
 
-        homeIcon.setOnClickListener(view -> navigateTo(MainActivity.class));
-        favoriteIcon.setOnClickListener(view -> navigateTo(FavoritesActivity.class));
+        homeIcon.setOnClickListener(view -> checkUserType());
         messageIcon.setOnClickListener(view -> navigateTo(MessagesActivity.class));
         calendarIcon.setOnClickListener(view -> navigateTo(ViewCalendarActivity.class));
 
@@ -125,166 +123,8 @@ public class StorefrontActivity extends AppCompatActivity {
         //item to database and visible for recycler view for this specific user
 
         //loadStorefrontItems(vendorId);
-        Button addButton = findViewById(R.id.add_button);
-        addButton.setOnClickListener(view -> addItem(vendorId));
-
-        Button deleteButton = findViewById(R.id.delete_button);
-        deleteButton.setOnClickListener(view -> deleteItem(vendorId));
-
         //fetchUserData();
     }
-
-    private void addItem(String vendorId) {
-        AlertDialog.Builder builder = new AlertDialog.Builder(this);
-        builder.setTitle("Add New Item");
-
-        View viewInflated = LayoutInflater.from(this).inflate(R.layout.dialog_add_item, null);
-        final EditText inputName = viewInflated.findViewById(R.id.input_name);
-        final EditText inputDescription = viewInflated.findViewById(R.id.input_description);
-        final EditText inputPrice = viewInflated.findViewById(R.id.input_price);
-        final EditText inputCategory = viewInflated.findViewById(R.id.input_category);
-
-        builder.setView(viewInflated);
-
-        builder.setPositiveButton("Add", (dialog, which) -> {
-            String name = inputName.getText().toString().trim();
-            String description = inputDescription.getText().toString().trim();
-            String priceString = inputPrice.getText().toString().trim();
-            String category = inputCategory.getText().toString().trim();
-
-            if (!name.isEmpty() && !description.isEmpty() && !priceString.isEmpty() && !category.isEmpty()) {
-                double price = Double.parseDouble(priceString);
-                String userId = currentUser.getUid();
-
-                // Check if an item with the same name already exists for the vendor
-                firestore.collection("Storefront")
-                        .whereEqualTo("name", name)
-                        .whereEqualTo("vendorID", userId)
-                        .get()
-                        .addOnSuccessListener(querySnapshot -> {
-                            if (!querySnapshot.isEmpty()) {
-                                // Item with the same name exists, show error message
-                                Toast.makeText(this, "Item with this name already exists!", Toast.LENGTH_SHORT).show();
-                            } else {
-                                // No duplicate, proceed with adding the item
-                                addNewItemToFirestore(name, description, price, category, userId, vendorId);
-                            }
-                        })
-                        .addOnFailureListener(e -> {
-                            Toast.makeText(this, "Error checking existing items.", Toast.LENGTH_SHORT).show();
-                        });
-            }
-        });
-
-        builder.setNegativeButton("Cancel", (dialog, which) -> dialog.cancel());
-
-        AlertDialog dialog = builder.create();
-        dialog.setOnShowListener(dialogInterface -> {
-            dialog.getButton(AlertDialog.BUTTON_POSITIVE).setTextColor(getResources().getColor(android.R.color.black));
-            dialog.getButton(AlertDialog.BUTTON_NEGATIVE).setTextColor(getResources().getColor(android.R.color.black));
-        });
-        dialog.show();
-    }
-
-    // Helper function to add the item and reload storefront
-    private void addNewItemToFirestore(String name, String description, double price,String category, String userId, String vendorId) {
-        CollectionReference storefrontColRef = firestore.collection("Storefront");
-        String itemID = storefrontColRef.document().getId();
-        String imageUrl = ""; // Placeholder for image URL
-
-        HashMap<String, Object> item = new HashMap<>();
-        item.put("name", name);
-        item.put("description", description);
-        item.put("imageUrl", imageUrl);
-        item.put("price", price);
-        item.put("category", category);
-        item.put("itemID", itemID);
-        item.put("vendorID", userId);
-        item.put("quantity", 1);
-
-        storefrontColRef.document(itemID).set(item)
-                .addOnSuccessListener(aVoid -> {
-                    Toast.makeText(this, "Item Added Successfully", Toast.LENGTH_SHORT).show();
-                    loadStorefrontItems(vendorId); // Refresh the storefront after adding
-                })
-                .addOnFailureListener(e -> {
-                    Toast.makeText(this, "Error Adding Item", Toast.LENGTH_SHORT).show();
-                });
-    }
-
-
-    private void deleteItem(String vendorId) {
-        AlertDialog.Builder builder = new AlertDialog.Builder(this);
-        builder.setTitle("Delete Item");
-
-        View viewInflated = LayoutInflater.from(this).inflate(R.layout.dialog_delete_item, null);
-        final EditText inputItem = viewInflated.findViewById(R.id.input_item_id);
-
-        builder.setView(viewInflated);
-
-        builder.setPositiveButton("Delete", (dialog, which) -> {
-            String inputText = inputItem.getText().toString().trim();
-            if (!inputText.isEmpty()) {
-                // Check if input is an item ID
-                DocumentReference itemRef = firestore.collection("Storefront").document(inputText);
-                itemRef.get().addOnSuccessListener(documentSnapshot -> {
-                    if (documentSnapshot.exists()) {
-                        String itemVendorId = documentSnapshot.getString("vendorID");
-
-                        if (itemVendorId != null && itemVendorId.equals(vendorId)) {
-                            // Delete the item by item ID
-                            itemRef.delete().addOnSuccessListener(aVoid -> {
-                                Toast.makeText(this, "Item Deleted Successfully", Toast.LENGTH_SHORT).show();
-                            }).addOnFailureListener(e -> {
-                                Toast.makeText(this, "Error Deleting Item", Toast.LENGTH_SHORT).show();
-                            });
-                        } else {
-                            Toast.makeText(this, "You can only delete your own items.", Toast.LENGTH_SHORT).show();
-                        }
-                    } else {
-                        // If not an item ID, search by name
-                        searchAndDeleteByName(inputText, vendorId);
-                    }
-                }).addOnFailureListener(e -> {
-                    Toast.makeText(this, "Error retrieving item data.", Toast.LENGTH_SHORT).show();
-                });
-            }
-        });
-
-        builder.setNegativeButton("Cancel", (dialog, which) -> dialog.cancel());
-
-        AlertDialog dialog = builder.create();
-        dialog.setOnShowListener(dialogInterface -> {
-            dialog.getButton(AlertDialog.BUTTON_POSITIVE).setTextColor(getResources().getColor(android.R.color.black));
-            dialog.getButton(AlertDialog.BUTTON_NEGATIVE).setTextColor(getResources().getColor(android.R.color.black));
-        });
-        dialog.show();
-    }
-
-    // Function to delete by item name
-    private void searchAndDeleteByName(String itemName, String vendorId) {
-        firestore.collection("Storefront")
-                .whereEqualTo("name", itemName)
-                .whereEqualTo("vendorID", vendorId) // Ensure only deleting current user's items
-                .get()
-                .addOnSuccessListener(queryDocumentSnapshots -> {
-                    if (!queryDocumentSnapshots.isEmpty()) {
-                        for (DocumentSnapshot doc : queryDocumentSnapshots.getDocuments()) {
-                            doc.getReference().delete().addOnSuccessListener(aVoid -> {
-                                Toast.makeText(this, "Item Deleted Successfully", Toast.LENGTH_SHORT).show();
-                            }).addOnFailureListener(e -> {
-                                Toast.makeText(this, "Error Deleting Item", Toast.LENGTH_SHORT).show();
-                            });
-                        }
-                    } else {
-                        Toast.makeText(this, "Item not found.", Toast.LENGTH_SHORT).show();
-                    }
-                })
-                .addOnFailureListener(e -> {
-                    Toast.makeText(this, "Error searching for item.", Toast.LENGTH_SHORT).show();
-                });
-    }
-
 
 
     private void loadStorefrontItems(String userId) {
@@ -341,6 +181,47 @@ public class StorefrontActivity extends AppCompatActivity {
                 }
             });
         }
+    }
+    private void checkUserType() {
+        if (currentUser == null) {
+            Toast.makeText(this, "User not authenticated", Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+        String userID = currentUser.getUid();
+        FirebaseFirestore.getInstance().collection("Users").document(userID).get()
+                .addOnCompleteListener(task -> {
+                    if (task.isSuccessful()) {
+                        DocumentSnapshot document = task.getResult();
+                        if (document.exists()) {
+                            // Check if user is vendor
+                            Boolean isVendor = document.getBoolean("isVendor");
+                            Intent intent;
+
+                            if (isVendor != null && isVendor) {
+                                //User is vendor
+                                intent = new Intent(StorefrontActivity.this, MainVendorActivity.class);
+                                Toast.makeText(StorefrontActivity.this, "Vendor login successful", Toast.LENGTH_SHORT).show();
+                            } else {
+                                //Regular user
+                                intent = new Intent(StorefrontActivity.this, MainActivity.class);
+                                Toast.makeText(StorefrontActivity.this, "Login successful", Toast.LENGTH_SHORT).show();
+                            }
+                            startActivity(intent);
+                            finish();
+                        } else {
+                            //document doesn't exist, treat like regular user
+                            startActivity(new Intent(StorefrontActivity.this, MainActivity.class));
+                            finish();
+                        }
+                    } else {
+                        Log.e("LoginActivity", "Error checking user type", task.getException());
+                        //Treat as regular user if error
+                        Toast.makeText(StorefrontActivity.this, "Error verifying account", Toast.LENGTH_SHORT).show();
+                        startActivity(new Intent(StorefrontActivity.this, MainActivity.class));
+                        finish();
+                    }
+                });
     }
 
     private void navigateTo(Class<?> targetActivity) {

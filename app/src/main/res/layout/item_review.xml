@@ -9,10 +9,10 @@
     android:layout_marginBottom="8dp">
 
     <TextView
-        android:id="@+id/review_title"
+        android:id="@+id/reviewer_name"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="Review Title"
+        android:text="Reviewer Name"
         android:textStyle="bold"
         android:textSize="16sp"
         android:layout_marginBottom="4dp" />

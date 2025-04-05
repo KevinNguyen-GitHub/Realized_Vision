@@ -41,6 +41,7 @@
             android:textSize="18sp"
             android:textStyle="bold" />
 
+
         <ImageView
             android:id="@+id/settings_icon"
             android:layout_width="48dp"
@@ -48,7 +49,11 @@
             android:contentDescription="Settings"
             android:src="@drawable/ic_settings"
             app:tint="@color/black" />
+
+
     </LinearLayout>
+
+
 
     <!-- Section Title -->
 
@@ -82,6 +87,24 @@
             tools:layout_editor_absoluteY="642dp" />
 
     </LinearLayout>
+
+    <TextView
+        android:id="@+id/vendor_address"
+        android:layout_width="311dp"
+        android:layout_height="30dp"
+        android:clickable="true"
+        android:focusable="true"
+        android:gravity="center"
+        android:padding="6dp"
+        android:text=""
+        android:textColor="@color/black"
+        android:textSize="14sp"
+        android:visibility="visible"
+        app:layout_constraintBottom_toTopOf="@id/storefront_nav"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/profile_name"
+        tools:visibility="visible" />
 
     <LinearLayout
         android:id="@+id/storefront_nav"

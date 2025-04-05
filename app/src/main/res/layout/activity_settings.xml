@@ -100,6 +100,15 @@
                 android:gravity="start|top"
                 android:padding="2dp"
                 android:text="Notifications" />
+            <Button
+                android:id="@+id/addAddressButton"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="16dp"
+                android:background="@color/white"
+                android:gravity="start|top"
+                android:padding="2dp"
+                android:text="Add Address" />
 
             <Button
                 android:id="@+id/btn_logout"

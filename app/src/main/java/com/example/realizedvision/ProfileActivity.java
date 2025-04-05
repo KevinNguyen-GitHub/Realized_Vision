@@ -2,6 +2,7 @@ package com.example.realizedvision;
 
 import android.content.Intent;
 import android.os.Bundle;
+import android.view.View;
 import android.widget.Button;
 import android.widget.ImageView;
 import android.widget.TextView;
@@ -17,9 +18,10 @@ import com.google.firebase.firestore.FirebaseFirestore;
 
 public class ProfileActivity extends AppCompatActivity {
 
-    private TextView profileNameTextView;
+    private TextView profileNameTextView, addressTextView;
     private FirebaseFirestore firestore;
     private FirebaseUser currentUser;
+    private String viewedUserId;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -34,13 +36,13 @@ public class ProfileActivity extends AppCompatActivity {
 
         // Initialize views
         profileNameTextView = findViewById(R.id.profile_name);
+        addressTextView = findViewById(R.id.profile_address);
 
         ImageView homeIcon = findViewById(R.id.home_icon);
         ImageView favoriteIcon = findViewById(R.id.favorites_icon);
         ImageView messageIcon = findViewById(R.id.messages_icon);
         ImageView profileIcon = findViewById(R.id.profile_icon);
         ImageView settingsIcon = findViewById(R.id.settings_icon);
-        Button storefrontButton = findViewById(R.id.storefrontButton);
 
         // Set navigation
         homeIcon.setOnClickListener(view -> navigateTo(MainActivity.class));
@@ -49,56 +51,42 @@ public class ProfileActivity extends AppCompatActivity {
         profileIcon.setOnClickListener(view -> navigateTo(ProfileActivity.class));
         settingsIcon.setOnClickListener(view -> navigateTo(SettingsActivity.class));
 
+        // Check if viewing another user's profile
+        viewedUserId = getIntent().getStringExtra("viewedUserId");
+        if (viewedUserId == null) {
+            viewedUserId = (currentUser != null) ? currentUser.getUid() : null;
+        }
 
-        storefrontButton.setOnClickListener(view -> {
-            if (currentUser != null) {
-                String userId = currentUser.getUid();
-
-                DocumentReference userDocRef = firestore.collection("Users").document(userId);
-
-                userDocRef.get().addOnCompleteListener(task -> {
-                    if (task.isSuccessful()) {
-                        DocumentSnapshot snapshot = task.getResult();
-
-                        if (snapshot.exists() && Boolean.TRUE.equals(snapshot.getBoolean("isVendor"))) {
-                            navigateTo(StorefrontActivity.class);
-                        } else if (snapshot.exists() && Boolean.FALSE.equals(snapshot.getBoolean("isVendor"))) {
-                            Toast.makeText(ProfileActivity.this, "Upgrade to vendor to use this feature.", Toast.LENGTH_SHORT).show();
-                        } else {
-                            Toast.makeText(ProfileActivity.this, "User data not found.", Toast.LENGTH_SHORT).show();
-                        }
-                    } else {
-                        Toast.makeText(ProfileActivity.this, "Error: " + task.getException().getMessage(), Toast.LENGTH_SHORT).show();
-                    }
-                });
-            }
-        });
 
         // Fetch user data
-        fetchUserData();
+        fetchProfileData(viewedUserId);
     }
-
-    private void fetchUserData() {
-        if (currentUser != null) {
-            String userId = currentUser.getUid();
-
+    private void fetchProfileData(String userId) {
+        if (userId != null) {
             DocumentReference userDocRef = firestore.collection("Users").document(userId);
 
             userDocRef.get().addOnCompleteListener(task -> {
                 if (task.isSuccessful()) {
                     DocumentSnapshot snapshot = task.getResult();
-
-                    if (snapshot.exists() /*&& Boolean.FALSE.equals(snapshot.getBoolean("isVendor"))*/) {
+                    if (snapshot.exists()) {
                         String firstName = snapshot.getString("firstName");
                         String lastName = snapshot.getString("lastName");
+                        String userAddress = snapshot.getString("address");
 
-                        // Handle null values
-                        firstName = (firstName != null) ? firstName : "";
-                        lastName = (lastName != null) ? lastName : "";
+                        profileNameTextView.setText((firstName != null ? firstName : "") + " " + (lastName != null ? lastName : ""));
+                        if (userAddress != null && !userAddress.isEmpty()) {
+                            addressTextView.setText(userAddress);
+                            addressTextView.setVisibility(View.VISIBLE);
 
-                        // Use resource string with placeholders
-                        String fullName = getString(R.string.profile_name_format, firstName, lastName);
-                        profileNameTextView.setText(fullName);
+                            // Make address clickable
+                            addressTextView.setOnClickListener(v -> {
+                                Intent intent = new Intent(ProfileActivity.this, MapActivity.class);
+                                intent.putExtra("selectedAddress", userAddress); //userAddress
+                                startActivity(intent);
+                            });
+                        } else {
+                            addressTextView.setText("");
+                        }
                     } else {
                         Toast.makeText(ProfileActivity.this, "User data not found.", Toast.LENGTH_SHORT).show();
                     }

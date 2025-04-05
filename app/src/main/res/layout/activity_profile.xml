@@ -48,10 +48,38 @@
             android:src="@drawable/ic_settings"
             app:tint="@color/black" />
 
+
     </LinearLayout>
 
 
     <!-- Section Divider -->
+    <LinearLayout
+        android:id="@+id/address_header"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="108dp"
+        android:gravity="center_vertical"
+        android:orientation="horizontal"
+        android:padding="16dp"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintHorizontal_bias="0.0"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent">
+
+        <TextView
+            android:id="@+id/profile_address"
+            android:layout_width="256dp"
+            android:layout_height="wrap_content"
+            android:clickable="true"
+            android:focusable="true"
+            android:padding="4dp"
+            android:text="Your Address"
+            android:textColor="@color/black"
+            android:textSize="14sp" />
+
+
+    </LinearLayout>
+
     <TextView
         android:id="@+id/reviews_title"
         android:layout_width="0dp"
@@ -70,17 +98,8 @@
     <!-- Review Card -->
 
     <!-- Bottom Navigation Bar -->
-    <Button
-        android:id="@+id/storefrontButton"
-        android:layout_width="132dp"
-        android:layout_height="49dp"
-        android:layout_marginBottom="8dp"
-        android:layout_weight="1"
-        android:text="Storefront"
-        app:layout_constraintBottom_toTopOf="@id/reviews_title"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintHorizontal_bias="0.498"
-        app:layout_constraintStart_toStartOf="parent" />
+
+
 
     <LinearLayout
         android:id="@+id/review_card"

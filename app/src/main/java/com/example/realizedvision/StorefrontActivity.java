@@ -99,6 +99,7 @@ public class StorefrontActivity extends AppCompatActivity {
         deleteButton.setOnClickListener(view -> deleteItem(vendorId));
 
         fetchUserData();
+        fetchVendorData();
     }
 
     private void addItem(String vendorId) {
@@ -304,6 +305,39 @@ public class StorefrontActivity extends AppCompatActivity {
                 }
             });
         }
+    }
+
+
+    //gets vendor address from firestore and makes it a clickable for map integration
+    private void fetchVendorData() {
+        //get the authentication for the current user, which should be a vendor now
+        FirebaseAuth auth = FirebaseAuth.getInstance();
+        FirebaseFirestore firestore = FirebaseFirestore.getInstance();
+        String vendorId = auth.getCurrentUser().getUid();  // Get current vendor ID
+
+        //sets the vendor address text for ui implementation
+        DocumentReference vendorDocRef = firestore.collection("Vendors").document(vendorId);
+        vendorDocRef.get().addOnSuccessListener(documentSnapshot -> {
+            if (documentSnapshot.exists()) {
+                String vendorAddress = documentSnapshot.getString("address");
+                String testVendorAddress = "1600 Amphitheatre Parkway, Mountain View, CA";
+                TextView addressTextView = findViewById(R.id.vendor_address);
+
+                if (vendorAddress != null && !vendorAddress.isEmpty()) {
+                    addressTextView.setText(vendorAddress);
+                    addressTextView.setVisibility(View.VISIBLE);
+
+                    // Make the address clickable to open the map
+                    addressTextView.setOnClickListener(v -> {
+                        Intent intent = new Intent(StorefrontActivity.this, MapActivity.class);
+                        intent.putExtra("selectedAddress", vendorAddress);
+                        startActivity(intent);
+                    });
+                }
+            }
+        }).addOnFailureListener(e -> {
+            Log.e("FirestoreError", "Error fetching vendor data", e);
+        });
     }
 
     private void navigateTo(Class<?> targetActivity) {

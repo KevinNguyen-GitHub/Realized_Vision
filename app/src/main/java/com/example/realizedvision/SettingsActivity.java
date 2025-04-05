@@ -41,6 +41,33 @@ public class SettingsActivity extends AppCompatActivity {
         Button vendorInfoButton = findViewById(R.id.upgradeButton);
         ImageButton backButton = findViewById(R.id.backButtonChangePass);
         Button logoutButton = findViewById(R.id.btn_logout);
+        Button addAddressButton = findViewById(R.id.addAddressButton);
+
+        addAddressButton.setOnClickListener(v -> {
+            FirebaseFirestore firestore = FirebaseFirestore.getInstance();
+            FirebaseUser currentUser = FirebaseAuth.getInstance().getCurrentUser();
+
+            if (currentUser != null) {
+                String userId = currentUser.getUid();
+                firestore.collection("Users").document(userId).get()
+                        .addOnSuccessListener(snapshot -> {
+                            Boolean isVendor = snapshot.getBoolean("isVendor");
+                            if (isVendor != null && isVendor) {
+                                Toast.makeText(SettingsActivity.this, "You’ve already provided an address as a vendor.", Toast.LENGTH_SHORT).show();
+                            } else {
+                                startActivity(new Intent(SettingsActivity.this, AddAddressActivity.class));
+                            }
+                        })
+                        .addOnFailureListener(e -> {
+                            Toast.makeText(SettingsActivity.this, "Failed to check vendor status.", Toast.LENGTH_SHORT).show();
+                        });
+            }
+        });
+
+
+
+
+
 
 
 

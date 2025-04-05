@@ -5,8 +5,11 @@
     <color name="beige">#FDF5E6</color>
     <color name="brown">#8B6D5C</color>
     <color name="maroon">#B7410E</color>
-    <color name= "lightred">#C22333</color>
+    <color name= "light_red">#C22333</color>
     <color name = "green">#58AC5C</color>
     <color name = "gray">#787C7E</color>
+    <color name = "divider_gray">#BEC1C3</color>
+    <color name = "light_blue">#37AFE6</color>
+
 
 </resources>

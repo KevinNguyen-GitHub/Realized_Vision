@@ -11,6 +11,7 @@ public class Item {
     private String imageUrl; // Or a drawable resource ID
 
     private boolean isFavorite;
+    private boolean isPreferred;
     public Item(){
         //default constructor
     }
@@ -53,5 +54,13 @@ public class Item {
     }
     public void setQuantity(long quantity) {
         this.quantity = quantity;
+    }
+
+    public boolean isPreferred() {
+        return isPreferred;
+    }
+
+    public void setPreferred(boolean preferred) {
+        isPreferred = preferred;
     }
 }

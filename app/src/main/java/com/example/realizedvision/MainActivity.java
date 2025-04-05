@@ -30,6 +30,7 @@ import com.google.firebase.firestore.DocumentSnapshot;
 import com.google.firebase.firestore.EventListener;
 import com.google.firebase.firestore.FirebaseFirestore;
 import com.google.firebase.firestore.FirebaseFirestoreException;
+import com.google.firebase.firestore.Query;
 import com.google.firebase.firestore.QueryDocumentSnapshot;
 import com.google.firebase.firestore.QuerySnapshot;
 
@@ -42,6 +43,8 @@ public class MainActivity extends AppCompatActivity implements ItemAdapter.OnIte
     private ItemAdapter itemAdapter;
     private List<Item> itemList;
     private List<Item> itemListFilter;
+
+    private List<String> preferredCategories = new ArrayList<>();
     private FirebaseFirestore firestore;
     private FirebaseUser currentUser;
 
@@ -49,6 +52,8 @@ public class MainActivity extends AppCompatActivity implements ItemAdapter.OnIte
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
+        new NotificationHelper(this);
+        checkUserType();
 
 //        Connect to db, find user instance
         currentUser = FirebaseAuth.getInstance().getCurrentUser();
@@ -65,8 +70,7 @@ public class MainActivity extends AppCompatActivity implements ItemAdapter.OnIte
 
         itemAdapter.setOnItemClickListener(this);
 
-
-        fetchItemsfromFirestore();
+        fetchUserPreferencesAndItems();
 
         ImageView homeIcon = findViewById(R.id.home_icon);
         ImageView favoriteIcon = findViewById(R.id.favorites_icon);
@@ -98,6 +102,39 @@ public class MainActivity extends AppCompatActivity implements ItemAdapter.OnIte
         startActivity(intent);
     }
 
+    private void fetchUserPreferencesAndItems(){
+        String userId = currentUser.getUid();
+
+        //fetch favorites
+        firestore.collection("Users")
+                .document(userId)
+                .collection("Favorites")
+                .get()
+                .addOnSuccessListener(favoriteQuery -> {
+                    for(QueryDocumentSnapshot doc: favoriteQuery){ //add categories to preferences
+                        String category = doc.getString("category");
+                        if(category != null && !preferredCategories.contains(category)){
+                            preferredCategories.add(category);
+                        }
+                    }
+                    //Examine items from shopping cart
+                    firestore.collection("Users")
+                            .document(userId)
+                            .collection("Shopping Cart")
+                            .get()
+                            .addOnSuccessListener(cartQuery ->{
+                                for(QueryDocumentSnapshot doc:cartQuery){
+                                    String category = doc.getString("category"); //add categories to preferences
+                                    if(category != null && !preferredCategories.contains(category)){
+                                        preferredCategories.add(category);
+                                    }
+                                }
+                                fetchItemsfromFirestore();
+                            });
+
+                });
+    }
+
 
 //    Retrieving items from database, adding them to item list to display
     private void fetchItemsfromFirestore(){
@@ -107,31 +144,61 @@ public class MainActivity extends AppCompatActivity implements ItemAdapter.OnIte
         db.collection("Storefront").get()
                 .addOnSuccessListener(queryDocumentSnapshots -> {
                     itemList.clear();
-                    for(QueryDocumentSnapshot document : queryDocumentSnapshots){
-                        Item item = document.toObject(Item.class);
-                        String itemId = item.getItemID();
+                    itemListFilter.clear();
 
-                        db.collection("Users")
-                                .document(userId)
-                                .collection("Favorites")
-                                .document(itemId)
-                                .get()
-                                .addOnSuccessListener(favoriteDocument -> {
-                                    if(favoriteDocument.exists()){
-                                        item.setFavorite(true);
-                                    }
-                                    else{
-                                        item.setFavorite(false);
-                                    }
-                                    itemList.add(item);
-                                    itemListFilter.add(item);
-                                    itemAdapter.notifyDataSetChanged();
-                                }).addOnFailureListener(e ->{
-                                    Log.d("Main Activity", "Error checking favorites", e);
-                                });
+                    //user has no favorites or items in cart, load normally
+                    if(preferredCategories.isEmpty()){
+                        for(QueryDocumentSnapshot doc : queryDocumentSnapshots){
+                            Item item = doc.toObject(Item.class);
+                            processItem(userId, item, false);
+                        }
                     }
-                }).addOnFailureListener(e ->{
-                    Log.e("Main Activity", "Error fetching products: " + e.getMessage());
+                    else {
+                        //check for items with preferred categories, process them first
+                        for (QueryDocumentSnapshot document : queryDocumentSnapshots) {
+                            Item item = document.toObject(Item.class);
+                            if (preferredCategories.contains(item.getCategory())) {
+                                processItem(userId, item, true);
+                            }
+                        }
+                        //non preferred items
+                        for (QueryDocumentSnapshot document : queryDocumentSnapshots) {
+                            Item item = document.toObject(Item.class);
+                            if (!preferredCategories.contains(item.getCategory())) {
+                                processItem(userId, item, false);
+                            }
+                        }
+                    }
+                        }).addOnFailureListener(e ->{
+                            Log.e("Main Activity", "Error checking user preferences: "+ e.getMessage());
+                        });
+
+    }
+    private void processItem(String userID, Item item, boolean isPreferred){
+        String itemID = item.getItemID();
+        FirebaseFirestore db = FirebaseFirestore.getInstance();
+
+        //Check favorites, fill hearts where needed
+        db.collection("Users")
+                .document(userID)
+                .collection("Favorites")
+                .document(itemID)
+                .get()
+                .addOnSuccessListener(favoriteDocument ->{
+                    if(favoriteDocument.exists()){
+                        item.setFavorite(true);
+                    } else{
+                     item.setFavorite(false);
+                    }
+
+                    //Mark preferred items
+                    item.setPreferred(isPreferred);
+                    itemList.add(item);
+                    itemListFilter.add(item);
+                    itemAdapter.notifyDataSetChanged();
+
+                }).addOnFailureListener(e->{
+                    Log.e("Main Activity", "Error checking favorites: " + e.getMessage());
                 });
     }
 
@@ -299,6 +366,44 @@ public class MainActivity extends AppCompatActivity implements ItemAdapter.OnIte
 
     }
 
+    private void checkUserType() {
+        if (currentUser == null) {
+            Toast.makeText(this, "User not authenticated", Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+        String userID = currentUser.getUid();
+        FirebaseFirestore.getInstance().collection("Users").document(userID).get()
+                .addOnCompleteListener(task -> {
+                    if (task.isSuccessful()) {
+                        DocumentSnapshot document = task.getResult();
+                        if (document.exists()) {
+                            // Check if user is vendor
+                            Boolean isVendor = document.getBoolean("isVendor");
+                            Intent intent;
+
+                            if (isVendor != null && isVendor) {
+                                //User is vendor
+                                intent = new Intent(MainActivity.this, MainVendorActivity.class);
+                            } else {
+                                //Regular user
+                                intent = new Intent(MainActivity.this, MainActivity.class);
+                            }
+                            startActivity(intent);
+                            finish();
+                        } else {
+                            //document doesn't exist, treat like regular user
+                            startActivity(new Intent(MainActivity.this, MainActivity.class));
+                            finish();
+                        }
+                    } else {
+                        Log.e("Main Activity", "Error checking user type", task.getException());
+                        //Treat as regular user if error
+                        startActivity(new Intent(MainActivity.this, MainActivity.class));
+                        finish();
+                    }
+                });
+    }
     private void navigateToVendorStorefront(String vendorID) {
         Intent intent = new Intent(MainActivity.this, StorefrontActivity.class);
         intent.putExtra("vendorID", vendorID); // Pass the vendor ID to the storefront activity

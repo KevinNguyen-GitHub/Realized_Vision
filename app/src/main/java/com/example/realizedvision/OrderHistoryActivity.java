@@ -65,13 +65,14 @@ public class OrderHistoryActivity extends AppCompatActivity {
                                         String vendorID = (String) itemMap.get("vendorID");
                                         String description = (String) itemMap.get("description");
                                         String name = (String) itemMap.get("name");
+                                        String category = (String) itemMap.get("category");
                                         Double price = (Double) itemMap.get("price");
                                         String imageUrl = (String) itemMap.get("imageUrl");
                                         Number quantity = (Number) itemMap.get("quantity");
                                         int qty = (quantity != null) ? quantity.intValue() : 1;
 
                                         if (itemId != null && vendorID != null && name != null && price != null && imageUrl != null) {
-                                            Item item = new Item(itemId, vendorID, description, name, price, imageUrl);
+                                            Item item = new Item(itemId, vendorID, description, name, category, price, imageUrl);
                                             item.setQuantity(qty);
                                             orderItemsList.add(item);
                                         } else {

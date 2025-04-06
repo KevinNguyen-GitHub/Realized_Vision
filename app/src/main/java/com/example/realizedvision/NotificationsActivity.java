@@ -118,7 +118,7 @@ public class NotificationsActivity extends AppCompatActivity {
         defaults.put("email_purchases", true);
         defaults.put("email_messages", true);
         defaults.put("email_reservations", true);
-        //sms notis - default to false
+        //default sms notis to false
         defaults.put("sms_purchases", false);
         defaults.put("sms_reservations", false);
 

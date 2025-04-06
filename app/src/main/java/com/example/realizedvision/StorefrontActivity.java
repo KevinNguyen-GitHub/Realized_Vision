@@ -83,18 +83,12 @@ public class StorefrontActivity extends AppCompatActivity {
 
 
         Intent intent  = getIntent();
-        if(intent != null){
-            String vendorID = intent.getStringExtra("vendorID");
-
-            if(vendorID != null){
-                vendorId = vendorID;
-            }else{
+        if(intent != null && intent.hasExtra("vendorID")) {
+            vendorId = intent.getStringExtra("vendorID");
+        }else{ //no extra provided, treat as vendor
                 Log.e("Storefront Activity", "vendorID extra not found in intent");
+                vendorId = currentUser.getUid(); //vendor
             }
-        }else{
-            Log.e("Storefront Activity", "Intent is null");
-        }
-
         loadStorefrontItems(vendorId);
         fetchUserData();
     }

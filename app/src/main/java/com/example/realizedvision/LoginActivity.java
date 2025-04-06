@@ -50,6 +50,7 @@ public class LoginActivity extends AppCompatActivity {
         }
 
         String userID = currentUser.getUid();
+        //check user type
         FirebaseFirestore.getInstance().collection("Users").document(userID).get()
                 .addOnCompleteListener(task -> {
                     if (task.isSuccessful()) {

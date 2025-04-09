@@ -64,10 +64,24 @@ public class SettingsActivity extends AppCompatActivity {
             }
         });
 
-
-
-
-
+        //button handling for vendor filters (Search engine filters)
+        Button setVendorFiltersButton = findViewById(R.id.setVendorFiltersButton);
+        setVendorFiltersButton.setOnClickListener(view -> {
+            FirebaseUser user = FirebaseAuth.getInstance().getCurrentUser();
+            if (user != null) {
+                FirebaseFirestore.getInstance().collection("Users")
+                        .document(user.getUid())
+                        .get()
+                        .addOnSuccessListener(documentSnapshot -> {
+                            Boolean isVendor = documentSnapshot.getBoolean("isVendor");
+                            if (Boolean.TRUE.equals(isVendor)) {
+                                startActivity(new Intent(SettingsActivity.this, VendorFilterActivity.class));
+                            } else {
+                                Toast.makeText(SettingsActivity.this, "You must be a vendor to set vendor filters.", Toast.LENGTH_SHORT).show();
+                            }
+                        });
+            }
+        });
 
 
 

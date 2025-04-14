@@ -2,6 +2,7 @@ plugins {
     alias(libs.plugins.jetbrains.kotlin.android)
     id("com.android.application")
     id("com.google.gms.google-services")
+    alias(libs.plugins.kotlin.compose)
 }
 
 android {
@@ -10,7 +11,7 @@ android {
 
     defaultConfig {
         applicationId = "com.csulb.realized_vision"
-        minSdk = 23
+        minSdk = 24
         targetSdk = 34
         versionCode = 1
         versionName = "1.0"
@@ -19,6 +20,13 @@ android {
         vectorDrawables {
             useSupportLibrary = true
         }
+        //credentials for smtp (email notifications)
+        buildConfigField("String", "SMTP_USER",
+            if (project.hasProperty("SMTP_USER")) "\"${project.properties["SMTP_USER"]}\"" else "\"\""
+        )
+        buildConfigField("String", "SMTP_PASSWORD",
+            if (project.hasProperty("SMTP_PASSWORD")) "\"${project.properties["SMTP_PASSWORD"]}\"" else "\"\""
+        )
     }
 
     buildTypes {
@@ -32,6 +40,7 @@ android {
     }
 
     compileOptions {
+        isCoreLibraryDesugaringEnabled = true
         sourceCompatibility = JavaVersion.VERSION_1_8
         targetCompatibility = JavaVersion.VERSION_1_8
     }
@@ -51,10 +60,11 @@ android {
     packaging {
         resources {
             excludes += "/META-INF/{AL2.0,LGPL2.1}"
+            excludes.add("META-INF/INDEX.LIST")
+            excludes.add("META-INF/DEPENDENCIES")
         }
     }
 }
-
 dependencies {
     // Core Android dependencies
     implementation(libs.androidx.core.ktx)
@@ -71,6 +81,7 @@ dependencies {
     implementation(libs.androidx.ui.tooling.preview)
     implementation(libs.material)
     implementation(libs.androidx.recyclerview)
+    implementation(libs.androidx.legacy.support.v4)
     debugImplementation(libs.androidx.ui.tooling)
     debugImplementation(libs.androidx.ui.test.manifest)
 
@@ -81,6 +92,19 @@ dependencies {
     implementation(libs.firebase.firestore)
     implementation(libs.firebase.database)
 
+
+    // Custom Calendar dependencies
+    implementation("com.kizitonwose.calendar:view:2.6.2")
+    implementation("com.kizitonwose.calendar:compose:2.6.2")
+    coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.1.4")
+
+    //stripe + retrofit + OkHttp dependencies
+    implementation("com.stripe:stripe-android:21.6.0")
+    implementation("com.squareup.retrofit2:retrofit:2.11.0")
+    implementation("com.squareup.retrofit2:converter-gson:2.11.0")
+    implementation("com.squareup.okhttp3:okhttp:4.12.0")
+    implementation("com.squareup.okhttp3:logging-interceptor:4.12.0")
+    
     // Testing dependencies
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
@@ -88,15 +112,15 @@ dependencies {
     androidTestImplementation(platform(libs.androidx.compose.bom))
     androidTestImplementation(libs.androidx.ui.test.junit4)
 
-    //Google Map
-    implementation("com.google.android.gms:play-services-maps:18.1.0")
-    implementation("com.google.android.gms:play-services-location:21.0.1")
-    implementation("com.android.volley:volley:1.2.1")
-    implementation("com.google.maps.android:android-maps-utils:2.2.3")
+    //Glide dependencies
+    implementation(libs.glide)
+    annotationProcessor(libs.glide.compiler)
 
-
-
-
+    //Java mail dependencies
+    // https://mvnrepository.com/artifact/javax.mail/mail
+    implementation("javax.mail:mail:1.4.1")
+    implementation ("com.sun.mail:android-mail:1.6.7");
+    implementation ("com.sun.mail:android-activation:1.6.7");
 }
 java {
     toolchain {

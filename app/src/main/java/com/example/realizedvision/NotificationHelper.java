@@ -6,11 +6,12 @@ import android.app.PendingIntent;
 import android.content.Context;
 import android.content.Intent;
 import android.os.Build;
-import android.os.Message;
+import android.util.Log;
 
 import androidx.annotation.NonNull;
 import androidx.core.app.NotificationCompat;
 
+import com.google.firebase.BuildConfig;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
 import com.google.firebase.database.DataSnapshot;
@@ -19,6 +20,19 @@ import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
 import com.google.firebase.database.ValueEventListener;
 import com.google.firebase.firestore.FirebaseFirestore;
+
+import java.io.IOException;
+import java.io.OutputStream;
+
+import javax.mail.Authenticator;
+import javax.mail.Message;
+import javax.mail.MessagingException;
+import javax.mail.Multipart;
+import javax.mail.PasswordAuthentication;
+import javax.mail.Session;
+import javax.mail.Transport;
+import javax.mail.internet.InternetAddress;
+import javax.mail.internet.MimeMessage;
 
 
 public class NotificationHelper {
@@ -110,21 +124,38 @@ public class NotificationHelper {
             try {
                 //email properties
                 java.util.Properties props = new java.util.Properties();
-                props.put("mail.smtp.host", "your.smtp.server.com");
+                props.put("mail.smtp.host", "smtp.gmail.com");
                 props.put("mail.smtp.port", "587");
                 props.put("mail.smtp.auth", "true");
                 props.put("mail.smtp.starttls.enable", "true");
-//                 TODO: implement javax api, setup SMTP server
-//                javax.mail.Session session = javax.mail.Session.getInstance(props);
-//                Message message = new MimeMessage(session);
+
+                String email = System.getenv("SMTP_USER");
+                String password = System.getenv("SMTP_PASSWORD");
+
+                Session session = Session.getInstance(props,
+                        new Authenticator() {
+                            @Override
+                            protected PasswordAuthentication getPasswordAuthentication() {
+                                return new PasswordAuthentication(email, password);
+                            }
+                        });
+                MimeMessage message = new MimeMessage(session);
+                message.setFrom(new InternetAddress(email));
+                message.setRecipients(Message.RecipientType.TO, InternetAddress.parse(currentUser.getEmail()));
+                message.setSubject(title);
+                message.setText(content);
+
+                Transport.send(message);
+                Log.d("Notification Helper", "Email sent successfully");
+
             }catch (Exception e){
-//                e.printStackTrace();
+                Log.e("Notification Helper", "Error sending email");
             }
         }).start();
     }
 
     public void sendSMSNotification(String title, String content){
-//TODO: decide between Twilio API or smsManager
+        //TODO: decide between Twilio API or smsManager
 
     }
 }

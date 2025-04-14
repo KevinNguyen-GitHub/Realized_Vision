@@ -20,6 +20,13 @@ android {
         vectorDrawables {
             useSupportLibrary = true
         }
+        //credentials for smtp (email notifications)
+        buildConfigField("String", "SMTP_USER",
+            if (project.hasProperty("SMTP_USER")) "\"${project.properties["SMTP_USER"]}\"" else "\"\""
+        )
+        buildConfigField("String", "SMTP_PASSWORD",
+            if (project.hasProperty("SMTP_PASSWORD")) "\"${project.properties["SMTP_PASSWORD"]}\"" else "\"\""
+        )
     }
 
     buildTypes {
@@ -85,6 +92,7 @@ dependencies {
     implementation(libs.firebase.firestore)
     implementation(libs.firebase.database)
 
+
     // Custom Calendar dependencies
     implementation("com.kizitonwose.calendar:view:2.6.2")
     implementation("com.kizitonwose.calendar:compose:2.6.2")
@@ -107,6 +115,12 @@ dependencies {
     //Glide dependencies
     implementation(libs.glide)
     annotationProcessor(libs.glide.compiler)
+
+    //Java mail dependencies
+    // https://mvnrepository.com/artifact/javax.mail/mail
+    implementation("javax.mail:mail:1.4.1")
+    implementation ("com.sun.mail:android-mail:1.6.7");
+    implementation ("com.sun.mail:android-activation:1.6.7");
 }
 java {
     toolchain {

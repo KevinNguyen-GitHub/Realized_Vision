@@ -81,11 +81,13 @@ public class MainActivity extends AppCompatActivity implements ItemAdapter.OnIte
         Button artFilter = findViewById(R.id.filter_artwork);
         Button metalFilter = findViewById(R.id.filter_metalwork);
         Button woodFilter = findViewById(R.id.filter_woodwork);
+        ImageView addFilter = findViewById(R.id.add_filter);
         ImageView resetFilter = findViewById(R.id.resetFilterIcon);
 
         artFilter.setOnClickListener(view -> itemAdapter.getFilter().filter("Art"));
         metalFilter.setOnClickListener(view -> itemAdapter.getFilter().filter("Metalwork"));
         woodFilter.setOnClickListener(view -> itemAdapter.getFilter().filter("Woodwork"));
+        addFilter.setOnClickListener(view -> addFilter());
         resetFilter.setOnClickListener(view -> fetchItemsfromFirestore());
 
 
@@ -275,7 +277,6 @@ public class MainActivity extends AppCompatActivity implements ItemAdapter.OnIte
                         cartRef.document(itemId).update("quantity", currentQuantity + 1)
                                 .addOnSuccessListener(aVoid -> {
                                     Log.d("Main Activity", "Quantity incremented for: " + item.getName());
-                                    Toast.makeText(MainActivity.this, "Quantity incremented", Toast.LENGTH_SHORT).show();
                                 })
                                 .addOnFailureListener(e -> {
                                     Log.e("Main Activity", "Failed to increment quantity", e);
@@ -403,6 +404,10 @@ public class MainActivity extends AppCompatActivity implements ItemAdapter.OnIte
                         finish();
                     }
                 });
+    }
+
+    private void addFilter(){
+
     }
     private void navigateToVendorStorefront(String vendorID) {
         Intent intent = new Intent(MainActivity.this, StorefrontActivity.class);

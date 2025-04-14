@@ -67,7 +67,7 @@ public class MainVendorActivity extends AppCompatActivity{
 //        Clicking on add or delete buttons
         addItemButton.setOnClickListener(v -> addItem(vendorId));
         deleteItemButton.setOnClickListener(v -> deleteItem(vendorId));
-//        viewOrdersButton.setOnClickListener(v -> navigateTo(OrderHistoryActivity.class));
+        viewOrdersButton.setOnClickListener(v -> navigateTo(OrderHistoryActivity.class));
 
 //        Navigate to desired elements when clicked
         messageIcon.setOnClickListener(view -> navigateTo(MessagesActivity.class));

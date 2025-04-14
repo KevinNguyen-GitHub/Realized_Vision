@@ -20,12 +20,20 @@ android {
         vectorDrawables {
             useSupportLibrary = true
         }
-        //credentials for smtp (email notifications)
-        buildConfigField("String", "SMTP_USER",
-            if (project.hasProperty("SMTP_USER")) "\"${project.properties["SMTP_USER"]}\"" else "\"\""
+
+        // Explicitly enable BuildConfig generation
+        buildConfigField("Boolean", "DEBUG", "false")
+
+        // SMTP Credentials
+        buildConfigField(
+            "String",
+            "SMTP_USER",
+            "\"${project.findProperty("SMTP_USER")?.toString()?.replace("'", "") ?: ""}\""
         )
-        buildConfigField("String", "SMTP_PASSWORD",
-            if (project.hasProperty("SMTP_PASSWORD")) "\"${project.properties["SMTP_PASSWORD"]}\"" else "\"\""
+        buildConfigField(
+            "String",
+            "SMTP_PASSWORD",
+            "\"${project.findProperty("SMTP_PASSWORD")?.toString()?.replace("\"", "\\\"")?: ""}\""
         )
     }
 
@@ -51,6 +59,7 @@ android {
 
     buildFeatures {
         compose = true
+        buildConfig = true
     }
 
     composeOptions {
@@ -60,8 +69,17 @@ android {
     packaging {
         resources {
             excludes += "/META-INF/{AL2.0,LGPL2.1}"
-            excludes.add("META-INF/INDEX.LIST")
-            excludes.add("META-INF/DEPENDENCIES")
+            excludes += setOf(
+                "META-INF/NOTICE.md",
+                "META-INF/LICENSE.md",
+                "META-INF/INDEX.LIST",
+                "META-INF/DEPENDENCIES",
+                "META-INF/LICENSE",
+                "META-INF/NOTICE",
+                "META-INF/ASL2.0",
+                "META-INF/AL2.0",
+                "META-INF/LGPL2.1"
+            )
         }
     }
 }
@@ -118,9 +136,12 @@ dependencies {
 
     //Java mail dependencies
     // https://mvnrepository.com/artifact/javax.mail/mail
-    implementation("javax.mail:mail:1.4.1")
-    implementation ("com.sun.mail:android-mail:1.6.7");
-    implementation ("com.sun.mail:android-activation:1.6.7");
+    implementation("com.sun.mail:android-mail:1.6.7") {
+        exclude(group = "com.sun.activation", module = "javax.activation")
+    }
+    implementation("com.sun.mail:android-activation:1.6.7") {
+        exclude(group = "com.sun.activation", module = "javax.activation")
+    }
 }
 java {
     toolchain {

@@ -49,7 +49,7 @@ public class SettingsActivity extends AppCompatActivity {
         changeUsernameButton.setOnClickListener(view -> navigateTo(ChangeNameActivity.class));
         changePasswordButton.setOnClickListener(view -> navigateTo(ChangePasswordActivity.class));
         notificationsButton.setOnClickListener(view -> navigateTo(NotificationsActivity.class));
-        vendorInfoButton.setOnClickListener(view -> navigateTo(VendorInfoActivity.class));
+        vendorInfoButton.setOnClickListener(view -> navigateTo(VendorOnboardActivity.class));
 
         backButton.setOnClickListener(view -> {
             if (currentUser != null) {

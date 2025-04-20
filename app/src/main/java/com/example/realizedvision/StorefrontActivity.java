@@ -81,57 +81,35 @@ public class StorefrontActivity extends AppCompatActivity {
         messageIcon.setOnClickListener(view -> navigateTo(MessagesActivity.class));
         calendarIcon.setOnClickListener(view -> navigateTo(ViewCalendarActivity.class));
 
-
-
-
         profileIcon.setOnClickListener(view -> navigateTo(StorefrontActivity.class));
-
-
-
 
         settingsIcon.setOnClickListener(view -> navigateTo(SettingsActivity.class));
 
-        // Template for demo purposes
-        String userId = currentUser.getUid();
-
-        DocumentReference userDocRef = firestore.collection("Users").document(userId);
-
-        userDocRef.get().addOnCompleteListener(task -> {
-            if (task.isSuccessful()) {
-                DocumentSnapshot snapshot = task.getResult();
-
-                if (snapshot.exists() && Boolean.TRUE.equals(snapshot.getBoolean("isVendor"))) {
-                    vendorId = currentUser.getUid();
-                } else if (snapshot.exists() && Boolean.FALSE.equals(snapshot.getBoolean("isVendor"))) {
-                    vendorId = "wP1b2zpnIcasqu9yE9lB4ymTxY63";
-                } else {
-                    Toast.makeText(StorefrontActivity.this, "User data not found.", Toast.LENGTH_SHORT).show();
-                }
-
-                if (vendorId != null) {
-                    Log.d("Debug", "Vendor ID set: " + vendorId);
-                    loadStorefrontItems(vendorId);  // Move inside to ensure vendorId is set
-                    fetchUserData();
-                } else {
-                    Log.e("Error", "vendorId is still null!");
-                }
-
-            } else {
-                Toast.makeText(StorefrontActivity.this, "Error: " + task.getException().getMessage(), Toast.LENGTH_SHORT).show();
-            }
-        });
 
         //Listens for if user clicks add button, if they do then envoke add item function for popup and adding of
         //item to database and visible for recycler view for this specific user
 
-        //loadStorefrontItems(vendorId);
+        Intent intent = getIntent();
+        if (intent != null) {
+            String vendorID = intent.getStringExtra("vendorID");
+
+            if (vendorID != null) {
+                vendorId = vendorID;
+            } else {
+                Log.e("StorefrontActivity", "vendorID extra not found in Intent");
+            }
+        } else {
+            Log.e("StorefrontActivity", "Intent is null");
+        }
+
+        loadStorefrontItems(vendorId);
         Button addButton = findViewById(R.id.add_button);
         addButton.setOnClickListener(view -> addItem(vendorId));
 
         Button deleteButton = findViewById(R.id.delete_button);
         deleteButton.setOnClickListener(view -> deleteItem(vendorId));
 
-        //fetchUserData();
+        fetchUserData();
     }
 
     private void addItem(String vendorId) {

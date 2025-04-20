@@ -6,7 +6,6 @@
     android:padding="16dp"
     android:background="@color/white">
 
-    <!-- Item Image -->
     <ImageView
         android:id="@+id/item_image"
         android:layout_width="match_parent"
@@ -14,7 +13,6 @@
         android:scaleType="centerCrop"
         android:src="@drawable/ic_placeholder_image" />
 
-    <!-- Item Name -->
     <TextView
         android:id="@+id/item_name"
         android:layout_width="wrap_content"
@@ -24,7 +22,6 @@
         android:textStyle="bold"
         android:layout_marginTop="16dp" />
 
-    <!-- Item Vendor -->
     <TextView
         android:id="@+id/item_vendor"
         android:layout_width="wrap_content"
@@ -32,7 +29,6 @@
         android:text="Vendor Name"
         android:textSize="20sp" />
 
-    <!-- Item Price -->
     <TextView
         android:id="@+id/item_price"
         android:layout_width="wrap_content"
@@ -41,7 +37,6 @@
         android:textSize="20sp"
         android:layout_marginTop="8dp" />
 
-    <!-- Item Description -->
     <TextView
         android:id="@+id/item_description"
         android:layout_width="match_parent"
@@ -50,7 +45,6 @@
         android:textSize="16sp"
         android:layout_marginTop="16dp" />
 
-    <!-- Add to Cart Button -->
     <Button
         android:id="@+id/popup_cart_button"
         android:layout_width="match_parent"
@@ -58,7 +52,6 @@
         android:text="Add to Cart"
         android:layout_marginTop="24dp" />
 
-    <!-- Favorite Button -->
     <Button
         android:id="@+id/popup_favorite_button"
         android:layout_width="match_parent"
@@ -66,29 +59,11 @@
         android:text="Add to Favorites"
         android:layout_marginTop="8dp" />
 
-    <TextView
-        android:id="@+id/review_title"
+    <Button
+        android:id="@+id/showReviewsButton"
+        android:layout_gravity="center"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="Review Title"
-        android:textStyle="bold"
-        android:textSize="16sp"
-        android:layout_marginTop="30dp"
-        android:layout_marginBottom="4dp"/>
-
-    <TextView
-        android:id="@+id/review_rating"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="Rating"
-        android:textColor="@color/green"
-        android:layout_marginBottom="4dp" />
-
-    <TextView
-        android:id="@+id/review_description"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="Review description goes here..."
-        android:textColor="@color/gray" />
+        android:text="Show Reviews" />
 
 </LinearLayout>

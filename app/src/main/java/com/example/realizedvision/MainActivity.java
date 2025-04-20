@@ -232,9 +232,21 @@ public class MainActivity extends AppCompatActivity implements ItemAdapter.OnIte
         TextView popupVendorName = popupView.findViewById(R.id.item_vendor);
         Button popupAddtoCart = popupView.findViewById(R.id.popup_cart_button);
         Button popupAddFavorites = popupView.findViewById(R.id.popup_favorite_button);
+        Button popupShowReviews = popupView.findViewById(R.id.showReviewsButton);
 
         popupAddtoCart.setOnClickListener(view ->{onCartClick(position);});
         popupAddFavorites.setOnClickListener(view ->{onFavoriteClick(position);});
+
+
+        popupShowReviews.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                String itemID = item.getItemID();
+                Intent intent = new Intent(MainActivity.this, ItemReviewsActivity.class);
+                intent.putExtra("itemID", itemID);
+                startActivity(intent);
+            }
+        });
 
         popupVendorName.setOnClickListener(view ->{
             navigateToVendorStorefront(item.getVendorID());

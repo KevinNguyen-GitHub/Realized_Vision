@@ -167,6 +167,12 @@
             android:label="Realized Vision"
             android:theme="@style/Theme.RealizedVision">
         </activity>
+        <activity
+            android:name=".ItemReviewsActivity"
+            android:exported="true"
+            android:label="Realized Vision"
+            android:theme="@style/Theme.RealizedVision">
+        </activity>
     </application>
 
 </manifest>

@@ -1,34 +1,26 @@
 
 package com.example.realizedvision;
 
-import android.content.Context;
-import android.graphics.drawable.ColorDrawable;
 import android.os.Bundle;
-import android.text.TextUtils;
 import android.util.Log;
-import android.view.Gravity;
-import android.view.LayoutInflater;
-import android.view.View;
-import android.view.ViewGroup;
-import android.widget.Button;
-import android.widget.PopupWindow;
 import android.widget.Toast;
 
+import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
-import com.google.android.material.textfield.TextInputEditText;
-import com.google.android.material.textfield.TextInputLayout;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
 import com.google.firebase.firestore.CollectionReference;
+import com.google.firebase.firestore.DocumentReference;
 import com.google.firebase.firestore.DocumentSnapshot;
 import com.google.firebase.firestore.EventListener;
 import com.google.firebase.firestore.FirebaseFirestore;
 import com.google.firebase.firestore.FirebaseFirestoreException;
 import com.google.firebase.firestore.QuerySnapshot;
+import com.google.firebase.firestore.Source;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -41,7 +33,6 @@ public class StorefrontActivity extends AppCompatActivity {
     private List<Item> itemList;
     private FirebaseFirestore firestore;
     private FirebaseUser currentUser;
-    private Button commissionRequest;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -65,92 +56,7 @@ public class StorefrontActivity extends AppCompatActivity {
 
         // Check if storefront exists and populate it with 10 sample items if empty
         checkOrPopulateStorefront();
-
-        // Initialize the commission request button
-                commissionRequest = findViewById(R.id.RequestButton);
-        commissionRequest.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-
-                // Inflate the popup layout (popup_commision_form.xml)
-                LayoutInflater inflater = (LayoutInflater) getSystemService(Context.LAYOUT_INFLATER_SERVICE);
-                final View popupView = inflater.inflate(R.layout.popup_commission_form, null);
-
-                int width = ViewGroup.LayoutParams.WRAP_CONTENT;
-                int height = ViewGroup.LayoutParams.WRAP_CONTENT;
-                boolean focusable = true;
-                final PopupWindow popupWindow = new PopupWindow(popupView, width, height, focusable);
-
-                // Allow the popup to be dismissed when touching outside
-                popupWindow.setOutsideTouchable(true);
-                popupWindow.setBackgroundDrawable(new ColorDrawable(android.graphics.Color.TRANSPARENT));
-
-                // Show the popup at the center of the screen
-                popupWindow.showAtLocation(findViewById(android.R.id.content), Gravity.CENTER, 0, 0);
-
-                // Get references for the required fields and submit button
-                final TextInputLayout nameInputLayout = popupView.findViewById(R.id.nameInputLayout);
-                final TextInputLayout typeInputLayout = popupView.findViewById(R.id.typeInputLayout);
-                final TextInputLayout sizeInputLayout = popupView.findViewById(R.id.sizeInputLayout);
-                final TextInputLayout styleInputLayout = popupView.findViewById(R.id.styleInputLayout);
-
-                final TextInputEditText nameEditText = popupView.findViewById(R.id.nameEditText);
-                final TextInputEditText typeEditText = popupView.findViewById(R.id.typeEditText);
-                final TextInputEditText sizeEditText = popupView.findViewById(R.id.sizeEditText);
-                final TextInputEditText styleEditText = popupView.findViewById(R.id.styleEditText);
-
-                Button submitButton = popupView.findViewById(R.id.submitButton);
-
-                submitButton.setOnClickListener(new View.OnClickListener() {
-                    @Override
-                    public void onClick(View v) {
-                        boolean valid = true;
-                        String name = nameEditText.getText().toString().trim();
-                        String type = typeEditText.getText().toString().trim();
-                        String size = sizeEditText.getText().toString().trim();
-                        String style = styleEditText.getText().toString().trim();
-
-                        // Validate required fields
-                        if (TextUtils.isEmpty(name)) {
-                            nameInputLayout.setError("Name is required");
-                            valid = false;
-                        } else {
-                            nameInputLayout.setError(null);
-                        }
-
-                        if (TextUtils.isEmpty(type)) {
-                            typeInputLayout.setError("Type is required");
-                            valid = false;
-                        } else {
-                            typeInputLayout.setError(null);
-                        }
-
-                        if (TextUtils.isEmpty(size)) {
-                            sizeInputLayout.setError("Size is required");
-                            valid = false;
-                        } else {
-                            sizeInputLayout.setError(null);
-                        }
-
-                        if (TextUtils.isEmpty(style)) {
-                            styleInputLayout.setError("Style is required");
-                            valid = false;
-                        } else {
-                            styleInputLayout.setError(null);
-                        }
-
-                        if (valid) {
-                            // All required fields are filled. Proceed with form submission.
-                            Toast.makeText(StorefrontActivity.this, "Form Submitted", Toast.LENGTH_SHORT).show();
-                            popupWindow.dismiss();
-
-                        }
-                    }
-                });
-            }
-        });
     }
-
 
     // Check if the storefront contains any items
     private void checkOrPopulateStorefront() {

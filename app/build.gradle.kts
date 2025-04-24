@@ -6,7 +6,7 @@ plugins {
 
 android {
     namespace = "com.example.realizedvision"
-    compileSdk = 35
+    compileSdk = 34
 
     defaultConfig {
         applicationId = "com.csulb.realized_vision"
@@ -37,7 +37,7 @@ android {
     }
 
     kotlinOptions {
-        jvmTarget = "1.8"
+        jvmTarget = "1.8" //used to be "1.8"
     }
 
     buildFeatures {
@@ -63,15 +63,14 @@ dependencies {
     implementation(libs.androidx.appcompat)
     implementation(libs.androidx.constraintlayout)
     implementation(libs.androidx.material3)
-    implementation (libs.androidx.cardview)
 
     // Jetpack Compose dependencies
     implementation(platform(libs.androidx.compose.bom))
     implementation(libs.androidx.ui)
     implementation(libs.androidx.ui.graphics)
     implementation(libs.androidx.ui.tooling.preview)
-    implementation(libs.androidx.recyclerview)
     implementation(libs.material)
+    implementation(libs.androidx.recyclerview)
     debugImplementation(libs.androidx.ui.tooling)
     debugImplementation(libs.androidx.ui.test.manifest)
 

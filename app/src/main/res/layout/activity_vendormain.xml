@@ -1,0 +1,200 @@
+<androidx.constraintlayout.widget.ConstraintLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@color/beige"
+    tools:context=".MainVendorActivity">
+    <!-- Basic Vendor Greeting -->
+    <LinearLayout
+        android:id="@+id/vendorGreeting"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        app:layout_constraintTop_toTopOf="parent"
+        android:gravity="center"
+        android:padding="16dp">
+
+        <ImageView
+            android:id="@+id/vendor_logo"
+            android:layout_width="100dp"
+            android:layout_height="100dp"
+            android:src="@drawable/ic_profile"
+            android:contentDescription="Vendor Logo"
+            android:layout_marginBottom="8dp" />
+
+        <TextView
+            android:id="@+id/main_vendor_name"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Welcome, Vendor Name!"
+            android:textColor="@color/black"
+            android:textSize="24sp"
+            android:textStyle="italic"
+            android:padding="8dp" />
+    </LinearLayout>
+    <!-- Analytics -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:id="@+id/vendorAnalytics"
+        app:layout_constraintTop_toBottomOf="@id/vendorGreeting"
+        android:padding="16dp">
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Analytics"
+            android:textColor="@color/black"
+            android:textSize="20sp"
+            android:textStyle="bold"
+            android:paddingBottom="8dp" />
+
+        <!-- Total Sales -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center_vertical"
+            android:padding="8dp">
+
+            <ImageView
+                android:layout_width="24dp"
+                android:layout_height="24dp"
+                android:src="@drawable/ic_cart"
+                android:contentDescription="Sales Icon"
+                android:layout_marginEnd="8dp" />
+
+            <TextView
+                android:id="@+id/total_sales"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Total Sales: $1200"
+                android:textSize="16sp" />
+        </LinearLayout>
+
+        <!-- Total Orders -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center_vertical"
+            android:padding="8dp">
+
+            <ImageView
+                android:layout_width="24dp"
+                android:layout_height="24dp"
+                android:src="@drawable/ic_book"
+                android:contentDescription="Orders Icon"
+                android:layout_marginEnd="8dp" />
+
+            <TextView
+                android:id="@+id/total_orders"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Total Orders: 24"
+                android:textSize="16sp" />
+        </LinearLayout>
+
+        <!-- View More Button -->
+        <Button
+            android:id="@+id/btn_view_analytics"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="View More"
+            android:layout_gravity="center"
+            android:padding="8dp"
+            android:layout_marginTop="8dp" />
+    </LinearLayout>
+
+    <!-- Quick Actions -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        app:layout_constraintTop_toBottomOf="@id/vendorAnalytics"
+        app:layout_constraintBottom_toTopOf="@id/bottom_navigation"
+        android:padding="16dp">
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Quick Actions"
+            android:textSize="20sp"
+            android:textColor="@color/black"
+            android:textStyle="bold"
+            android:paddingBottom="8dp" />
+
+        <!-- Add Product -->
+        <Button
+            android:id="@+id/add_item_button"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Add New Item"
+            android:gravity="center"
+            android:padding="16dp"
+            android:layout_marginBottom="8dp" />
+
+        <!-- Delete Products -->
+        <Button
+            android:id="@+id/delete_item_button"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Delete Item"
+            android:gravity="center"
+            android:padding="16dp"
+            android:layout_marginBottom="8dp" />
+
+        <!-- View Orders -->
+        <Button
+            android:id="@+id/view_orders_button"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="View Orders"
+            android:gravity="center"
+            android:padding="16dp" />
+    </LinearLayout>
+
+
+    <!-- Bottom Navigation -->
+    <LinearLayout
+        android:id="@+id/bottom_navigation"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:background="@color/maroon"
+        android:padding="8dp"
+        android:gravity="center"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        android:weightSum="3">
+
+        <ImageView
+            android:id="@+id/home_icon"
+            android:layout_width="32dp"
+            android:layout_height="32dp"
+            android:layout_weight="1"
+            android:src="@drawable/ic_home"
+            android:contentDescription="Home" />
+
+
+        <ImageView
+            android:id="@+id/messages_icon"
+            android:layout_width="32dp"
+            android:layout_height="32dp"
+            android:layout_weight="1"
+            android:src="@drawable/ic_message"
+            android:contentDescription="Messages" />
+
+        <ImageView
+            android:id="@+id/profile_icon"
+            android:layout_width="32dp"
+            android:layout_height="32dp"
+            android:layout_weight="1"
+            android:src="@drawable/ic_profile"
+            android:contentDescription="Profile" />
+    </LinearLayout>
+</androidx.constraintlayout.widget.ConstraintLayout>

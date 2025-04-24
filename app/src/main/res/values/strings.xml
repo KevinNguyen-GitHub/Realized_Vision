@@ -16,6 +16,9 @@
     <string name="realized_vision">Realized Vision</string>
     <string name="profile_name_format">%1$s %2$s</string>
     <string name="posting_content_description">Posting Content Description</string>
+    <string name="openRouteServiceApi">5b3ce3597851110001cf624847b71804162340aba367fb026dde707c</string>
+
+
     <string name="Favorites">Favorites</string>
     <string name="shopping_cart">Shopping Cart</string>
     <string name="home">Home</string>

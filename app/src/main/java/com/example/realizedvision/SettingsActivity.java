@@ -41,6 +41,47 @@ public class SettingsActivity extends AppCompatActivity {
         Button vendorInfoButton = findViewById(R.id.upgradeButton);
         ImageButton backButton = findViewById(R.id.backButtonChangePass);
         Button logoutButton = findViewById(R.id.btn_logout);
+        Button addAddressButton = findViewById(R.id.addAddressButton);
+
+        addAddressButton.setOnClickListener(v -> {
+            FirebaseFirestore firestore = FirebaseFirestore.getInstance();
+            FirebaseUser currentUser = FirebaseAuth.getInstance().getCurrentUser();
+
+            if (currentUser != null) {
+                String userId = currentUser.getUid();
+                firestore.collection("Users").document(userId).get()
+                        .addOnSuccessListener(snapshot -> {
+                            Boolean isVendor = snapshot.getBoolean("isVendor");
+                            if (isVendor != null && isVendor) {
+                                Toast.makeText(SettingsActivity.this, "You’ve already provided an address as a vendor.", Toast.LENGTH_SHORT).show();
+                            } else {
+                                startActivity(new Intent(SettingsActivity.this, AddAddressActivity.class));
+                            }
+                        })
+                        .addOnFailureListener(e -> {
+                            Toast.makeText(SettingsActivity.this, "Failed to check vendor status.", Toast.LENGTH_SHORT).show();
+                        });
+            }
+        });
+
+        //button handling for vendor filters (Search engine filters)
+        Button setVendorFiltersButton = findViewById(R.id.setVendorFiltersButton);
+        setVendorFiltersButton.setOnClickListener(view -> {
+            FirebaseUser user = FirebaseAuth.getInstance().getCurrentUser();
+            if (user != null) {
+                FirebaseFirestore.getInstance().collection("Users")
+                        .document(user.getUid())
+                        .get()
+                        .addOnSuccessListener(documentSnapshot -> {
+                            Boolean isVendor = documentSnapshot.getBoolean("isVendor");
+                            if (Boolean.TRUE.equals(isVendor)) {
+                                startActivity(new Intent(SettingsActivity.this, VendorFilterActivity.class));
+                            } else {
+                                Toast.makeText(SettingsActivity.this, "You must be a vendor to set vendor filters.", Toast.LENGTH_SHORT).show();
+                            }
+                        });
+            }
+        });
 
 
 

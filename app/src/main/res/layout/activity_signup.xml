@@ -37,12 +37,11 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginBottom="20dp"
-            android:hint="@string/first"
             android:autofillHints="first name"
             android:background="@drawable/rounded_edittext"
             android:inputType="textPersonName"
+            android:hint="@string/first"
             android:textAlignment="center"
-            android:textColorHint="@color/black"
             android:textSize="30sp"
             app:layout_constraintTop_toBottomOf="@id/textView" />
 
@@ -51,10 +50,10 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginBottom="20dp"
-            android:hint="@string/last"
             android:autofillHints="last name"
             android:background="@drawable/rounded_edittext"
             android:inputType="textPersonName"
+            android:hint="@string/last"
             android:textAlignment="center"
             android:textSize="30sp"
             app:layout_constraintTop_toBottomOf="@+id/firstNameEditText" />
@@ -64,10 +63,10 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginBottom="20dp"
-            android:hint="@string/phone"
             android:autofillHints="phone"
             android:background="@drawable/rounded_edittext"
             android:inputType="phone"
+            android:hint="@string/phone"
             android:textAlignment="center"
             android:textSize="30sp"
             app:layout_constraintTop_toBottomOf="@id/lastNameEditText" />
@@ -77,10 +76,10 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginBottom="20dp"
-            android:hint="@string/email"
             android:autofillHints="emailAddress"
             android:background="@drawable/rounded_edittext"
             android:inputType="textEmailAddress"
+            android:hint="@string/email"
             android:textAlignment="center"
             android:textSize="30sp"
             app:layout_constraintTop_toBottomOf="@id/phoneNumberEditText" />
@@ -90,29 +89,38 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginBottom="20dp"
-            android:hint="@string/password"
             android:autofillHints="password"
             android:background="@drawable/rounded_edittext"
             android:inputType="textPassword"
+            android:hint="@string/password"
             android:textAlignment="center"
             android:textSize="30sp"
             app:layout_constraintTop_toBottomOf="@id/emailEditText" />
 
+        <Button
+            android:id="@+id/signUpButton"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="25dp"
+            android:background="@drawable/rounded_button"
+            android:text="@string/sign_up"
+            android:textColor="@color/white"
+            android:textSize="25sp"
+            app:layout_constraintTop_toBottomOf="@+id/information"
+            tools:layout_editor_absoluteX="16dp" />
+
+        <TextView
+            android:id="@+id/login_link"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center"
+            android:layout_marginTop="20dp"
+            android:text="@string/login_now"
+            android:textColor="#0000FF"
+            android:textSize="15sp"
+            android:textStyle="bold"/>
 
     </LinearLayout>
-
-    <Button
-        android:id="@+id/signUpButton"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_margin="20dp"
-        android:layout_marginTop="256dp"
-        android:background="@drawable/rounded_button"
-        android:text="@string/sign_up"
-        android:textColor="@color/white"
-        android:textSize="25sp"
-        app:layout_constraintTop_toBottomOf="@+id/information"
-        tools:layout_editor_absoluteX="24dp" />
 
 
 </androidx.constraintlayout.widget.ConstraintLayout>

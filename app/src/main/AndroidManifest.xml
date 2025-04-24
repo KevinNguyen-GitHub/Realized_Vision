@@ -21,6 +21,51 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
+        <activity android:name=".VendorOnboardActivity"
+            android:exported="true"
+            android:label="Realized Vision"
+            android:theme="@style/Theme.RealizedVision">
+            <intent-filter android:autoVerify="true">
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data
+                    android:scheme="https"
+                    android:host="f-andrade27.github.io"
+                    android:pathPrefix="/stripe_return.html" />
+            </intent-filter>
+
+            <intent-filter android:autoVerify="true">
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data
+                    android:scheme="https"
+                    android:host="f-andrade27.github.io"
+                    android:pathPrefix="/stripe_refresh.html" />
+            </intent-filter>
+
+            <!-- Custom Scheme intent filters (for realizedvision:// URLs) -->
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data
+                    android:scheme="realizedvision"
+                    android:host="stripe"
+                    android:pathPrefix="/onboarding_complete" />
+            </intent-filter>
+
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data
+                    android:scheme="realizedvision"
+                    android:host="stripe"
+                    android:pathPrefix="/refresh" />
+            </intent-filter>
+        </activity>
         <activity android:name=".TermsAndConditionsActivity"
             android:exported="true"
             android:label="Realized Vision"

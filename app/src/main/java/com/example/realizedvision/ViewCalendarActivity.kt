@@ -1,233 +1,171 @@
 package com.example.realizedvision
 
-
 import android.content.Intent
 import android.graphics.Color
 import android.os.Bundle
 import android.view.Gravity
 import android.view.View
-import android.widget.Button
-import android.widget.ImageView
-import android.widget.LinearLayout
-import android.widget.TextView
-import android.widget.Toast
+import android.widget.*
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
+import androidx.lifecycle.lifecycleScope
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.QuerySnapshot
-import com.kizitonwose.calendar.core.CalendarDay
-import com.kizitonwose.calendar.core.CalendarMonth
-import com.kizitonwose.calendar.core.DayPosition
-import com.kizitonwose.calendar.view.CalendarView
-import com.kizitonwose.calendar.view.MonthDayBinder
-import com.kizitonwose.calendar.view.MonthHeaderFooterBinder
-import com.kizitonwose.calendar.view.MonthScrollListener
-import java.time.DayOfWeek
-import java.time.Instant
-import java.time.LocalDate
-import java.time.YearMonth
-import java.time.ZoneId
+import com.kizitonwose.calendar.core.*
+import com.kizitonwose.calendar.view.*
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.tasks.await
+import java.time.*
 import java.time.format.DateTimeFormatter
 import java.time.format.TextStyle
-import java.util.Locale
-
+import java.util.*
 
 class ViewCalendarActivity : AppCompatActivity() {
 
-    private lateinit var calendarView : CalendarView
-    private lateinit var monthText: TextView
-    private val today = LocalDate.now()
+    /* ─────────────── views ─────────────── */
+    private val calendar by lazy { findViewById<CalendarView>(R.id.calendarView) }
+    private val title    by lazy { findViewById<TextView>(R.id.monthText) }
+    private val btnEdit  by lazy { findViewById<Button>(R.id.btnEditAvailability) }
+    private val btnBook  by lazy { findViewById<Button>(R.id.btnBookDate) }
 
-    private lateinit var auth: FirebaseAuth
-    private lateinit var firestore: FirebaseFirestore
+    /* ─────────────── data ──────────────── */
+    private val today           = LocalDate.now()
+    private val classDays       = mutableSetOf<LocalDate>()
+    private val auth            = FirebaseAuth.getInstance()
+    private val db              = FirebaseFirestore.getInstance()
+    private val vendorIdHardcap = "HFRgKpDsOwWvwg32icAu7103f7w2"   // TODO: replace when dynamic
 
-    private var daysWithClasses: MutableSet<LocalDate> = mutableSetOf()
-
-    override fun onCreate(savedInstanceState: Bundle?) {
-        super.onCreate(savedInstanceState)
+    /* ══════════════════ life-cycle ═════════════════════ */
+    override fun onCreate(b: Bundle?) {
+        super.onCreate(b)
         setContentView(R.layout.activity_view_calendar)
 
-
-        firestore = FirebaseFirestore.getInstance()
-        auth = FirebaseAuth.getInstance()
-
-
-        calendarView = findViewById(R.id.calendarView)
-        monthText = findViewById(R.id.monthText)
-
-        val calendarIcon = findViewById<ImageView>(R.id.calendar_icon)
-        val settingsIcon = findViewById<ImageView>(R.id.settings_icon)
-        val profileImage = findViewById<ImageView>(R.id.profile_image)
-        val profileName = findViewById<TextView>(R.id.profile_name)
-        val storefrontLabel = findViewById<ImageView>(R.id.storefront_label)
-        val starIcon = findViewById<ImageView>(R.id.star_icon)
-        val editAvailability = findViewById<Button>(R.id.btnEditAvailability)
-        val bookDate = findViewById<Button>(R.id.btnBookDate)
-
-        calendarIcon.setOnClickListener { view: View? -> navigateTo(ViewCalendarActivity::class.java) }
-        settingsIcon.setOnClickListener { view: View? -> navigateTo(SettingsActivity::class.java) }
-        storefrontLabel.setOnClickListener { view: View? -> navigateTo(StorefrontActivity::class.java) }
-        starIcon.setOnClickListener { view: View? -> navigateTo(FavoritesActivity::class.java) }
-
-        val userId = auth.currentUser?.uid
-        if (userId != null) {
-            val userDocRef = firestore.collection("Users").document(userId)
-
-            userDocRef.get().addOnCompleteListener { task ->
-                if (task.isSuccessful) {
-                    val snapshot = task.result
-                    if (snapshot != null && snapshot.exists()) {
-                        val isVendor =
-                            snapshot.getBoolean("isVendor") // Assuming this field exists in the Firestore user document
-
-                        if (isVendor == true) {
-                            // User is a vendor: Show the "editAvailability" button and hide the "bookDate" button
-                            editAvailability.visibility = View.VISIBLE
-                        } else {
-                            // User is not a vendor: Hide the "editAvailability" button and show the "bookDate" button
-                            editAvailability.visibility = View.GONE
-                            bookDate.visibility = View.VISIBLE
-                        }
-                    }
-                } else {
-                    Toast.makeText(this, "Error fetching user data", Toast.LENGTH_SHORT).show()
-                }
-            }
-        }else{}
-
-        editAvailability.setOnClickListener { view: View? -> navigateTo(EditAvailability::class.java) }
-        bookDate.setOnClickListener{view: View? -> navigateTo(BookingAvailability::class.java)}
-
-
-        loadCalendarData()
-
+        wireNav()
+        configureButtons()
+        refreshCalendarData()
     }
 
     override fun onRestart() {
         super.onRestart()
-        loadCalendarData()
+        refreshCalendarData()
     }
 
-    private fun loadCalendarData() {
-        val currentUser = auth.currentUser
-        if (currentUser != null) {
-            val vendorId = "HFRgKpDsOwWvwg32icAu7103f7w2"
-            firestore.collection("Classes")
-                .whereEqualTo("vendorID", vendorId)
-                .get()
-                .addOnSuccessListener { documents ->
-                    processClassData(documents)
-                    setupCalendar()
-                }
-                .addOnFailureListener { _ ->
-                    Toast.makeText(this, "Error getting classes", Toast.LENGTH_SHORT).show()
-                }
+    /* ───────────────── navigation bar ───────────────── */
+    private fun wireNav() = mapOf(
+        R.id.calendar_icon   to ViewCalendarActivity::class.java,
+        R.id.settings_icon   to SettingsActivity  ::class.java,
+        R.id.storefront_label to StorefrontActivity::class.java,
+        R.id.star_icon       to FavoritesActivity::class.java
+    ).forEach { (id, cls) ->
+        findViewById<ImageView>(id).setOnClickListener { start(cls) }
+    }
+
+    private fun start(cls: Class<*>) =
+        startActivity(Intent(this, cls))
+
+    /* ───────────────── vendor/user role ─────────────── */
+    private fun configureButtons() {
+        val uid = auth.currentUser?.uid ?: return
+        db.collection("Users").document(uid).get()
+            .addOnSuccessListener { snap ->
+                val vendor = snap.getBoolean("isVendor") == true
+                btnEdit.visibility = if (vendor) View.VISIBLE else View.GONE
+                btnBook.visibility = if (vendor) View.GONE   else View.VISIBLE
+            }
+
+        btnEdit.setOnClickListener { start(EditAvailability::class.java) }
+        btnBook.setOnClickListener { start(BookingAvailability::class.java) }
+    }
+
+    /* ───────────────── calendar data ────────────────── */
+    private fun refreshCalendarData() = lifecycleScope.launch {
+        try {
+            val qs = db.collection("Classes")
+                .whereEqualTo("vendorID", vendorIdHardcap)
+                .get().await()
+            collectClassDays(qs)
+            setupCalendar()                          // (re)bind view
+        } catch (e: Exception) {
+            Toast.makeText(this@ViewCalendarActivity,
+                "Error loading classes", Toast.LENGTH_SHORT).show()
         }
     }
 
-    private fun processClassData(documents: QuerySnapshot) {
-        daysWithClasses.clear()
-        for (document in documents) {
-            val startTimeTimestamp = document.getTimestamp("startTime")
-            startTimeTimestamp?.let { timestamp ->
-                val localDate = Instant.ofEpochSecond(timestamp.seconds)
-                    .atZone(ZoneId.systemDefault())
-                    .toLocalDate()
-                daysWithClasses.add(localDate)
+    private fun collectClassDays(qs: QuerySnapshot) {
+        classDays.clear()
+        qs.forEach { doc ->
+            doc.getTimestamp("startTime")?.toDate()?.toInstant()?.let {
+                classDays += it.atZone(ZoneId.systemDefault()).toLocalDate()
             }
         }
     }
 
+    /* ───────────────── calendar view ────────────────── */
+    private fun setupCalendar() = with(calendar) {
 
-    private fun navigateTo(activityClass: Class<*>) {
-        val intent = Intent(this, activityClass)
-        startActivity(intent)
-    }
+        val rangeStart = YearMonth.now().minusMonths(10)
+        val rangeEnd   = YearMonth.now().plusMonths(10)
+        setup(rangeStart, rangeEnd, DayOfWeek.SATURDAY)
+        scrollToMonth(YearMonth.now())
 
-    private fun setupCalendar() {
-
-        val currentMonth = YearMonth.now()
-        val firstMonth = currentMonth.minusMonths(10)
-        val lastMonth = currentMonth.plusMonths(10)
-        val daysOfWeek = DayOfWeek.entries
-        calendarView.setup(firstMonth, lastMonth, daysOfWeek.last())
-        calendarView.scrollToMonth(currentMonth)
-
-        calendarView.dayBinder = object : MonthDayBinder<DayViewContainer> {
+        dayBinder = object : MonthDayBinder<DayViewContainer> {
             override fun create(view: View) = DayViewContainer(view)
+            override fun bind(c: DayViewContainer, day: CalendarDay) = with(c.textView) {
+                text = day.date.dayOfMonth.toString()
+                background = null
 
-            override fun bind(container: DayViewContainer, data: CalendarDay) {
-                container.textView.text = data.date.dayOfMonth.toString()
-
-                container.textView.background = null
-
-                if (data.position == DayPosition.MonthDate) {
-                    if (data.date == today && daysWithClasses.contains(data.date)) {
-                        container.textView.setTextColor(Color.WHITE)
-                        container.textView.background = ContextCompat.getDrawable(
-                            this@ViewCalendarActivity,
-                            R.drawable.class_today
-                        )
-                    }
-                    else if (data.date == today) {
-                        container.textView.setTextColor(Color.WHITE)
-                        container.textView.background = ContextCompat.getDrawable(
-                            this@ViewCalendarActivity,
-                            R.drawable.inset_solid_circle
-                        )
-                    } else if (daysWithClasses.contains(data.date)){
-                        container.textView.setTextColor(ContextCompat.getColor(
-                            this@ViewCalendarActivity, R.color.maroon))
-                        container.textView.background = ContextCompat.getDrawable(
-                            this@ViewCalendarActivity,
-                            R.drawable.inset_outline_circle
-                        )
-                    } else {
-                        container.textView.setTextColor(Color.BLACK)
-                    }
-                }
-
-                container.view.setOnClickListener {
-                    val intent = Intent(this@ViewCalendarActivity, ViewClassActivity::class.java)
-                    val formatter = DateTimeFormatter.ofPattern("MMMM d, yyyy", Locale.getDefault())
-                    intent.putExtra("selectedDate", data.date.format(formatter))
-                    intent.putExtra("selectedProfileId", "HFRgKpDsOwWvwg32icAu7103f7w2")
-                    startActivity(intent)
-                }
-            }
-        }
-
-        calendarView.monthHeaderBinder = object : MonthHeaderFooterBinder<MonthViewContainer> {
-            override fun create(view: View) = MonthViewContainer(view)
-            override fun bind(container: MonthViewContainer, data: CalendarMonth) {
-                // Clear any existing views
-                container.titlesContainer.removeAllViews()
-
-                // Dynamically add TextViews for each day
-                val daysOfWeek = data.weekDays.last().map { it.date.dayOfWeek }
-                daysOfWeek.forEach { dayOfWeek ->
-                    val textView = TextView(this@ViewCalendarActivity).apply {
-                        text = dayOfWeek.getDisplayName(TextStyle.SHORT, Locale.getDefault())
-                        layoutParams = LinearLayout.LayoutParams(
-                            0,
-                            LinearLayout.LayoutParams.WRAP_CONTENT,
-                            1f
-                        ).apply {
-                            gravity = Gravity.CENTER
+                if (day.position == DayPosition.MonthDate) {
+                    when {
+                        day.date == today && day.date in classDays -> {
+                            setTextColor(Color.WHITE)
+                            background = bg(R.drawable.class_today)
                         }
-                        setTextColor(Color.BLACK)
-                        gravity = Gravity.CENTER
+                        day.date == today -> {
+                            setTextColor(Color.WHITE)
+                            background = bg(R.drawable.inset_solid_circle)
+                        }
+                        day.date in classDays -> {
+                            setTextColor(color(R.color.maroon))
+                            background = bg(R.drawable.inset_outline_circle)
+                        }
+                        else -> setTextColor(Color.BLACK)
                     }
-                    container.titlesContainer.addView(textView)
+                }
+                c.view.setOnClickListener { openClassList(day.date) }
+            }
+        }
+
+        monthHeaderBinder = object : MonthHeaderFooterBinder<MonthViewContainer> {
+            override fun create(view: View) = MonthViewContainer(view)
+            override fun bind(m: MonthViewContainer, month: CalendarMonth) {
+                m.titlesContainer.removeAllViews()
+                month.weekDays.last().map { it.date.dayOfWeek }.forEach { dow ->
+                    m.titlesContainer.addView(TextView(this@ViewCalendarActivity).apply {
+                        text = dow.getDisplayName(TextStyle.SHORT, Locale.getDefault())
+                        gravity = Gravity.CENTER
+                        setTextColor(Color.BLACK)
+                        layoutParams = LinearLayout.LayoutParams(0,
+                            LinearLayout.LayoutParams.WRAP_CONTENT, 1f)
+                    })
                 }
             }
         }
 
-        calendarView.monthScrollListener = object : MonthScrollListener {
-            override fun invoke(month: CalendarMonth) {
-                monthText.text = month.yearMonth.month.getDisplayName(TextStyle.FULL, Locale.getDefault())
-            }
+        monthScrollListener = MonthScrollListener { mon ->
+            title.text = mon.yearMonth.month.getDisplayName(TextStyle.FULL, Locale.getDefault())
         }
     }
+
+    /* ───────────────── helpers ──────────────────────── */
+    private fun openClassList(date: LocalDate) {
+        val fmt = DateTimeFormatter.ofPattern("MMMM d, yyyy", Locale.getDefault())
+        Intent(this, ViewClassActivity::class.java).apply {
+            putExtra("selectedDate", date.format(fmt))
+            putExtra("selectedProfileId", vendorIdHardcap)
+        }.also(::startActivity)
+    }
+
+    private fun bg(drawable: Int) = ContextCompat.getDrawable(this, drawable)
+    private fun color(id: Int)    = ContextCompat.getColor(this, id)
 }

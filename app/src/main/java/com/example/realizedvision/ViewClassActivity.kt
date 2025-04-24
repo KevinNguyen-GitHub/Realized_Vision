@@ -6,380 +6,276 @@ import android.icu.util.Calendar
 import android.os.Bundle
 import android.util.Log
 import android.view.View
-import android.widget.Button
-import android.widget.EditText
-import android.widget.TextView
-import android.widget.Toast
+import android.widget.*
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.view.ContextThemeWrapper
+import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.google.firebase.Timestamp
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FieldValue
 import com.google.firebase.firestore.FirebaseFirestore
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.tasks.await
 import java.text.SimpleDateFormat
-import java.util.Date
-import java.util.Locale
+import java.util.*
+import java.util.Locale.*
 
 class ViewClassActivity : AppCompatActivity(), ClassAdapter.OnItemClickListener {
 
-    private lateinit var firestore: FirebaseFirestore
-    private lateinit var auth: FirebaseAuth
-    private lateinit var adapter: ClassAdapter
-    private lateinit var recyclerView: RecyclerView
-    private var selectedDate: String? = null
-    private var isRemoveMode = false
-    private var selectedProfileId: String? = null
+    /* ───────────── Firebase – lazily fetched only once ───────────── */
+    private val db   by lazy { FirebaseFirestore.getInstance() }
+    private val auth by lazy { FirebaseAuth.getInstance() }
 
-    override fun onCreate(savedInstanceState: Bundle?) {
-        super.onCreate(savedInstanceState)
+    /* ───────────── views ───────────── */
+    private val selectedDateTv by lazy { findViewById<TextView>(R.id.selectedDate)      }
+    private val list            by lazy { findViewById<RecyclerView>(R.id.viewClassRecycler) }
+    private val btnAdd          by lazy { findViewById<Button>(R.id.add_class_button)   }
+    private val btnRemove       by lazy { findViewById<Button>(R.id.remove_class_button)}
+
+    /* ───────────── state ───────────── */
+    private val adapter         = ClassAdapter(true).also { it.setOnItemClickListener(this) }
+    private var removeMode      = false
+    private val dateStr         by lazy { intent.getStringExtra("selectedDate") ?: "" }
+    private val profileId       by lazy {
+        intent.getStringExtra("selectedProfileId") ?: auth.currentUser?.uid
+    }
+
+    /* ══════════════════ life-cycle ══════════════════ */
+    override fun onCreate(b: Bundle?) {
+        super.onCreate(b)
         setContentView(R.layout.activity_view_class)
 
-        firestore = FirebaseFirestore.getInstance()
-        auth = FirebaseAuth.getInstance()
+        selectedDateTv.text = getString(R.string.class_header, dateStr)
 
-        selectedProfileId = intent.getStringExtra("selectedProfileId") ?: auth.currentUser?.uid
-        //viewingUserId = testUserId
+        list.layoutManager = LinearLayoutManager(this)
+        list.adapter       = adapter
 
-        selectedDate = intent.getStringExtra("selectedDate")
-        val selectedDateTextView = findViewById<TextView>(R.id.selectedDate)
-        selectedDateTextView.text = "Schedule for\n$selectedDate"
+        // Hide vendor-only buttons for other users
+        val myUid = auth.currentUser?.uid
+        if (profileId != myUid) {
+            btnAdd.visibility = View.GONE
+            btnRemove.visibility = View.GONE
+        }
 
-        recyclerView = findViewById(R.id.viewClassRecycler)
-        recyclerView.layoutManager = LinearLayoutManager(this)
-        adapter = ClassAdapter(selectedProfileId != auth.currentUser?.uid)
-        adapter.setOnItemClickListener(this)
-        recyclerView.adapter = adapter
+        btnAdd.setOnClickListener { showAddDialog() }
+        btnRemove.setOnClickListener { toggleRemoveMode() }
 
         loadClasses()
-
-        val addClassButton = findViewById<Button>(R.id.add_class_button)
-        val removeClassButton = findViewById<Button>(R.id.remove_class_button)
-
-        if(selectedProfileId != auth.currentUser?.uid) {
-            addClassButton.visibility = View.GONE
-            removeClassButton.visibility = View.GONE
-        }
-
-        addClassButton.setOnClickListener {showAddClassDialog() }
-        removeClassButton.setOnClickListener {
-            isRemoveMode = !isRemoveMode
-            if (isRemoveMode) {
-                removeClassButton.text = "Cancel"
-                Toast.makeText(this, "Select a class to remove", Toast.LENGTH_SHORT).show()
-            } else {
-                removeClassButton.text = "Remove"
-            }
-        }
-
     }
 
-    override fun onItemClick(classInfo: ClassInfo) {
-        if (isRemoveMode) {
-            showRemoveConfirmationDialog(classInfo)
-        }
+    override fun onRestart() {
+        super.onRestart()
+        loadClasses()
     }
 
-    override fun onReserveClick(classInfo: ClassInfo) {
-        showReserveSeatDialog(classInfo)
+    /* ───────────── adapter callbacks ───────────── */
+    override fun onItemClick(info: ClassInfo) {
+        if (removeMode) confirmDelete(info)
     }
 
-    private fun showReserveSeatDialog(classInfo: ClassInfo) {
-        val dialog = AlertDialog.Builder(ContextThemeWrapper(this, R.style.CustomAlertDialog))
-            .setTitle("Reserve Class")
-            .setMessage(
-                "Are you sure you want to reserve:\n" +
-                        "\nTitle: ${classInfo.title}" +
-                        "\nDescription: ${classInfo.description}" +
-                        "\nStart Time: ${classInfo.startTime}" +
-                        "\nEnd Time: ${classInfo.endTime}"
-            )
-            .setPositiveButton("Yes") { _, _ ->
-                reserveSeat(classInfo)
-            }
-            .setNegativeButton("No") { dialog, _ ->
-                dialog.dismiss()
+    override fun onReserveClick(info: ClassInfo) = confirmReserve(info)
 
-            }
-            .create()
-        dialog.show()
-    }
+    /* ═══════════════════ CRUD ═════════════════════ */
+    private fun loadClasses() = lifecycleScope.launch {
+        try {
+            val start = dateStr.toStartOfDay()
+            val end   = dateStr.toEndOfDay()
 
-//    private fun navigateToViewSeatsActivity(classInfo: ClassInfo){
-//        val intent = Intent(this, ViewSeatsActivity::class.java)
-//        intent.putExtra("classId", classInfo.classID)
-//        startActivity(intent)
-//    }
-
-    private fun reserveSeat(classInfo: ClassInfo) {
-        val currentUser = auth.currentUser ?: return
-        val userRef = firestore.collection("Users").document(currentUser.uid)
-        val classRef = firestore.collection("Classes").document(classInfo.classID)
-        val seatsRef = classRef.collection("Seats").document(currentUser.uid)
-
-        seatsRef.get().addOnSuccessListener { seatSnapshot ->
-            if (seatSnapshot.exists()) {
-                Toast.makeText(this, "Seat already reserved", Toast.LENGTH_SHORT).show()
-                return@addOnSuccessListener
-            }
-
-            userRef.get().addOnSuccessListener { documentSnapshot ->
-                if (documentSnapshot.exists()) {
-                    val firstName = documentSnapshot.getString("firstName") ?: ""
-                    val lastName = documentSnapshot.getString("lastName") ?: ""
-
-                    firestore.runTransaction { transaction ->
-                        val classSnapshot = transaction.get(classRef)
-                        val currentSeats = classSnapshot.getLong("currentSeats") ?: 0
-                        val sizeLimit = classSnapshot.getLong("sizeLimit") ?: 0
-
-                        if (currentSeats < sizeLimit) {
-                            transaction.update(classRef, "currentSeats", FieldValue.increment(1))
-
-                            val seatData = hashMapOf(
-                                "userId" to currentUser.uid,
-                                "firstName" to firstName,
-                                "lastName" to lastName,
-                                "email" to currentUser.email
-                            )
-                            transaction.set(seatsRef, seatData)
-                            true
-                        } else {
-                            false
-                        }
-                    }.addOnSuccessListener { result ->
-                        if (result) {
-                            Toast.makeText(this, "Seat Reserved!", Toast.LENGTH_SHORT).show()
-                            loadClasses()
-                        } else {
-                            Toast.makeText(this, "Class Full!", Toast.LENGTH_SHORT).show()
-                        }
-                    }.addOnFailureListener { e ->
-                        Log.w("ViewClassActivity", "Error reserving seat", e)
-                        Toast.makeText(this, "Reservation Failed", Toast.LENGTH_SHORT).show()
-                    }
-                }
-            }
-        }
-    }
-
-    private fun showRemoveConfirmationDialog(classInfo: ClassInfo) {
-        val dialog = AlertDialog.Builder(ContextThemeWrapper(this, R.style.CustomAlertDialog))
-            .setTitle("Remove Class")
-            .setMessage("Are you sure you want to remove:\n" +
-                    "\nTitle: ${classInfo.title}" +
-                    "\nDescription: ${classInfo.description}" +
-                    "\nStart Time: ${classInfo.startTime}" +
-                    "\nEnd Time: ${classInfo.endTime}")
-            .setPositiveButton("Yes") { _, _ ->
-                removeClassFromFirestore(classInfo)
-            }
-            .setNegativeButton("No") { dialog, _ ->
-                dialog.dismiss()
-
-            }
-            .create()
-        dialog.show()
-    }
-
-    private fun removeClassFromFirestore(classInfo: ClassInfo) {
-        firestore.collection("Classes")
-            .document(classInfo.classID)
-            .delete()
-            .addOnSuccessListener {
-                Toast.makeText(this, "Class removed successfully.", Toast.LENGTH_SHORT).show()
-                loadClasses()
-            }
-            .addOnFailureListener { e ->
-                Log.w("ViewClassActivity", "Error removing document", e)
-                Toast.makeText(this, "Failed to remove class.", Toast.LENGTH_SHORT).show()
-            }
-    }
-
-    private fun loadClasses() {
-        val currentUser = auth.currentUser
-        if (currentUser != null) {
-            val vendorId = selectedProfileId
-            val startOfDayTimestamp = getStartOfDayTimestamp(selectedDate!!)
-            val endOfDayTimestamp = getEndOfDayTimestamp(selectedDate!!)
-            firestore.collection("Classes")
-                .whereEqualTo("vendorID", vendorId)
-                .whereGreaterThanOrEqualTo("startTime", startOfDayTimestamp)
-                .whereLessThanOrEqualTo("startTime", endOfDayTimestamp)
+            val qs = db.collection("Classes")
+                .whereEqualTo("vendorID", profileId)
+                .whereGreaterThanOrEqualTo("startTime", start)
+                .whereLessThanOrEqualTo("startTime", end)
                 .orderBy("startTime")
                 .get()
-                .addOnSuccessListener { documents ->
-                    val classes = documents.mapNotNull { document ->
-                        try {
-                            val classID = document.getString("classID") ?: return@mapNotNull null
-                            val vendorID = document.getString("vendorID") ?: return@mapNotNull null
-                            val title = document.getString("title") ?: return@mapNotNull null
-                            val description = document.getString("description") ?: return@mapNotNull null
-                            val startTimeTimestamp = document.getTimestamp("startTime") ?: return@mapNotNull null
-                            val endTimeTimestamp = document.getTimestamp("endTime") ?: return@mapNotNull null
-                            val startTime = formatTimestampTo12Hour(startTimeTimestamp)
-                            val endTime = formatTimestampTo12Hour(endTimeTimestamp)
-                            val sizeLimit = document.getLong("sizeLimit") ?: 0
-                            val currentSeats = document.getLong("currentSeats") ?: 0
+                .await()
 
-                            ClassInfo(classID, vendorID, title, description, startTime, endTime, currentSeats, sizeLimit)
-                        } catch (e: Exception) {
-                            Log.e("ViewClassActivity", "Error parsing document: ${document.id}", e)
-                            null
-                        }
-                    }
-                    adapter.submitList(classes)
-                }
-                .addOnFailureListener { exception ->
-                    Log.w("ViewClassActivity", "Error getting classes", exception)
-                    Toast.makeText(this, "Error getting classes", Toast.LENGTH_SHORT).show()
-                }
+            val list = qs.mapNotNull { it.toClassInfoOrNull() }
+            adapter.submitList(list)
+        } catch (e: Exception) {
+            toast("Failed to load classes")
+            Log.e(TAG, "loadClasses", e)
         }
     }
 
-    //Helper functions that get the start and end time
-    //of a given day for database queries
-    private fun getStartOfDayTimestamp(dateString: String): Timestamp {
-        val formatter = SimpleDateFormat("MMMM dd, yyyy", Locale.getDefault())
-        val date = formatter.parse(dateString) ?: Date()
-        val calendar = Calendar.getInstance()
-        calendar.time = date
-        calendar.set(Calendar.HOUR_OF_DAY, 0)
-        calendar.set(Calendar.MINUTE, 0)
-        calendar.set(Calendar.SECOND, 0)
-        calendar.set(Calendar.MILLISECOND, 0)
-        return Timestamp(calendar.time)
+    private fun reserveSeat(info: ClassInfo) = lifecycleScope.launch {
+        val user = auth.currentUser ?: return@launch
+        val seatRef  = db.classDoc(info.classID).collection("Seats").document(user.uid)
+        val classRef = db.classDoc(info.classID)
+
+        if (seatRef.get().await().exists()) {
+            toast("Seat already reserved"); return@launch
+        }
+
+        db.runTransaction { tr ->
+            val snap        = tr.get(classRef)
+            val current     = snap.getLong("currentSeats") ?: 0
+            val max         = snap.getLong("sizeLimit") ?: 0
+            if (current >= max) throw IllegalStateException("Full")
+
+            tr.update(classRef, "currentSeats", FieldValue.increment(1))
+            val userDoc = db.userDoc(user.uid).get().result
+            val first   = userDoc?.getString("firstName") ?: ""
+            val last    = userDoc?.getString("lastName") ?: ""
+
+            tr.set(seatRef, mapOf(
+                "userId" to user.uid,
+                "firstName" to first,
+                "lastName"  to last,
+                "email"     to user.email
+            ))
+        }.runCatching {
+            toast("Seat reserved!"); loadClasses()
+        }.onFailure {
+            toast(it.message ?: "Reservation failed")
+        }
     }
 
-    private fun getEndOfDayTimestamp(dateString: String): Timestamp {
-        val formatter = SimpleDateFormat("MMMM dd, yyyy", Locale.getDefault())
-        val date = formatter.parse(dateString) ?: Date()
-        val calendar = Calendar.getInstance()
-        calendar.time = date
-        calendar.set(Calendar.HOUR_OF_DAY, 23)
-        calendar.set(Calendar.MINUTE, 59)
-        calendar.set(Calendar.SECOND, 59)
-        calendar.set(Calendar.MILLISECOND, 999)
-        return Timestamp(calendar.time)
+    private fun removeClass(info: ClassInfo) = lifecycleScope.launch {
+        runCatching {
+            db.classDoc(info.classID).delete().await()
+        }.onSuccess {
+            toast("Class removed"); loadClasses()
+        }.onFailure {
+            toast("Remove failed"); Log.e(TAG, "removeClass", it)
+        }
     }
 
-    private fun formatTimestampTo12Hour(timestamp: Timestamp): String {
-        val date = timestamp.toDate()
-        val sdf = SimpleDateFormat("hh:mm a", Locale.getDefault())
-        return sdf.format(date)
-    }
+    /* ═════════════════ dialogs ════════════════════ */
+    private fun confirmReserve(info: ClassInfo) =
+        alert("Reserve Class", info.detail()) { reserveSeat(info) }
 
-    private fun showAddClassDialog() {
-        val dialogView = layoutInflater.inflate(R.layout.dialog_add_class, null)
-        val titleEdit = dialogView.findViewById<EditText>(R.id.classTitle)
-        val descriptionEdit = dialogView.findViewById<EditText>(R.id.classDescription)
-        val startEdit = dialogView.findViewById<EditText>(R.id.classStartTime)
-        val endEdit = dialogView.findViewById<EditText>(R.id.classEndTime)
-        val sizeLimitEdit = dialogView.findViewById<EditText>(R.id.editClassSizeLimit)
+    private fun confirmDelete(info: ClassInfo) =
+        alert("Remove Class", info.detail()) { removeClass(info) }
 
-        startEdit.setOnClickListener { showTimePickerDialog(startEdit) }
-        endEdit.setOnClickListener { showTimePickerDialog(endEdit) }
+    private fun showAddDialog() {
+        val v = layoutInflater.inflate(R.layout.dialog_add_class, null)
+        val titleEt = v.findViewById<EditText>(R.id.classTitle)
+        val descEt  = v.findViewById<EditText>(R.id.classDescription)
+        val startEt = v.findViewById<EditText>(R.id.classStartTime)
+        val endEt   = v.findViewById<EditText>(R.id.classEndTime)
+        val limitEt = v.findViewById<EditText>(R.id.editClassSizeLimit)
 
-        val dialog = AlertDialog.Builder(ContextThemeWrapper(this, R.style.CustomAlertDialog))
-            .setView(dialogView)
+        listOf(startEt, endEt).forEach { et -> et.setOnClickListener { pickTime(et) } }
+
+        AlertDialog.Builder(ContextThemeWrapper(this, R.style.CustomAlertDialog))
+            .setView(v)
             .setTitle("Add Class")
-            .setPositiveButton("Add") { dialog, _ ->
-                val title = titleEdit.text.toString()
-                val description = descriptionEdit.text.toString()
-                val startTime = startEdit.text.toString()
-                val endTime = endEdit.text.toString()
-                val sizeLimitString = sizeLimitEdit.text.toString()
-
-                if (title.isNotEmpty() && description.isNotEmpty() && startTime.isNotEmpty() && endTime.isNotEmpty() && sizeLimitString.isNotEmpty()) {
-                    val sizeLimit = sizeLimitString.toLongOrNull()
-                    if (sizeLimit != null){
-                        addClassToFirestore(title, description, startTime, endTime, sizeLimit)
-                    }
-                    else{
-                        Toast.makeText(this, "Invalid size limit.", Toast.LENGTH_SHORT).show()
-                    }
-                } else {
-                    Toast.makeText(this, "Please fill in all fields.", Toast.LENGTH_SHORT).show()
+            .setPositiveButton("Add") { _, _ ->
+                val size = limitEt.text.toString().toLongOrNull()
+                if (titleEt.anyEmpty(descEt, startEt, endEt) || size == null) {
+                    toast("Please fill all fields"); return@setPositiveButton
                 }
-                dialog.dismiss()
+                addClass(
+                    titleEt.text.toString(), descEt.text.toString(),
+                    startEt.text.toString(), endEt.text.toString(), size
+                )
             }
-            .setNegativeButton("Cancel") { dialog, _ -> dialog.dismiss() }
-            .create()
-
-        dialog.show()
+            .setNegativeButton("Cancel", null)
+            .show()
     }
 
-    private fun showTimePickerDialog(editText: EditText) {
-        val calendar = Calendar.getInstance()
-        val hour = calendar.get(Calendar.HOUR_OF_DAY)
-        val minute = calendar.get(Calendar.MINUTE)
-
-        val timePickerDialog = TimePickerDialog(
-            this,
-            R.style.CustomTimePickerDialog,
-            { _, selectedHour, selectedMinute ->
-                val formattedTime: String = if (selectedHour == 0) {
-                    String.format(Locale.getDefault(), "%02d:%02d AM", 12, selectedMinute)
-                } else if (selectedHour < 12) {
-                    String.format(Locale.getDefault(), "%02d:%02d AM", selectedHour, selectedMinute)
-                } else if (selectedHour == 12) {
-                    String.format(Locale.getDefault(), "%02d:%02d PM", selectedHour, selectedMinute)
-                } else {
-                    String.format(Locale.getDefault(), "%02d:%02d PM", selectedHour - 12, selectedMinute)
-                }
-                editText.setText(formattedTime)
-            },
-            hour,
-            minute,
-            false
-        )
-
-        timePickerDialog.show()
+    /* ═════════════════ helpers ════════════════════ */
+    private fun toggleRemoveMode() {
+        removeMode = !removeMode
+        btnRemove.text = if (removeMode) "Cancel" else "Remove"
+        if (removeMode) toast("Select a class to remove")
     }
 
-    private fun addClassToFirestore(title: String, description: String, startTime: String, endTime: String, sizeLimit: Long) {
-        val currentUser = auth.currentUser
-        if (currentUser != null) {
-            val vendorId = currentUser.uid
-            val startTimestamp = combineDateAndTime(selectedDate!!, startTime)
-            val endTimestamp = combineDateAndTime(selectedDate!!, endTime)
+    private fun pickTime(target: EditText) {
+        val cal = Calendar.getInstance()
+        TimePickerDialog(
+            this, R.style.CustomTimePickerDialog,
+            { _, h, m -> target.setText(h.to12Hour(m)) },
+            cal.get(Calendar.HOUR_OF_DAY), cal.get(Calendar.MINUTE), false
+        ).show()
+    }
 
-            val classData = hashMapOf(
-                "vendorID" to vendorId,
-                "title" to title,
-                "description" to description,
-                "startTime" to startTimestamp,
-                "endTime" to endTimestamp,
-                "sizeLimit" to sizeLimit,
+    private fun addClass(t: String, d: String, start: String, end: String, limit: Long) =
+        lifecycleScope.launch {
+            val doc = db.collection("Classes").document()
+            val payload = mapOf(
+                "classID"      to doc.id,
+                "vendorID"     to auth.currentUser?.uid,
+                "title"        to t,
+                "description"  to d,
+                "startTime"    to dateStr.combine(start),
+                "endTime"      to dateStr.combine(end),
+                "sizeLimit"    to limit,
                 "currentSeats" to 0L
             )
-
-            firestore.collection("Classes")
-                .add(classData)
-                .addOnSuccessListener { documentReference ->
-                    Log.d("ViewClassActivity", "Document added with ID: ${documentReference.id}")
-                    documentReference.update("classID", documentReference.id)
-                    Toast.makeText(this, "Class added successfully.", Toast.LENGTH_SHORT).show()
-                    loadClasses() // Refresh the list
-                }
-                .addOnFailureListener { e ->
-                    Log.w("ViewClassActivity", "Error adding document", e)
-                    Toast.makeText(this, "Failed to add class.", Toast.LENGTH_SHORT).show()
-                }
+            runCatching { doc.set(payload).await() }
+                .onSuccess { toast("Class added"); loadClasses() }
+                .onFailure { toast("Add failed"); Log.e(TAG, "addClass", it) }
         }
+
+    /* ───────────── extensions ───────────── */
+    private fun String.combine(time: String): Timestamp {
+        val fmt = SimpleDateFormat("MMMM dd, yyyy hh:mm a", getDefault())
+        return Timestamp(fmt.parse("$this $time")!!)
     }
 
-    private fun combineDateAndTime(date: String, time: String): Timestamp {
-        val formatter = SimpleDateFormat("MMMM dd, yyyy hh:mm a", Locale.getDefault())
-        val dateTimeString = "$date $time"
-        val dateObject = formatter.parse(dateTimeString) ?: Date()
-        return Timestamp(dateObject)
+    private fun String.toTimestamp(hourEnd: Boolean): Timestamp {
+        val fmt = SimpleDateFormat("MMMM dd, yyyy", getDefault())
+        val cal = Calendar.getInstance().apply {
+            time = fmt.parse(this@toTimestamp)!!
+            if (hourEnd) set(23, 59, 59, 999) else set(0, 0, 0, 0)
+        }
+        return Timestamp(cal.time)
+    }
+    private fun String.toStartOfDay() = toTimestamp(false)
+    private fun String.toEndOfDay()   = toTimestamp(true)
+
+    private fun EditText.anyEmpty(vararg others: EditText) =
+        text.isNullOrBlank() || others.any { it.text.isNullOrBlank() }
+
+    private fun Int.to12Hour(min: Int): String {
+        val amPm = if (this >= 12) "PM" else "AM"
+        val hour = when {
+            this == 0  -> 12
+            this <= 12 -> this
+            else       -> this - 12
+        }
+        return "%02d:%02d $amPm".format(hour, min)
     }
 
-    private fun navigateTo(activityClass: Class<*>) {
-        val intent = Intent(this, activityClass)
-        startActivity(intent)
-    }
+    private fun ClassInfo.detail() = """
+        Title: $title
+        Description: $description
+        Start Time: $startTime
+        End Time: $endTime
+    """.trimIndent()
+
+    private fun alert(title: String, msg: String, ok: () -> Unit) =
+        AlertDialog.Builder(ContextThemeWrapper(this, R.style.CustomAlertDialog))
+            .setTitle(title).setMessage(msg)
+            .setPositiveButton("Yes") { _, _ -> ok() }
+            .setNegativeButton("No", null).show()
+
+    private fun toast(msg: String) =
+        Toast.makeText(this, msg, Toast.LENGTH_SHORT).show()
+
+    private fun FirebaseFirestore.classDoc(id: String) = collection("Classes").document(id)
+    private fun FirebaseFirestore.userDoc(uid: String) = collection("Users").document(uid)
+    private fun QuerySnapshot.toClassInfoOrNull() = runCatching {
+        val start = getTimestamp("startTime")!!
+        val end   = getTimestamp("endTime")!!
+        ClassInfo(
+            getString("classID")!!,
+            getString("vendorID")!!,
+            getString("title")!!,
+            getString("description")!!,
+            start.toFormatted(),
+            end.toFormatted(),
+            getLong("currentSeats") ?: 0,
+            getLong("sizeLimit") ?: 0
+        )
+    }.getOrNull()
+
+    private fun Timestamp.toFormatted(): String =
+        SimpleDateFormat("hh:mm a", getDefault()).format(toDate())
+
+    companion object { private const val TAG = "ViewClassActivity" }
 }

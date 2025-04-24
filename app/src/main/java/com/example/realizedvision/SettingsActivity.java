@@ -2,131 +2,99 @@ package com.example.realizedvision;
 
 import android.content.Intent;
 import android.os.Bundle;
-import android.view.View;
 import android.widget.Button;
 import android.widget.ImageButton;
 import android.widget.Toast;
 
 import androidx.appcompat.app.AppCompatActivity;
-import androidx.compose.ui.text.font.FontVariation;
 
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
-import com.google.firebase.firestore.DocumentReference;
-import com.google.firebase.firestore.DocumentSnapshot;
-import com.google.firebase.firestore.FirebaseFirestore;
+import com.google.firebase.firestore.*;
 
+/**
+ * Settings hub for both customers and vendors.
+ *
+ * • All nav buttons are wired in one place.
+ * • “Add address” is blocked for vendors (they already have one).
+ * • “Set vendor filters” only opens for vendor accounts.
+ * • Back-arrow returns the user to the right profile/storefront.
+ * • Logout clears the back-stack.
+ */
 public class SettingsActivity extends AppCompatActivity {
-    private FirebaseUser currentUser;
-    private FirebaseFirestore firestore;
 
+    /* ───────────────────────── Firebase ───────────────────────── */
+    private final FirebaseAuth      auth = FirebaseAuth.getInstance();
+    private final FirebaseFirestore db   = FirebaseFirestore.getInstance();
+    private FirebaseUser user;
 
+    /* ───────────────────────── lifecycle ───────────────────────── */
     @Override
-    protected void onCreate(Bundle savedInstanceState) {
-        super.onCreate(savedInstanceState);
+    protected void onCreate(Bundle b) {
+        super.onCreate(b);
         setContentView(R.layout.activity_settings);
 
-        currentUser = FirebaseAuth.getInstance().getCurrentUser();
-        if (currentUser != null) {
-            firestore = FirebaseFirestore.getInstance();
-        }
+        user = auth.getCurrentUser();
+        if (user == null) { finish(); return; }
 
+        wireTopButtons();
+        wireNavButtons();
+        wireLogout();
+    }
 
-
-        Button termsAndConditionsButton = findViewById(R.id.tcButton);
-        Button orderHistoryButton = findViewById(R.id.historyButton);
-        Button changeUsernameButton = findViewById(R.id.changeUsernameButton);
-        Button changePasswordButton = findViewById(R.id.changePasswordButton);
-        Button notificationsButton = findViewById(R.id.notificationsButton);
-        Button vendorInfoButton = findViewById(R.id.upgradeButton);
-        ImageButton backButton = findViewById(R.id.backButtonChangePass);
-        Button logoutButton = findViewById(R.id.btn_logout);
-        Button addAddressButton = findViewById(R.id.addAddressButton);
-
-        addAddressButton.setOnClickListener(v -> {
-            FirebaseFirestore firestore = FirebaseFirestore.getInstance();
-            FirebaseUser currentUser = FirebaseAuth.getInstance().getCurrentUser();
-
-            if (currentUser != null) {
-                String userId = currentUser.getUid();
-                firestore.collection("Users").document(userId).get()
-                        .addOnSuccessListener(snapshot -> {
-                            Boolean isVendor = snapshot.getBoolean("isVendor");
-                            if (isVendor != null && isVendor) {
-                                Toast.makeText(SettingsActivity.this, "You’ve already provided an address as a vendor.", Toast.LENGTH_SHORT).show();
-                            } else {
-                                startActivity(new Intent(SettingsActivity.this, AddAddressActivity.class));
-                            }
-                        })
-                        .addOnFailureListener(e -> {
-                            Toast.makeText(SettingsActivity.this, "Failed to check vendor status.", Toast.LENGTH_SHORT).show();
-                        });
-            }
+    /* ─────────────────────── view wiring ──────────────────────── */
+    private void wireTopButtons() {
+        findViewById(R.id.backButtonChangePass).setOnClickListener(v -> {
+            db.collection("Users").document(user.getUid()).get()
+                    .addOnSuccessListener(snap -> {
+                        boolean vendor = Boolean.TRUE.equals(snap.getBoolean("isVendor"));
+                        nav(vendor ? StorefrontActivity.class : ProfileActivity.class);
+                    })
+                    .addOnFailureListener(e -> toast("Failed to load profile"));
         });
 
-        //button handling for vendor filters (Search engine filters)
-        Button setVendorFiltersButton = findViewById(R.id.setVendorFiltersButton);
-        setVendorFiltersButton.setOnClickListener(view -> {
-            FirebaseUser user = FirebaseAuth.getInstance().getCurrentUser();
-            if (user != null) {
-                FirebaseFirestore.getInstance().collection("Users")
-                        .document(user.getUid())
-                        .get()
-                        .addOnSuccessListener(documentSnapshot -> {
-                            Boolean isVendor = documentSnapshot.getBoolean("isVendor");
-                            if (Boolean.TRUE.equals(isVendor)) {
-                                startActivity(new Intent(SettingsActivity.this, VendorFilterActivity.class));
-                            } else {
-                                Toast.makeText(SettingsActivity.this, "You must be a vendor to set vendor filters.", Toast.LENGTH_SHORT).show();
-                            }
-                        });
-            }
+        findViewById(R.id.addAddressButton).setOnClickListener(v -> {
+            db.collection("Users").document(user.getUid()).get()
+                    .addOnSuccessListener(snap -> {
+                        boolean vendor = Boolean.TRUE.equals(snap.getBoolean("isVendor"));
+                        if (vendor) toast("You’ve already provided an address as a vendor.");
+                        else         nav(AddAddressActivity.class);
+                    })
+                    .addOnFailureListener(e -> toast("Failed to check vendor status"));
         });
 
-
-
-        termsAndConditionsButton.setOnClickListener(view -> navigateTo(TermsAndConditionsActivity.class));
-        orderHistoryButton.setOnClickListener(view -> navigateTo(OrderHistoryActivity.class));
-        changeUsernameButton.setOnClickListener(view -> navigateTo(ChangeNameActivity.class));
-        changePasswordButton.setOnClickListener(view -> navigateTo(ChangePasswordActivity.class));
-        notificationsButton.setOnClickListener(view -> navigateTo(NotificationsActivity.class));
-        vendorInfoButton.setOnClickListener(view -> navigateTo(VendorOnboardActivity.class));
-
-        backButton.setOnClickListener(view -> {
-            if (currentUser != null) {
-                String userId = currentUser.getUid();
-
-                DocumentReference userDocRef = firestore.collection("Users").document(userId);
-
-                userDocRef.get().addOnCompleteListener(task -> {
-                    if (task.isSuccessful()) {
-                        DocumentSnapshot snapshot = task.getResult();
-
-                        if (snapshot.exists() && Boolean.TRUE.equals(snapshot.getBoolean("isVendor"))) {
-                            navigateTo(StorefrontActivity.class);
-                        } else if (snapshot.exists() && Boolean.FALSE.equals(snapshot.getBoolean("isVendor"))) {
-                            navigateTo(ProfileActivity.class);
-                        } else {
-                            Toast.makeText(SettingsActivity.this, "User data not found.", Toast.LENGTH_SHORT).show();
-                        }
-                    } else {
-                        Toast.makeText(SettingsActivity.this, "Error: " + task.getException().getMessage(), Toast.LENGTH_SHORT).show();
-                    }
-                });
-            }
-        });
-
-        logoutButton.setOnClickListener(view -> {
-            FirebaseAuth.getInstance().signOut(); // Sign out the user
-            Intent intent = new Intent(SettingsActivity.this, LoginActivity.class);
-            intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK); // Clear activity stack
-            startActivity(intent);
-            finish(); // Close current activity
+        findViewById(R.id.setVendorFiltersButton).setOnClickListener(v -> {
+            db.collection("Users").document(user.getUid()).get()
+                    .addOnSuccessListener(snap -> {
+                        if (Boolean.TRUE.equals(snap.getBoolean("isVendor")))
+                            nav(VendorFilterActivity.class);
+                        else toast("You must be a vendor to set vendor filters.");
+                    });
         });
     }
 
-    private void navigateTo(Class<?> targetActivity) {
-        Intent intent = new Intent(SettingsActivity.this, targetActivity);
-        startActivity(intent);
+    private void wireNavButtons() {
+        int[] ids   = { R.id.tcButton,   R.id.historyButton,   R.id.changeUsernameButton,
+                R.id.changePasswordButton, R.id.notificationsButton, R.id.upgradeButton };
+        Class<?>[] dest = { TermsAndConditionsActivity.class, OrderHistoryActivity.class,
+                ChangeNameActivity.class, ChangePasswordActivity.class,
+                NotificationsActivity.class, VendorOnboardActivity.class };
+
+        for (int i = 0; i < ids.length; i++)
+            findViewById(ids[i]).setOnClickListener(v -> nav(dest[i]));
     }
+
+    private void wireLogout() {
+        findViewById(R.id.btn_logout).setOnClickListener(v -> {
+            auth.signOut();
+            Intent i = new Intent(this, LoginActivity.class)
+                    .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
+            startActivity(i);
+            finish();
+        });
+    }
+
+    /* ─────────────────────── helpers ──────────────────────────── */
+    private void nav(Class<?> c) { startActivity(new Intent(this, c)); }
+    private void toast(String m) { Toast.makeText(this, m, Toast.LENGTH_SHORT).show(); }
 }

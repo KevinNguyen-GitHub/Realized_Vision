@@ -10,190 +10,166 @@ import android.widget.TextView
 import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.lifecycleScope
 import com.google.firebase.auth.FirebaseAuth
-import com.google.firebase.firestore.DocumentReference
 import com.google.firebase.firestore.FirebaseFirestore
-import com.google.firebase.firestore.QuerySnapshot
 import com.stripe.android.PaymentConfiguration
 import com.stripe.android.paymentsheet.PaymentSheet
 import com.stripe.android.paymentsheet.PaymentSheetResult
-import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.util.Date
 
-
+/**
+ * Displays a checkout summary, creates a Stripe PaymentIntent, and (on success)
+ * moves the user’s cart into **Order History**.
+ *
+ * Uses Firebase for user/cart storage and a simple Retrofit service wrapper for
+ * Stripe‐server calls (see [NetworkModule.provideStripeApiService]).
+ */
 class CheckoutActivity : AppCompatActivity() {
 
-    private lateinit var orderSummaryExpandableList: ExpandableListView
-    private lateinit var checkoutSubtotal: TextView
-    private val db = FirebaseFirestore.getInstance()
-    private val auth = FirebaseAuth.getInstance()
-    private lateinit var paymentSheet: PaymentSheet
-    private lateinit var paymentIntentClientSecret: String
-    private val stripeApiService = NetworkModule.provideStripeApiService()
-    private lateinit var payNowButton: Button
-    private lateinit var backButton: ImageButton
-    private var subtotal: Double = 0.0
+    /* ─────────────────────────── Firebase / Stripe ────────────────────────── */
+    private val db   by lazy { FirebaseFirestore.getInstance() }
+    private val auth by lazy { FirebaseAuth.getInstance() }
+    private val stripeApi  = NetworkModule.provideStripeApiService()
 
+    /* ─────────────────────────── UI refs ─────────────────────────── */
+    private lateinit var listView: ExpandableListView
+    private lateinit var subtotalTv: TextView
+    private lateinit var payBtn: Button
+    private lateinit var backBtn: ImageButton
+
+    private lateinit var paymentSheet: PaymentSheet
+    private var clientSecret = ""
+    private var subtotal = 0.0
+
+    /* ───────────────────────── life-cycle ─────────────────────────── */
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_checkout)
 
-        orderSummaryExpandableList = findViewById(R.id.orderSummaryExpandableList)
-        checkoutSubtotal = findViewById(R.id.checkout_subtotal)
-        payNowButton = findViewById(R.id.pay_now_button)
-        backButton = findViewById(R.id.backButtonCheckout)
-
+        initViews()
         paymentSheet = PaymentSheet(this, ::onPaymentSheetResult)
+
         fetchStripeConfig()
         fetchShoppingCart()
-        payNowButton.setOnClickListener {
-            createPaymentIntent()
-        }
-        backButton.setOnClickListener{
-            val intent = Intent(this, ShoppingCartActivity::class.java)
-            startActivity(intent)
-        }
     }
-    private fun fetchStripeConfig() {
-        CoroutineScope(Dispatchers.Main).launch {
-            try {
-                val response = withContext(Dispatchers.IO) {
-                    stripeApiService.getStripeConfig()
-                }
-                if (response.isSuccessful) {
-                    val config = response.body()
-                    val publishableKey = config?.stripePublishableKey
-                    if (publishableKey != null) {
-                        PaymentConfiguration.init(applicationContext, publishableKey)
-                        Log.d("MyApplication", "Stripe PaymentConfiguration initialized successfully")
-                    } else {
-                        Log.e("MyApplication", "Publishable key is null")
-                    }
-                } else {
-                    Log.e("MyApplication", "Error fetching Stripe config: ${response.errorBody()?.string()}")
-                }
-            } catch (e: Exception) {
-                Log.e("MyApplication", "Exception fetching Stripe config", e)
-            }
+
+    /* ─────────────────────── view wiring ─────────────────────────── */
+    private fun initViews() = with(findViewById<ExpandableListView>(R.id.orderSummaryExpandableList)) {
+        listView   = this
+        subtotalTv = findViewById(R.id.checkout_subtotal)
+        payBtn     = findViewById(R.id.pay_now_button)
+        backBtn    = findViewById(R.id.backButtonCheckout)
+
+        payBtn.setOnClickListener { createPaymentIntent() }
+        backBtn.setOnClickListener {
+            startActivity(Intent(this@CheckoutActivity, ShoppingCartActivity::class.java))
         }
     }
 
+    /* ─────────────────────── Stripe config ───────────────────────── */
+    private fun fetchStripeConfig() = lifecycleScope.launch {
+        runCatching {
+            withContext(Dispatchers.IO) { stripeApi.getStripeConfig() }
+        }.onSuccess { res ->
+            if (res.isSuccessful) {
+                res.body()?.stripePublishableKey?.let {
+                    PaymentConfiguration.init(applicationContext, it)
+                } ?: Log.e(TAG, "Publishable key missing")
+            } else {
+                Log.e(TAG, "Stripe config error: ${res.errorBody()?.string()}")
+            }
+        }.onFailure { e -> Log.e(TAG, "Stripe config request failed", e) }
+    }
+
+    /* ─────────────────────── cart fetch / UI ─────────────────────── */
     private fun fetchShoppingCart() {
-        val userId = auth.currentUser?.uid
-        if (userId == null) {
-            Log.e("CheckoutActivity", "User not logged in")
-            return
-        }
+        val uid = auth.currentUser?.uid ?: return Log.e(TAG, "User not logged in")
 
-        db.collection("Users").document(userId).collection("Shopping Cart")
+        db.collection("Users").document(uid).collection("Shopping Cart")
             .get()
-            .addOnSuccessListener { cartDocuments ->
-                val items = mutableListOf<Item>()
-                for (document in cartDocuments) {
-                    val item = document.toObject(Item::class.java)
-                    if (item != null) {
-                        items.add(item)
-                    }
-                }
-                updateUI(items)
+            .addOnSuccessListener { docs ->
+                val items = docs.mapNotNull { it.toObject(Item::class.java) }
+                updateUi(items)
             }
-            .addOnFailureListener { exception ->
-                Log.w("CheckoutActivity", "Error getting shopping cart", exception)
-            }
+            .addOnFailureListener { e -> Log.w(TAG, "Error loading cart", e) }
     }
 
-    private fun updateUI(items: List<Item>) {
+    private fun updateUi(items: List<Item>) {
+        listView.setAdapter(
+            OrderSummaryExpandableListAdapter(
+                this,
+                "Order Summary for ${items.size} item${if (items.size == 1) "" else "s"}",
+                items
+            )
+        )
+        listView.expandGroup(0)
 
-        val adapter = OrderSummaryExpandableListAdapter(this, "Order Summary for ${items.size} items", items)
-        orderSummaryExpandableList.setAdapter(adapter)
-
-        subtotal = items.sumOf { it.getPrice() * it.getQuantity() }
-        checkoutSubtotal.text = "Total: $${String.format("%.2f", subtotal)}"
-
-        orderSummaryExpandableList.expandGroup(0)
+        subtotal = items.sumOf { it.price * it.quantity }
+        subtotalTv.text = getString(R.string.total_fmt, subtotal)
     }
 
-    private fun createPaymentIntent() {
-        lifecycleScope.launch {
-            try {
-                val amountInCents = (subtotal * 100).toLong()
-                val request = CreatePaymentIntentRequest(
-                    amount = amountInCents,
-                    currency = "usd",
-                    automatic_payment_methods = AutomaticPaymentMethods()
-                )
+    /* ───────────────────── PaymentIntent flow ─────────────────────── */
+    private fun createPaymentIntent() = lifecycleScope.launch {
+        if (subtotal == 0.0) return@launch
 
-                val response = withContext(Dispatchers.IO) {
-                    stripeApiService.createPaymentIntent(request)
-                }
+        val req = CreatePaymentIntentRequest(
+            amount = (subtotal * 100).toLong(),
+            currency = "usd",
+            automatic_payment_methods = AutomaticPaymentMethods()
+        )
 
-                if (response.isSuccessful) {
-                    val paymentIntentResponse = response.body()
-                    paymentIntentClientSecret = paymentIntentResponse?.client_secret ?: ""
-                    presentPaymentSheet()
-                } else {
-                    Log.e("CheckoutActivity", "Error creating payment intent: ${response.errorBody()?.string()}")
-                }
-            } catch (e: Exception) {
-                Log.e("CheckoutActivity", "Exception creating payment intent", e)
+        runCatching {
+            withContext(Dispatchers.IO) { stripeApi.createPaymentIntent(req) }
+        }.onSuccess { res ->
+            if (res.isSuccessful) {
+                clientSecret = res.body()?.client_secret.orEmpty()
+                presentPaymentSheet()
+            } else {
+                Log.e(TAG, "PaymentIntent error: ${res.errorBody()?.string()}")
             }
-        }
+        }.onFailure { e -> Log.e(TAG, "PaymentIntent request failed", e) }
     }
 
     private fun presentPaymentSheet() {
-        paymentSheet.presentWithPaymentIntent(paymentIntentClientSecret, PaymentSheet.Configuration("Example, Inc."))
+        paymentSheet.presentWithPaymentIntent(
+            clientSecret,
+            PaymentSheet.Configuration("Example, Inc.")
+        )
     }
-    private fun onPaymentSheetResult(paymentSheetResult: PaymentSheetResult) {
-        when (paymentSheetResult) {
-            is PaymentSheetResult.Completed -> {
-                Log.d("CheckoutActivity", "Payment completed")
-                addOrderToHistory()
-                val intent = Intent(this, MainActivity::class.java)
-                startActivity(intent)
-            }
-            is PaymentSheetResult.Canceled -> {
-                Log.d("CheckoutActivity", "Payment canceled")
-            }
-            is PaymentSheetResult.Failed -> {
-                Log.e("CheckoutActivity", "Payment failed", paymentSheetResult.error)
-            }
-        }
-    }
-    private fun addOrderToHistory(){
-        val userId = auth.currentUser?.uid
-        if (userId == null) {
-            Log.e("CheckoutActivity", "User not logged in")
-            return
-        }
 
-        // Gets the shopping cart items
-        db.collection("Users").document(userId).collection("Shopping Cart").get()
-            .addOnSuccessListener { queryDocumentSnapshots: QuerySnapshot ->
-                val items: MutableList<Map<String, Any>?> = ArrayList()
-                for (document in queryDocumentSnapshots) {
-                    items.add(document.data)
+    private fun onPaymentSheetResult(r: PaymentSheetResult) = when (r) {
+        is PaymentSheetResult.Completed -> {
+            Log.d(TAG, "Payment complete")
+            moveCartToOrderHistory()
+            startActivity(Intent(this, MainActivity::class.java))
+        }
+        PaymentSheetResult.Canceled -> Log.d(TAG, "Payment canceled")
+        is PaymentSheetResult.Failed -> Log.e(TAG, "Payment failed", r.error)
+    }
+
+    /* ─────────────────── order-history migration ──────────────────── */
+    private fun moveCartToOrderHistory() {
+        val uid = auth.currentUser?.uid ?: return Log.e(TAG, "User not logged in")
+
+        val cartRef = db.collection("Users").document(uid).collection("Shopping Cart")
+        cartRef.get().addOnSuccessListener { cartSnap ->
+            if (cartSnap.isEmpty) return@addOnSuccessListener
+
+            val order = hashMapOf(
+                "userId" to uid,
+                "items"  to cartSnap.documents.map { it.data },
+                "timestamp" to Date()
+            )
+
+            db.collection("Order History").add(order)
+                .addOnSuccessListener {
+                    cartSnap.documents.forEach { d -> cartRef.document(d.id).delete() }
                 }
-
-                // Creates a new order document
-                val order: MutableMap<String, Any> = HashMap()
-                order["userId"] = userId
-                order["items"] = items
-                order["timestamp"] = Date()
-
-                db.collection("Order History").add(order)
-                    .addOnSuccessListener { documentReference: DocumentReference? ->
-                        for (document in queryDocumentSnapshots) {
-                            db.collection("Users").document(userId).collection("Shopping Cart")
-                                .document(document.id)
-                                .delete()
-                        }
-                    }
-                    .addOnFailureListener { e: java.lang.Exception? -> println("Shopping cart is empty for user: $e")}
-            }
-            .addOnFailureListener { e: java.lang.Exception? -> println("Error retrieving shopping cart for user: $e")}
-
+                .addOnFailureListener { e -> Log.e(TAG, "Failed to place order", e) }
+        }.addOnFailureListener { e -> Log.e(TAG, "Failed to fetch cart", e) }
     }
 
+    companion object { private const val TAG = "CheckoutActivity" }
 }

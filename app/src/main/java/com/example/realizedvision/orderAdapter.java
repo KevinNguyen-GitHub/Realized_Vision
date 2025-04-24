@@ -9,92 +9,72 @@ import android.widget.Button;
 import android.widget.ImageView;
 import android.widget.TextView;
 import android.widget.Toast;
+
+import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
+
 import java.util.List;
 
-public class orderAdapter extends RecyclerView.Adapter<orderAdapter.OrderViewHolder> {
+/** Simple adapter that lists orders and lets the user cancel one. */
+public class orderAdapter extends RecyclerView.Adapter<orderAdapter.VH> {
 
-    private List<String> orderList;
-    private Context context;
+    private final Context        ctx;
+    private final List<String>   orders;
+    private final LayoutInflater inflater;
 
-    public orderAdapter(Context context, List<String> orderList) {
-        this.context = context;
-        this.orderList = orderList;
+    public OrderAdapter(Context c, List<String> list) {
+        this.ctx       = c;
+        this.orders    = list;
+        this.inflater  = LayoutInflater.from(c);
+        setHasStableIds(true);          // smoother RecyclerView animations
     }
 
-    public static class OrderViewHolder extends RecyclerView.ViewHolder {
-        ImageView itemImage;
-        TextView orderTitle;
-        TextView orderDetails;
-        Button cancelOrderButton;
+    /* ───────────────────────── ViewHolder ───────────────────────── */
+    static final class VH extends RecyclerView.ViewHolder {
+        final ImageView img;
+        final TextView  title, details;
+        final Button    cancel;
 
-        public OrderViewHolder(View itemView) {
-            super(itemView);
-            itemImage = itemView.findViewById(R.id.item_image);
-            orderTitle = itemView.findViewById(R.id.order_title);
-            orderDetails = itemView.findViewById(R.id.order_details);
-            cancelOrderButton = itemView.findViewById(R.id.cancel_order_button);
+        VH(View v) {
+            super(v);
+            img     = v.findViewById(R.id.item_image);
+            title   = v.findViewById(R.id.order_title);
+            details = v.findViewById(R.id.order_details);
+            cancel  = v.findViewById(R.id.cancel_order_button);
         }
     }
 
-    @Override
-    public OrderViewHolder onCreateViewHolder(ViewGroup parent, int viewType) {
-        View view = LayoutInflater.from(context).inflate(R.layout.item_order, parent, false);
-        return new OrderViewHolder(view);
+    /* ───────────────────── RecyclerView hooks ──────────────────── */
+    @NonNull @Override
+    public VH onCreateViewHolder(@NonNull ViewGroup p, int t) {
+        return new VH(inflater.inflate(R.layout.item_order, p, false));
     }
 
     @Override
-    public void onBindViewHolder(OrderViewHolder holder, int position) {
-        String order = orderList.get(position);
+    public void onBindViewHolder(@NonNull VH h, int pos) {
+        String order = orders.get(pos);
+        h.title.setText(order);
+        h.details.setText("Additional details for " + order);
 
-        holder.orderTitle.setText(order);
-        holder.orderDetails.setText("Additional details for " + order);
+        h.cancel.setOnClickListener(v -> showConfirmDialog(h.getBindingAdapterPosition()));
+    }
 
+    @Override public int  getItemCount()       { return orders.size(); }
+    @Override public long getItemId(int pos)   { return orders.get(pos).hashCode(); }
 
-        holder.cancelOrderButton.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
+    /* ───────────────────────── dialog helper ───────────────────── */
+    private void showConfirmDialog(int position) {
+        View dView = inflater.inflate(R.layout.popup_confirmation, null);
+        AlertDialog d = new AlertDialog.Builder(ctx).setView(dView).create();
 
-                // Inflate the custom confirmation dialog layout
-                LayoutInflater inflater = LayoutInflater.from(context);
-                View dialogView = inflater.inflate(R.layout.popup_confirmation, null);
-
-                AlertDialog dialog = new AlertDialog.Builder(context)
-                        .setView(dialogView)
-                        .create();
-
-                // Reference the dialog's buttons
-                Button btnYes = dialogView.findViewById(R.id.btn_yes);
-                Button btnNo = dialogView.findViewById(R.id.btn_no);
-
-                // Set click listeners for the buttons
-                btnYes.setOnClickListener(new View.OnClickListener() {
-                    @Override
-                    public void onClick(View view) {
-                        // Remove the order from the list
-                        int currentPosition = holder.getAdapterPosition();
-                        orderList.remove(currentPosition);
-                        notifyItemRemoved(currentPosition);
-                        notifyItemRangeChanged(currentPosition, orderList.size());
-                        Toast.makeText(context, "Order cancelled", Toast.LENGTH_SHORT).show();
-                        dialog.dismiss();
-                    }
-                });
-
-                btnNo.setOnClickListener(new View.OnClickListener() {
-                    @Override
-                    public void onClick(View view) {
-                        dialog.dismiss();
-                    }
-                });
-
-                dialog.show();
-            }
+        dView.findViewById(R.id.btn_yes).setOnClickListener(v -> {
+            orders.remove(position);
+            notifyItemRemoved(position);
+            Toast.makeText(ctx, "Order cancelled", Toast.LENGTH_SHORT).show();
+            d.dismiss();
         });
-    }
 
-    @Override
-    public int getItemCount() {
-        return orderList.size();
+        dView.findViewById(R.id.btn_no).setOnClickListener(v -> d.dismiss());
+        d.show();
     }
 }

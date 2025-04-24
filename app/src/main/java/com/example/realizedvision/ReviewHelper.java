@@ -2,138 +2,95 @@ package com.example.realizedvision;
 
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
-import com.google.firebase.firestore.FirebaseFirestore;
-import com.google.firebase.firestore.DocumentSnapshot;
+import com.google.firebase.firestore.*;
 
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
 
+/**
+ * Utility for reading / writing reviews under:
+ *   Storefront/{itemID}/reviews/{reviewID}
+ *
+ * All public APIs take lightweight callback interfaces so callers stay
+ * platform‐thread agnostic.
+ */
 public class ReviewHelper {
-    private FirebaseFirestore firestore = FirebaseFirestore.getInstance();
 
+    /* ───────────────────────── Firebase ───────────────────────── */
+    private final FirebaseFirestore db = FirebaseFirestore.getInstance();
+    private final FirebaseAuth      auth = FirebaseAuth.getInstance();
+
+    /* ───────────────────────── callbacks ───────────────────────── */
     public interface ExistingReviewCallback {
-        void onExistingReviewFound(DocumentSnapshot reviewDoc);
-
-        void onNoExistingReview();
-
-        void onError(String errorMessage);
+        void onFound(DocumentSnapshot doc);
+        void onNotFound();
+        void onError(String msg);
     }
-
     public interface ReviewSubmitCallback {
         void onSuccess();
-
-        void onFailure(String errorMessage);
+        void onFailure(String msg);
     }
 
-    public interface GetFirstNameCallback {
-        void onFirstNameFetched(String firstName);
+    /* ─────────────────────── public helpers ───────────────────── */
+    public void findExistingReview(String itemId,
+                                   ExistingReviewCallback cb) {
+        FirebaseUser u = auth.getCurrentUser();
+        if (u == null) { cb.onError("User not logged in"); return; }
 
-        void onFirstNameFetchFailed(String errorMessage);
-    }
-
-    public void checkForExistingReview(String itemID, final ReviewHelper.ExistingReviewCallback callback) {
-        FirebaseUser user = FirebaseAuth.getInstance().getCurrentUser();
-        if (user != null) {
-            String userID = user.getUid();
-            firestore.collection("Storefront")
-                    .document(itemID)
-                    .collection("reviews")
-                    .whereEqualTo("userID", userID)
-                    .get()
-                    .addOnSuccessListener(queryDocumentSnapshots -> {
-                        if (!queryDocumentSnapshots.isEmpty()) {
-                            DocumentSnapshot reviewDoc = queryDocumentSnapshots.getDocuments().get(0);
-                            callback.onExistingReviewFound(reviewDoc);
-                        } else {
-                            callback.onNoExistingReview();
-                        }
-                    })
-                    .addOnFailureListener(e -> {
-                        callback.onError("Error checking for existing review: " + e.getMessage());
-                    });
-        } else {
-            callback.onError("User not logged in");
-        }
-    }
-
-    public void getFirstName(String userID, final GetFirstNameCallback callback) {
-        firestore.collection("Users").document(userID)
-                .get()
-                .addOnSuccessListener(documentSnapshot -> {
-                    if (documentSnapshot.exists()) {
-                        String firstName = documentSnapshot.getString("firstName");
-
-                        if (firstName != null) {
-                            callback.onFirstNameFetched(firstName);
-                        } else {
-                            callback.onFirstNameFetchFailed("First name field not found");
-                        }
-                    } else {
-                        callback.onFirstNameFetchFailed("User document not found");
-                    }
-                })
-                .addOnFailureListener(e -> {
-                    callback.onFirstNameFetchFailed("Error fetching user data: " + e.getMessage());
-                });
-    }
-
-    public void submitReview(String itemID, float rating, String text, final ReviewSubmitCallback callback) {
-        FirebaseUser user = FirebaseAuth.getInstance().getCurrentUser();
-
-        if (user != null) {
-            String userID = user.getUid();
-
-            getFirstName(userID, new GetFirstNameCallback() {
-                @Override
-                public void onFirstNameFetched(String firstName) {
-                    String displayName = firstName != null ? firstName : "Anonymous";
-
-                    Map<String, Object> review = new HashMap<>();
-                    review.put("userID", userID);
-                    review.put("displayName", displayName);
-                    review.put("rating", rating);
-                    review.put("text", text);
-                    review.put("timestamp", new Date());
-
-                    firestore.collection("Storefront").document(itemID).collection("reviews")
-                            .add(review)
-                            .addOnSuccessListener(documentReference -> {
-                                callback.onSuccess();
-                            })
-                            .addOnFailureListener(e -> {
-                                callback.onFailure("Error submitting review: " + e.getMessage());
-                            });
-                }
-
-                @Override
-                public void onFirstNameFetchFailed(String errorMessage) {
-                    callback.onFailure(errorMessage);
-                }
-            });
-
-        } else {
-            callback.onFailure("User not logged in");
-        }
-    }
-
-    public void updateReview(String itemID, String reviewID, float rating, String text, final ReviewSubmitCallback callback) {
-
-        firestore.collection("Storefront")
-                .document(itemID)
+        db.collection("Storefront").document(itemId)
                 .collection("reviews")
-                .document(reviewID)
+                .whereEqualTo("userID", u.getUid())
+                .limit(1)
+                .get()
+                .addOnSuccessListener(q -> {
+                    if (q.isEmpty()) cb.onNotFound();
+                    else             cb.onFound(q.getDocuments().get(0));
+                })
+                .addOnFailureListener(e -> cb.onError(e.getMessage()));
+    }
+
+    public void submitReview(String itemId,
+                             float rating,
+                             String text,
+                             ReviewSubmitCallback cb) {
+        FirebaseUser u = auth.getCurrentUser();
+        if (u == null) { cb.onFailure("User not logged in"); return; }
+        String uid = u.getUid();
+
+        db.collection("Users").document(uid).get()
+                .addOnSuccessListener(userDoc -> {
+                    String display = userDoc.getString("firstName");
+                    Map<String,Object> m = new HashMap<>();
+                    m.put("userID",      uid);
+                    m.put("displayName", display == null ? "Anonymous" : display);
+                    m.put("rating",      rating);
+                    m.put("text",        text);
+                    m.put("timestamp",   new Date());
+
+                    db.collection("Storefront").document(itemId)
+                            .collection("reviews")
+                            .add(m)
+                            .addOnSuccessListener(r -> cb.onSuccess())
+                            .addOnFailureListener(e -> cb.onFailure(e.getMessage()));
+                })
+                .addOnFailureListener(e -> cb.onFailure(e.getMessage()));
+    }
+
+    public void updateReview(String itemId,
+                             String reviewId,
+                             float rating,
+                             String text,
+                             ReviewSubmitCallback cb) {
+
+        db.collection("Storefront").document(itemId)
+                .collection("reviews").document(reviewId)
                 .update(
-                        "rating", rating,
-                        "text", text,
+                        "rating",    rating,
+                        "text",      text,
                         "timestamp", new Date()
                 )
-                .addOnSuccessListener(aVoid -> {
-                    callback.onSuccess();
-                })
-                .addOnFailureListener(e -> {
-                    callback.onFailure("Error updating review: " + e.getMessage());
-                });
+                .addOnSuccessListener(r -> cb.onSuccess())
+                .addOnFailureListener(e -> cb.onFailure(e.getMessage()));
     }
-
 }

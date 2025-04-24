@@ -1,448 +1,191 @@
-
 package com.example.realizedvision;
 
+import android.content.Intent;
 import android.os.Bundle;
-import android.util.Log;
-import android.widget.Toast;
+import android.view.LayoutInflater;
+import android.view.View;
+import android.widget.*;
 
-import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.google.firebase.auth.FirebaseAuth;
-import com.google.firebase.auth.FirebaseUser;
-import com.google.firebase.firestore.CollectionReference;
-import com.google.firebase.firestore.DocumentReference;
-import com.google.firebase.firestore.DocumentSnapshot;
-import com.google.firebase.firestore.EventListener;
-import com.google.firebase.firestore.FirebaseFirestore;
-import com.google.firebase.firestore.FirebaseFirestoreException;
-import com.google.firebase.firestore.QuerySnapshot;
-import com.google.firebase.firestore.Source;
+import com.google.firebase.firestore.*;
 
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
+/**
+ * Vendor-side storefront screen.
+ *
+ *  • Lists every item where <code>vendorID == currentUser</code><br>
+ *  • Lets the vendor add / delete items in-place.<br>
+ *  • Tapping the address opens {@link MapActivity}.<br>
+ *  • Top-bar icons route to core areas.<br>
+ */
 public class StorefrontActivity extends AppCompatActivity {
 
-    private RecyclerView recyclerView;
-    private ItemAdapter itemAdapter;
-    private List<Item> itemList;
-    private FirebaseFirestore firestore;
-    private FirebaseUser currentUser;
-    private TextView profileNameTextView;
+    /* ───────────────────────── Firebase ───────────────────────── */
+    private final FirebaseAuth      auth = FirebaseAuth.getInstance();
+    private final FirebaseFirestore db   = FirebaseFirestore.getInstance();
 
-    @Override
-    protected void onCreate(Bundle savedInstanceState) {
-        super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_vendor_profile); // Ensure correct XML file
-         profileNameTextView = findViewById(R.id.profile_name);
-        // Initialize Firebase
-        currentUser = FirebaseAuth.getInstance().getCurrentUser();
-        if (currentUser != null) {
-            firestore = FirebaseFirestore.getInstance();
-        }
+    /* ───────────────────────── UI / data ───────────────────────── */
+    private RecyclerView        rv;
+    private ItemAdapter         adapter;
+    private final List<Item>    items = new ArrayList<>();
+    private TextView            tvName, tvAddress;
+    private String              vendorId;
 
-        // Initialize RecyclerView
-        recyclerView = findViewById(R.id.recyclerView);
-        recyclerView.setLayoutManager(new LinearLayoutManager(this));
+    /* ───────────────────────── lifecycle ───────────────────────── */
+    @Override protected void onCreate(Bundle b) {
+        super.onCreate(b);
+        setContentView(R.layout.activity_vendor_profile);
 
-        // Initialize item list and adapter
-        itemList = new ArrayList<>();
-        itemAdapter = new ItemAdapter(this, itemList);
-        recyclerView.setAdapter(itemAdapter);
+        if (auth.getCurrentUser() == null) { finish(); return; }
+        vendorId = auth.getUid();
 
-        // Check if storefront exists and populate it with 10 sample items if empty
-        checkOrPopulateStorefront();
-
-
-        ImageView homeIcon = findViewById(R.id.home_icon);
-        ImageView favoriteIcon = findViewById(R.id.favorites_icon);
-        ImageView messageIcon = findViewById(R.id.messages_icon);
-        ImageView profileIcon = findViewById(R.id.profile_icon);
-        ImageView settingsIcon = findViewById(R.id.settings_icon);
-
-        homeIcon.setOnClickListener(view -> navigateTo(MainActivity.class));
-        favoriteIcon.setOnClickListener(view -> navigateTo(FavoritesActivity.class));
-        messageIcon.setOnClickListener(view -> navigateTo(MessagesActivity.class));
-
-
-
-
-        profileIcon.setOnClickListener(view -> navigateTo(StorefrontActivity.class));
-
-
-
-
-        settingsIcon.setOnClickListener(view -> navigateTo(SettingsActivity.class));
-
-
-
-        //Listens for if user clicks add button, if they do then envoke add item function for popup and adding of
-        //item to database and visible for recycler view for this specific user
-        String vendorId = currentUser.getUid();
-        loadStorefrontItems(vendorId);
-        Button addButton = findViewById(R.id.add_button);
-        addButton.setOnClickListener(view -> addItem(vendorId));
-
-        Button deleteButton = findViewById(R.id.delete_button);
-        deleteButton.setOnClickListener(view -> deleteItem(vendorId));
-
-        fetchUserData();
-        fetchVendorData();
+        initViews();
+        listenForItems();
+        loadVendorMeta();
     }
 
-    private void addItem(String vendorId) {
-        AlertDialog.Builder builder = new AlertDialog.Builder(this);
-        builder.setTitle("Add New Item");
+    /* ───────────────────── view wiring helpers ─────────────────── */
+    private void initViews() {
+        tvName    = findViewById(R.id.profile_name);
+        tvAddress = findViewById(R.id.vendor_address);
 
-        View viewInflated = LayoutInflater.from(this).inflate(R.layout.dialog_add_item, null);
-        final EditText inputName = viewInflated.findViewById(R.id.input_name);
-        final EditText inputDescription = viewInflated.findViewById(R.id.input_description);
-        final EditText inputPrice = viewInflated.findViewById(R.id.input_price);
+        rv = findViewById(R.id.recyclerView);
+        rv.setLayoutManager(new LinearLayoutManager(this));
+        adapter = new ItemAdapter(this, items, /*filterable*/ false);
+        rv.setAdapter(adapter);
 
-        builder.setView(viewInflated);
+        // nav icons
+        int[] ids   = { R.id.home_icon, R.id.favorites_icon, R.id.messages_icon,
+                R.id.profile_icon, R.id.settings_icon };
+        Class<?>[] dest = { MainActivity.class, FavoritesActivity.class,
+                MessagesActivity.class, StorefrontActivity.class,
+                SettingsActivity.class };
+        for (int i = 0; i < ids.length; i++)
+            findViewById(ids[i]).setOnClickListener(v -> nav(dest[i]));
 
-        builder.setPositiveButton("Add", (dialog, which) -> {
-            String name = inputName.getText().toString().trim();
-            String description = inputDescription.getText().toString().trim();
-            String priceString = inputPrice.getText().toString().trim();
+        findViewById(R.id.add_button)   .setOnClickListener(v -> showAddDialog());
+        findViewById(R.id.delete_button).setOnClickListener(v -> showDeleteDialog());
+    }
 
-            if (!name.isEmpty() && !description.isEmpty() && !priceString.isEmpty()) {
-                double price = Double.parseDouble(priceString);
-                String userId = currentUser.getUid();
+    /* ─────────────────────── Firestore live-load ───────────────── */
+    private void listenForItems() {
+        db.collection("Storefront")
+                .whereEqualTo("vendorID", vendorId)
+                .addSnapshotListener((@Nullable QuerySnapshot snap,
+                                      @Nullable FirebaseFirestoreException e) -> {
+                    if (e != null) return;
+                    items.clear();
+                    for (DocumentSnapshot d : snap.getDocuments())
+                        items.add(d.toObject(Item.class));
+                    adapter.notifyDataSetChanged();
+                });
+    }
 
-                // Check if an item with the same name already exists for the vendor
-                firestore.collection("Storefront")
-                        .whereEqualTo("name", name)
-                        .whereEqualTo("vendorID", userId)
-                        .get()
-                        .addOnSuccessListener(querySnapshot -> {
-                            if (!querySnapshot.isEmpty()) {
-                                // Item with the same name exists, show error message
-                                Toast.makeText(this, "Item with this name already exists!", Toast.LENGTH_SHORT).show();
-                            } else {
-                                // No duplicate, proceed with adding the item
-                                addNewItemToFirestore(name, description, price, userId, vendorId);
-                            }
-                        })
-                        .addOnFailureListener(e -> {
-                            Toast.makeText(this, "Error checking existing items.", Toast.LENGTH_SHORT).show();
+    /* ───────────────────── vendor meta (name/address) ──────────── */
+    private void loadVendorMeta() {
+        db.collection("Vendors").document(vendorId).get()
+                .addOnSuccessListener(doc -> {
+                    tvName.setText(doc.getString("companyName"));
+                    String addr = doc.getString("address");
+                    if (addr != null && !addr.isEmpty()) {
+                        tvAddress.setText(addr);
+                        tvAddress.setVisibility(View.VISIBLE);
+                        tvAddress.setOnClickListener(v -> {
+                            Intent i = new Intent(this, MapActivity.class);
+                            i.putExtra("selectedAddress", addr);
+                            startActivity(i);
                         });
-            }
-        });
-
-        builder.setNegativeButton("Cancel", (dialog, which) -> dialog.cancel());
-
-        AlertDialog dialog = builder.create();
-        dialog.setOnShowListener(dialogInterface -> {
-            dialog.getButton(AlertDialog.BUTTON_POSITIVE).setTextColor(getResources().getColor(android.R.color.black));
-            dialog.getButton(AlertDialog.BUTTON_NEGATIVE).setTextColor(getResources().getColor(android.R.color.black));
-        });
-        dialog.show();
-    }
-
-    // Helper function to add the item and reload storefront
-    private void addNewItemToFirestore(String name, String description, double price, String userId, String vendorId) {
-        CollectionReference storefrontColRef = firestore.collection("Storefront");
-        String itemID = storefrontColRef.document().getId();
-        String imageUrl = ""; // Placeholder for image URL
-
-        HashMap<String, Object> item = new HashMap<>();
-        item.put("name", name);
-        item.put("description", description);
-        item.put("imageUrl", imageUrl);
-        item.put("price", price);
-        item.put("itemID", itemID);
-        item.put("vendorID", userId);
-
-        storefrontColRef.document(itemID).set(item)
-                .addOnSuccessListener(aVoid -> {
-                    Toast.makeText(this, "Item Added Successfully", Toast.LENGTH_SHORT).show();
-                    loadStorefrontItems(vendorId); // Refresh the storefront after adding
-                })
-                .addOnFailureListener(e -> {
-                    Toast.makeText(this, "Error Adding Item", Toast.LENGTH_SHORT).show();
+                    }
                 });
     }
 
+    /* ───────────────────────── add item ───────────────────────── */
+    private void showAddDialog() {
+        View v = LayoutInflater.from(this)
+                .inflate(R.layout.dialog_add_item, null);
+        EditText name = v.findViewById(R.id.input_name);
+        EditText desc = v.findViewById(R.id.input_description);
+        EditText price= v.findViewById(R.id.input_price);
 
-    private void deleteItem(String vendorId) {
-        AlertDialog.Builder builder = new AlertDialog.Builder(this);
-        builder.setTitle("Delete Item");
+        new AlertDialog.Builder(this).setTitle("Add new item")
+                .setView(v)
+                .setPositiveButton("Add", (d, i) -> {
+                    String n = name.getText().toString().trim();
+                    String de= desc.getText().toString().trim();
+                    String p = price.getText().toString().trim();
+                    if (n.isEmpty()||de.isEmpty()||p.isEmpty()) { toast("All fields"); return; }
 
-        View viewInflated = LayoutInflater.from(this).inflate(R.layout.dialog_delete_item, null);
-        final EditText inputItem = viewInflated.findViewById(R.id.input_item_id);
+                    db.collection("Storefront")
+                            .whereEqualTo("vendorID", vendorId)
+                            .whereEqualTo("name", n)
+                            .limit(1)
+                            .get()
+                            .addOnSuccessListener(q -> {
+                                if (!q.isEmpty()) { toast("Name already exists"); return; }
+                                Map<String,Object> m = new HashMap<>();
+                                m.put("name", n);
+                                m.put("description", de);
+                                m.put("price", Double.parseDouble(p));
+                                m.put("vendorID", vendorId);
+                                m.put("itemID", db.collection("dummy").document().getId());
+                                m.put("imageUrl", "");
 
-        builder.setView(viewInflated);
-
-        builder.setPositiveButton("Delete", (dialog, which) -> {
-            String inputText = inputItem.getText().toString().trim();
-            if (!inputText.isEmpty()) {
-                // Check if input is an item ID
-                DocumentReference itemRef = firestore.collection("Storefront").document(inputText);
-                itemRef.get().addOnSuccessListener(documentSnapshot -> {
-                    if (documentSnapshot.exists()) {
-                        String itemVendorId = documentSnapshot.getString("vendorID");
-
-                        if (itemVendorId != null && itemVendorId.equals(vendorId)) {
-                            // Delete the item by item ID
-                            itemRef.delete().addOnSuccessListener(aVoid -> {
-                                Toast.makeText(this, "Item Deleted Successfully", Toast.LENGTH_SHORT).show();
-                            }).addOnFailureListener(e -> {
-                                Toast.makeText(this, "Error Deleting Item", Toast.LENGTH_SHORT).show();
+                                db.collection("Storefront").document((String) m.get("itemID"))
+                                        .set(m).addOnSuccessListener(vv -> toast("Added!"))
+                                        .addOnFailureListener(er -> toast("Add failed"));
                             });
-                        } else {
-                            Toast.makeText(this, "You can only delete your own items.", Toast.LENGTH_SHORT).show();
-                        }
-                    } else {
-                        // If not an item ID, search by name
-                        searchAndDeleteByName(inputText, vendorId);
-                    }
-                }).addOnFailureListener(e -> {
-                    Toast.makeText(this, "Error retrieving item data.", Toast.LENGTH_SHORT).show();
-                });
-            }
-        });
-
-        builder.setNegativeButton("Cancel", (dialog, which) -> dialog.cancel());
-
-        AlertDialog dialog = builder.create();
-        dialog.setOnShowListener(dialogInterface -> {
-            dialog.getButton(AlertDialog.BUTTON_POSITIVE).setTextColor(getResources().getColor(android.R.color.black));
-            dialog.getButton(AlertDialog.BUTTON_NEGATIVE).setTextColor(getResources().getColor(android.R.color.black));
-        });
-        dialog.show();
-    }
-
-    // Function to delete by item name
-    private void searchAndDeleteByName(String itemName, String vendorId) {
-        firestore.collection("Storefront")
-                .whereEqualTo("name", itemName)
-                .whereEqualTo("vendorID", vendorId) // Ensure only deleting current user's items
-                .get()
-                .addOnSuccessListener(queryDocumentSnapshots -> {
-                    if (!queryDocumentSnapshots.isEmpty()) {
-                        for (DocumentSnapshot doc : queryDocumentSnapshots.getDocuments()) {
-                            doc.getReference().delete().addOnSuccessListener(aVoid -> {
-                                Toast.makeText(this, "Item Deleted Successfully", Toast.LENGTH_SHORT).show();
-                            }).addOnFailureListener(e -> {
-                                Toast.makeText(this, "Error Deleting Item", Toast.LENGTH_SHORT).show();
-                            });
-                        }
-                    } else {
-                        Toast.makeText(this, "Item not found.", Toast.LENGTH_SHORT).show();
-                    }
                 })
-                .addOnFailureListener(e -> {
-                    Toast.makeText(this, "Error searching for item.", Toast.LENGTH_SHORT).show();
-                });
+                .setNegativeButton("Cancel", null)
+                .show();
     }
 
+    /* ─────────────────────── delete item ───────────────────────── */
+    private void showDeleteDialog() {
+        View v = LayoutInflater.from(this)
+                .inflate(R.layout.dialog_delete_item, null);
+        EditText input = v.findViewById(R.id.input_item_id);
 
+        new AlertDialog.Builder(this).setTitle("Delete item")
+                .setView(v)
+                .setPositiveButton("Delete", (d, i) -> {
+                    String txt = input.getText().toString().trim();
+                    if (txt.isEmpty()) return;
 
-    private void loadStorefrontItems(String userId) {
-        CollectionReference itemsRef = firestore.collection("Storefront");
-
-        itemsRef.whereEqualTo("vendorID", userId)
-                .addSnapshotListener(new EventListener<QuerySnapshot>() {
-                    @Override
-                    public void onEvent(@Nullable QuerySnapshot snapshot, @Nullable FirebaseFirestoreException error) {
-                        if (error != null) {
-                            Log.e("Firestore", "Error loading items", error);
-                            return;
-                        }
-                        if (snapshot != null) {
-                            itemList.clear();
-
-                            for (DocumentSnapshot itemDoc : snapshot.getDocuments()) {
-                                Item item = itemDoc.toObject(Item.class);
-
-                                if (item != null) {
-                                    itemList.add(item);
-                                }
-                            }
-                            itemAdapter.notifyDataSetChanged();
-                        }
-                    }
-                });
-    }
-}
-
-
-    //gets vendor address from firestore and makes it a clickable for map integration
-    private void fetchVendorData() {
-        //get the authentication for the current user, which should be a vendor now
-        FirebaseAuth auth = FirebaseAuth.getInstance();
-        FirebaseFirestore firestore = FirebaseFirestore.getInstance();
-        String vendorId = auth.getCurrentUser().getUid();  // Get current vendor ID
-
-        //sets the vendor address text for ui implementation
-        DocumentReference vendorDocRef = firestore.collection("Vendors").document(vendorId);
-        vendorDocRef.get().addOnSuccessListener(documentSnapshot -> {
-            if (documentSnapshot.exists()) {
-                String vendorAddress = documentSnapshot.getString("address");
-                String testVendorAddress = "1600 Amphitheatre Parkway, Mountain View, CA";
-                TextView addressTextView = findViewById(R.id.vendor_address);
-
-                if (vendorAddress != null && !vendorAddress.isEmpty()) {
-                    addressTextView.setText(vendorAddress);
-                    addressTextView.setVisibility(View.VISIBLE);
-
-                    // Make the address clickable to open the map
-                    addressTextView.setOnClickListener(v -> {
-                        Intent intent = new Intent(StorefrontActivity.this, MapActivity.class);
-                        intent.putExtra("selectedAddress", vendorAddress);
-                        startActivity(intent);
+                    // try by ID, else by name
+                    DocumentReference ref = db.collection("Storefront").document(txt);
+                    ref.get().addOnSuccessListener(doc -> {
+                        if (doc.exists() && vendorId.equals(doc.getString("vendorID")))
+                            ref.delete().addOnSuccessListener(vv -> toast("Deleted"));
+                        else deleteByName(txt);
                     });
-                }
-            }
-        }).addOnFailureListener(e -> {
-            Log.e("FirestoreError", "Error fetching vendor data", e);
-        });
+                })
+                .setNegativeButton("Cancel", null)
+                .show();
     }
 
-    private void navigateTo(Class<?> targetActivity) {
-        Intent intent = new Intent(StorefrontActivity.this, targetActivity);
-        startActivity(intent);
+    private void deleteByName(String name) {
+        db.collection("Storefront")
+                .whereEqualTo("vendorID", vendorId)
+                .whereEqualTo("name", name)
+                .get()
+                .addOnSuccessListener(q -> {
+                    if (q.isEmpty()) { toast("Item not found"); return; }
+                    for (DocumentSnapshot d : q) d.getReference().delete();
+                    toast("Deleted");
+                });
     }
+
+    /* ───────────────────── helper wrappers ────────────────────── */
+    private void nav(Class<?> c){ startActivity(new Intent(this,c)); }
+    private void toast(String m){ Toast.makeText(this,m,Toast.LENGTH_SHORT).show(); }
 }
-
-
-// -------------------------READ ME ---------------------------------READ ME--------------------------------READ ME------------------------------------------------
-//COMMENTED CODE BELOW IS FOR USER INPUT VERSION. USE WHEN READY TO
-//IMPLEMENT ADD FUNCTION. CODE ABOVE IS BOILER PLATE VERSION FOR VIEW
-//TESTING.
-
-
-
-
-
-
-//package com.example.realizedvision;
-//
-//import android.os.Bundle;
-//import android.util.Log;
-//import android.widget.Toast;
-//
-//import androidx.annotation.NonNull;
-//import androidx.appcompat.app.AppCompatActivity;
-//import androidx.recyclerview.widget.LinearLayoutManager;
-//import androidx.recyclerview.widget.RecyclerView;
-//
-//import com.google.firebase.auth.FirebaseAuth;
-//import com.google.firebase.auth.FirebaseUser;
-//import com.google.firebase.database.DataSnapshot;
-//import com.google.firebase.database.DatabaseError;
-//import com.google.firebase.database.DatabaseReference;
-//import com.google.firebase.database.FirebaseDatabase;
-//import com.google.firebase.database.ValueEventListener;
-//import com.example.realizedvision.ItemAdapter;
-//
-//import java.util.ArrayList;
-//import java.util.HashMap;
-//import java.util.List;
-//
-//public class StorefrontActivity extends AppCompatActivity {
-//
-//    private RecyclerView recyclerView;
-//    private ItemAdapter itemAdapter;
-//    private List<Item> itemList;
-//    private DatabaseReference userDatabaseRef;
-//    private FirebaseUser currentUser;
-//
-//    @Override
-//    protected void onCreate(Bundle savedInstanceState) {
-//        super.onCreate(savedInstanceState);
-//        setContentView(R.layout.activity_vendor_profile); // Make sure this XML file is correct!
-//
-//        // Initialize Firebase
-//        currentUser = FirebaseAuth.getInstance().getCurrentUser();
-//        userDatabaseRef = FirebaseDatabase.getInstance().getReference("Users");
-//
-//        // Initialize RecyclerView
-//        recyclerView = findViewById(R.id.recyclerView);
-//        recyclerView.setLayoutManager(new LinearLayoutManager(this));
-//
-//        // Initialize item list and adapter
-//        itemList = new ArrayList<>();
-//        itemAdapter = new ItemAdapter(this, itemList);
-//        recyclerView.setAdapter(itemAdapter);
-//
-//        // Check if storefront exists and load items
-//        checkOrCreateStorefront();
-//    }
-//
-//    private void checkOrCreateStorefront() {
-//        if (currentUser != null) {
-//            String userId = currentUser.getUid();
-//            DatabaseReference storefrontRef = userDatabaseRef.child(userId).child("storefront");
-//
-//            // Check if "storefront" exists
-//            storefrontRef.addListenerForSingleValueEvent(new ValueEventListener() {
-//                @Override
-//                public void onDataChange(@NonNull DataSnapshot snapshot) {
-//                    if (!snapshot.exists()) {
-//                        // Storefront doesn't exist, create it
-//                        createDefaultStorefront(userId);
-//                    } else {
-//                        // Load existing items
-//                        loadStorefrontItems(userId);
-//                    }
-//                }
-//
-//                @Override
-//                public void onCancelled(@NonNull DatabaseError error) {
-//                    Toast.makeText(StorefrontActivity.this, "Error: " + error.getMessage(), Toast.LENGTH_SHORT).show();
-//                }
-//            });
-//        }
-//    }
-//
-//    private void createDefaultStorefront(String userId) {
-//        DatabaseReference storefrontRef = userDatabaseRef.child(userId).child("storefront").child("items");
-//
-//        // Create a default item for testing
-//        HashMap<String, Object> defaultItem = new HashMap<>();
-//        defaultItem.put("name", "Sample Item");
-//        defaultItem.put("description", "This is a sample item.");
-//        defaultItem.put("price", 10.99);
-//        defaultItem.put("imageUrl", "https://via.placeholder.com/150");
-//
-//        // Push default item into the storefront collection
-//        storefrontRef.push().setValue(defaultItem).addOnCompleteListener(task -> {
-//            if (task.isSuccessful()) {
-//                Toast.makeText(StorefrontActivity.this, "Storefront created!", Toast.LENGTH_SHORT).show();
-//                loadStorefrontItems(userId);
-//            } else {
-//                Toast.makeText(StorefrontActivity.this, "Failed to create storefront", Toast.LENGTH_SHORT).show();
-//            }
-//        });
-//    }
-//
-//    private void loadStorefrontItems(String userId) {
-//        DatabaseReference itemsRef = userDatabaseRef.child(userId).child("storefront").child("items");
-//
-//        itemsRef.addValueEventListener(new ValueEventListener() {
-//            @Override
-//            public void onDataChange(@NonNull DataSnapshot snapshot) {
-//                itemList.clear();
-//                for (DataSnapshot dataSnapshot : snapshot.getChildren()) {
-//                    Item item = dataSnapshot.getValue(Item.class);
-//                    if (item != null) {
-//                        itemList.add(item);
-//                    }
-//                }
-//                itemAdapter.notifyDataSetChanged();
-//            }
-//
-//            @Override
-//            public void onCancelled(@NonNull DatabaseError error) {
-//                Log.e("Firebase", "Error loading items", error.toException());
-//            }
-//        });
-//    }
-//}

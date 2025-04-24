@@ -5,56 +5,68 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.TextView;
+
 import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
+
 import java.util.List;
 import java.util.Map;
 
-public class ReviewAdapter extends RecyclerView.Adapter<ReviewAdapter.ReviewViewHolder> {
+/**
+ * Lightweight adapter that renders item-review docs coming straight from
+ * Firestore (<code>Map&lt;String,Object&gt;</code>).
+ *
+ * Expected keys in each map:
+ * <ul>
+ *   <li><b>displayName</b> – String</li>
+ *   <li><b>rating</b>      – Number (Double/Long)</li>
+ *   <li><b>text</b>        – String (optional)</li>
+ * </ul>
+ */
+public class ReviewAdapter extends RecyclerView.Adapter<ReviewAdapter.VH> {
 
-    private Context context;
-    private List<Map<String, Object>> reviews;
+    private final Context              ctx;
+    private final LayoutInflater       inflater;
+    private final List<Map<String, Object>> data;
 
-    public ReviewAdapter(Context context, List<Map<String, Object>> reviews) {
-        this.context = context;
-        this.reviews = reviews;
+    public ReviewAdapter(Context c, List<Map<String, Object>> reviews) {
+        this.ctx      = c;
+        this.data     = reviews;
+        this.inflater = LayoutInflater.from(c);
+        setHasStableIds(true);                   // smoother RecyclerView animations
     }
 
-    @NonNull
-    @Override
-    public ReviewViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
-        View view = LayoutInflater.from(context).inflate(R.layout.item_review, parent, false);
-        return new ReviewViewHolder(view);
-    }
-
-    @Override
-    public void onBindViewHolder(@NonNull ReviewViewHolder holder, int position) {
-        Map<String, Object> review = reviews.get(position);
-        String userId = (String) review.get("userId");
-        String displayName = (String) review.get("displayName");
-        float rating = ((Number) review.get("rating")).floatValue();
-        String text = (String) review.get("text");
-
-        holder.reviewerNameTextView.setText("Review by: " + displayName);
-        holder.reviewRatingTextView.setText("Rating: " + rating);
-        holder.reviewDescriptionTextView.setText(text != null ? text : "");
-    }
-
-    @Override
-    public int getItemCount() {
-        return reviews.size();
-    }
-
-    public static class ReviewViewHolder extends RecyclerView.ViewHolder {
-        TextView reviewerNameTextView;
-        TextView reviewRatingTextView;
-        TextView reviewDescriptionTextView;
-
-        public ReviewViewHolder(@NonNull View itemView) {
-            super(itemView);
-            reviewerNameTextView = itemView.findViewById(R.id.reviewer_name);
-            reviewRatingTextView = itemView.findViewById(R.id.review_rating);
-            reviewDescriptionTextView = itemView.findViewById(R.id.review_description);
+    /* ───────────────────────── ViewHolder ───────────────────────── */
+    static final class VH extends RecyclerView.ViewHolder {
+        final TextView name, rating, desc;
+        VH(View v) {
+            super(v);
+            name   = v.findViewById(R.id.reviewer_name);
+            rating = v.findViewById(R.id.review_rating);
+            desc   = v.findViewById(R.id.review_description);
         }
     }
+
+    /* ───────────────────── RecyclerView hooks ──────────────────── */
+    @NonNull @Override
+    public VH onCreateViewHolder(@NonNull ViewGroup p, int t) {
+        return new VH(inflater.inflate(R.layout.item_review, p, false));
+    }
+
+    @Override
+    public void onBindViewHolder(@NonNull VH h, int pos) {
+        Map<String, Object> r = data.get(pos);
+
+        String displayName = String.valueOf(r.get("displayName"));
+        Number rawRating   = (Number) r.get("rating");
+        String text        = String.valueOf(r.get("text"));
+
+        h.name  .setText(ctx.getString(R.string.review_by_fmt, displayName));
+        h.rating.setText(ctx.getString(R.string.rating_fmt,
+                rawRating != null ? rawRating.floatValue() : 0f));
+        h.desc  .setText(text == null || "null".equals(text) ? "" : text);
+    }
+
+    @Override public int  getItemCount()            { return data.size(); }
+    @Override public long getItemId(int position)   { return data.get(position).hashCode(); }
 }

@@ -1,28 +1,44 @@
-package com.example.realizedvision;
+package com.example.realizedvision.util;
 
 import android.util.Log;
-import android.widget.TextView;
+import androidx.annotation.Nullable;
 import com.google.firebase.firestore.FirebaseFirestore;
 
-public class VendorUtils {
+/**
+ * Lightweight helper for looking up a vendor’s company name by id.
+ *
+ * You call:
+ * <pre>
+ * VendorUtils.fetchVendorName(vendorId) { name ->
+ *     // name is null if unknown / error
+ * }
+ * </pre>
+ */
+public final class VendorUtils {
 
-    public interface onVendorFetchedListener{
-        void onVendorFetched(String vendorName);
+    private static final String TAG = "VendorUtils";
+    private static final FirebaseFirestore db = FirebaseFirestore.getInstance();
+
+    /** functional-style callback */
+    public interface VendorCallback {
+        /** @param name companyName or <code>null</code> if not found / error */
+        void onResult(@Nullable String name);
     }
-    public static void fetchVendorName(String vendorID, onVendorFetchedListener listener) {
-        FirebaseFirestore db = FirebaseFirestore.getInstance();
-        db.collection("Vendors").document(vendorID).get()
-                .addOnSuccessListener(documentSnapshot -> {
-                    if (documentSnapshot.exists()) {
-                        String vendorName = documentSnapshot.getString("companyName");
-                        listener.onVendorFetched(vendorName);
-                    } else {
-                        listener.onVendorFetched(null);
-                    }
-                })
+
+    private VendorUtils() {} // no instances
+
+    public static void fetchVendorName(String vendorId, VendorCallback cb) {
+        if (vendorId == null || vendorId.isEmpty()) {
+            cb.onResult(null);
+            return;
+        }
+
+        db.collection("Vendors").document(vendorId).get()
+                .addOnSuccessListener(doc ->
+                        cb.onResult(doc.exists() ? doc.getString("companyName") : null))
                 .addOnFailureListener(e -> {
-                    Log.e("VendorUtils", "Failed to fetch vendor name", e);
-                    listener.onVendorFetched(null);
+                    Log.e(TAG, "fetchVendorName failed", e);
+                    cb.onResult(null);
                 });
     }
 }

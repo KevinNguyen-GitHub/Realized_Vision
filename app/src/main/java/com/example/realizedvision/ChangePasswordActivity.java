@@ -2,105 +2,101 @@ package com.example.realizedvision;
 
 import android.os.Bundle;
 import android.text.TextUtils;
-import android.view.View;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.ImageButton;
 import android.widget.Toast;
 
-import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 
 import com.google.firebase.auth.AuthCredential;
 import com.google.firebase.auth.EmailAuthProvider;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
-import com.google.android.gms.tasks.OnCompleteListener;
-import com.google.android.gms.tasks.Task;
 
+/**
+ * Allows the signed-in user to change their password after a quick
+ * re-authentication check with their current password.
+ */
 public class ChangePasswordActivity extends AppCompatActivity {
 
-    private EditText editTextCurrentPassword, editTextNewPassword, editTextConfirmPassword;
-    private Button buttonSave;
-    private FirebaseAuth mAuth;
-    private FirebaseUser currentUser;
+    private static final int MIN_LEN = 6;
 
+    private EditText etCurrent, etNew, etConfirm;
+    private Button   btnSave;
+
+    private FirebaseUser user;
+
+    // ───────────────────────── lifecycle ─────────────────────────
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_changepassword);
 
-        // Initialize Firebase Auth
-        mAuth = FirebaseAuth.getInstance();
-        currentUser = mAuth.getCurrentUser();
+        user = FirebaseAuth.getInstance().getCurrentUser();
+        if (user == null) {                 // signed-out guard
+            toast("User not authenticated. Please log in again.");
+            finish(); return;
+        }
 
-        // Initialize views
-        editTextCurrentPassword = findViewById(R.id.currentPassword);
-        editTextNewPassword = findViewById(R.id.newPassword);
-        editTextConfirmPassword = findViewById(R.id.confirmPassword);
-        buttonSave = findViewById(R.id.saveButton);
+        initViews();
+    }
 
-        ImageButton backButton = findViewById(R.id.backButtonChangePass);
-        backButton.setOnClickListener(v -> finish());
+    // ───────────────────── view wiring / listeners ───────────────────────
+    private void initViews() {
+        etCurrent = findViewById(R.id.currentPassword);
+        etNew     = findViewById(R.id.newPassword);
+        etConfirm = findViewById(R.id.confirmPassword);
+        btnSave   = findViewById(R.id.saveButton);
 
-        // Save button logic
-        buttonSave.setOnClickListener(v -> {
-            String currentPassword = editTextCurrentPassword.getText().toString().trim();
-            String newPassword = editTextNewPassword.getText().toString().trim();
-            String confirmPassword = editTextConfirmPassword.getText().toString().trim();
-            if (validateInputs(currentPassword, newPassword, confirmPassword)) {
-                changePassword(currentPassword, newPassword);
-            }
+        ImageButton back = findViewById(R.id.backButtonChangePass);
+        back.setOnClickListener(v -> finish());
+
+        btnSave.setOnClickListener(v -> {
+            String curr = etCurrent.getText().toString().trim();
+            String next = etNew.getText().toString().trim();
+            String conf = etConfirm.getText().toString().trim();
+
+            if (inputsValid(curr, next, conf)) changePassword(curr, next);
         });
     }
 
-    private boolean validateInputs(String currentPassword, String newPassword, String confirmPassword) {
-        if (TextUtils.isEmpty(currentPassword)) { //trim for extra spaces
-            Toast.makeText(this, "Please enter your current password.", Toast.LENGTH_SHORT).show();
-            return false;
-        }
-        if (TextUtils.isEmpty(newPassword) || TextUtils.isEmpty(confirmPassword)) {
-            Toast.makeText(this, "Please fill in all password fields.", Toast.LENGTH_SHORT).show();
-            return false;
-        }
-        if (!newPassword.equals(confirmPassword)) { //password match check
-            Toast.makeText(this, "New passwords do not match.", Toast.LENGTH_SHORT).show();
-            return false;
-        }
-        if (newPassword.length() < 6) {
-            Toast.makeText(this, "New password must be at least 6 characters long.", Toast.LENGTH_SHORT).show();
-            return false;
-        }
+    // ────────────────────── validation helpers ───────────────────────────
+    private boolean inputsValid(String curr, String next, String conf) {
+        if (TextUtils.isEmpty(curr))                      { toast("Enter your current password."); return false; }
+        if (TextUtils.isEmpty(next) || TextUtils.isEmpty(conf))
+        { toast("Fill in all password fields.");  return false; }
+        if (!next.equals(conf))                          { toast("New passwords do not match.");   return false; }
+        if (next.length() < MIN_LEN)                     { toast("Password must be ≥ " + MIN_LEN + " characters."); return false; }
         return true;
     }
 
-    private void changePassword(String currentPassword, String newPassword) {
-        if (currentUser == null) {
-            Toast.makeText(this, "User not authenticated. Please log in again.", Toast.LENGTH_SHORT).show();
-            return;
-        }
+    // ────────────────────── change-password flow ─────────────────────────
+    private void changePassword(String currentPwd, String newPwd) {
+        btnSave.setEnabled(false);      // debounce taps
 
-        // Re-authenticate the user with their current password
-        AuthCredential credential = EmailAuthProvider.getCredential(currentUser.getEmail(), currentPassword);
-        currentUser.reauthenticate(credential)
-                .addOnCompleteListener(task -> {
-                    if (task.isSuccessful()) {
-                        // Update the password
-                        currentUser.updatePassword(newPassword)
-                                .addOnCompleteListener(task1 -> {
-                                    if (task1.isSuccessful()) {
-                                        Toast.makeText(this, "Password updated successfully!", Toast.LENGTH_SHORT).show();
-                                        finish();
-                                    } else {
-                                        Toast.makeText(this, "Password update failed. Try again.", Toast.LENGTH_SHORT).show();
-                                    }
-                                });
-                    } else {
-                        Toast.makeText(this, "Current password is incorrect.", Toast.LENGTH_SHORT).show();
-                    }
-                });
+        AuthCredential cred = EmailAuthProvider.getCredential(
+                String.valueOf(user.getEmail()), currentPwd);
+
+        user.reauthenticate(cred).addOnCompleteListener(authTask -> {
+            if (!authTask.isSuccessful()) {
+                toast("Current password is incorrect.");
+                btnSave.setEnabled(true);
+                return;
+            }
+
+            user.updatePassword(newPwd).addOnCompleteListener(updTask -> {
+                if (updTask.isSuccessful()) {
+                    toast("Password updated successfully!");
+                    finish();
+                } else {
+                    toast("Password update failed. Try again.");
+                    btnSave.setEnabled(true);
+                }
+            });
+        });
     }
+
+    // ────────────────────────── toast helper ─────────────────────────────
+    private void toast(String msg) { Toast.makeText(this, msg, Toast.LENGTH_SHORT).show(); }
 }
-
-
-

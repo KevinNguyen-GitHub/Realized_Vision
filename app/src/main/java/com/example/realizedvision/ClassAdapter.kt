@@ -7,71 +7,55 @@ import android.widget.TextView
 import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
 
-class ClassAdapter(private val isViewingOtherAccount: Boolean) : ListAdapter<ClassInfo, ClassAdapter.ClassViewHolder>(ClassDiffCallback()) {
+class ClassAdapter(
+    private val isViewingOtherAccount: Boolean,
+    private val listener: OnItemClickListener
+) : ListAdapter<ClassInfo, ClassAdapter.ViewHolder>(ClassDiffCallback()) {
 
     interface OnItemClickListener {
         fun onItemClick(classInfo: ClassInfo)
         fun onReserveClick(classInfo: ClassInfo)
     }
 
-    private var listener: OnItemClickListener? = null
+    /*────────────────────────── ViewHolder ──────────────────────────*/
+    inner class ViewHolder(view: View) : RecyclerView.ViewHolder(view) {
+        private val titleTv  = view.findViewById<TextView>(R.id.classDetailTitle)
+        private val descTv   = view.findViewById<TextView>(R.id.classDetailDescription)
+        private val slotTv   = view.findViewById<TextView>(R.id.classDetailTimeSlot)
+        private val seatTv   = view.findViewById<TextView>(R.id.classDetailSeatInfo)
+        private val actionTv = view.findViewById<TextView>(R.id.reserveButton)
 
-    fun setOnItemClickListener(listener: OnItemClickListener) {
-        this.listener = listener
-    }
+        private var currentItem: ClassInfo? = null
 
-    class ClassViewHolder(itemView: View, private val listener: OnItemClickListener?, private val isViewingOtherAccount: Boolean) : RecyclerView.ViewHolder(itemView) {
-        val titleTextView: TextView = itemView.findViewById(R.id.classDetailTitle)
-        val descriptionTextView: TextView = itemView.findViewById(R.id.classDetailDescription)
-        val timeslotTextView: TextView = itemView.findViewById(R.id.classDetailTimeSlot)
-        val sizeLimitTextView: TextView = itemView.findViewById(R.id.classDetailSeatInfo)
-        val reserveButton: TextView = itemView.findViewById(R.id.reserveButton)
-
-        fun bind(classData: ClassInfo) {
-            titleTextView.text = classData.title
-            descriptionTextView.text = classData.description
-            itemView.tag = classData
-
-            val startTimeFormatted = classData.startTime
-            val endTimeFormatted = classData.endTime
-            val timeSlot = "$startTimeFormatted - $endTimeFormatted"
-            timeslotTextView.text = timeSlot
-
-            val currentSeats = classData.currentSeats
-            val sizeLimit = classData.sizeLimit
-            val seatInfo = "$currentSeats/$sizeLimit Seats Reserved"
-            sizeLimitTextView.text = seatInfo
-            if (isViewingOtherAccount) {
-                reserveButton.visibility = View.VISIBLE
-                reserveButton.text = "Reserve"
-            } else {
-                reserveButton.visibility = View.VISIBLE
-                reserveButton.text = "View Seats"
-            }
-
-        }
         init {
-            reserveButton.setOnClickListener {
-                val position = getBindingAdapterPosition()
-                if (position != RecyclerView.NO_POSITION) {
-                    val classData = itemView.tag as ClassInfo
-                    if (isViewingOtherAccount) {
-                        listener?.onReserveClick(classData)
-                    } else {
-                        listener?.onItemClick(classData)
-                    }
+            actionTv.setOnClickListener {
+                currentItem?.let {
+                    if (isViewingOtherAccount) listener.onReserveClick(it)
+                    else                       listener.onItemClick(it)
                 }
             }
         }
+
+        fun bind(item: ClassInfo) {
+            currentItem = item
+
+            titleTv.text = item.title
+            descTv.text  = item.description
+            slotTv.text  = "${item.startTime} - ${item.endTime}"
+            seatTv.text  = "${item.currentSeats}/${item.sizeLimit} Seats Reserved"
+
+            actionTv.apply {
+                visibility = View.VISIBLE
+                text = if (isViewingOtherAccount) "Reserve" else "View Seats"
+            }
+        }
     }
 
-    override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ClassViewHolder {
-        val itemView = LayoutInflater.from(parent.context).inflate(R.layout.view_class, parent, false)
-        return ClassViewHolder(itemView, listener, isViewingOtherAccount)
-    }
+    /*───────────────────────── Adapter API ──────────────────────────*/
+    override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolder =
+        ViewHolder(LayoutInflater.from(parent.context)
+            .inflate(R.layout.view_class, parent, false))
 
-    override fun onBindViewHolder(holder: ClassViewHolder, position: Int) {
-        val classData = getItem(position)
-        holder.bind(classData)
-    }
+    override fun onBindViewHolder(holder: ViewHolder, position: Int) =
+        holder.bind(getItem(position))
 }

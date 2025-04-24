@@ -6,125 +6,115 @@ import android.app.PendingIntent;
 import android.content.Context;
 import android.content.Intent;
 import android.os.Build;
-import android.os.Message;
 
 import androidx.annotation.NonNull;
 import androidx.core.app.NotificationCompat;
 
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
-import com.google.firebase.database.DataSnapshot;
-import com.google.firebase.database.DatabaseError;
-import com.google.firebase.database.DatabaseReference;
-import com.google.firebase.database.FirebaseDatabase;
-import com.google.firebase.database.ValueEventListener;
-import com.google.firebase.firestore.FirebaseFirestore;
+import com.google.firebase.database.*;
 
-
+/**
+ * One-stop helper for reading a user’s notification-preference flags and then
+ * routing the message to the correct transport (in-app, e-mail, SMS).
+ *
+ * Preferences are stored in Realtime DB:
+ *   /Users/{uid}/notificationPreferences/{type} = Boolean
+ *
+ * If a Boolean for that {type} is missing, the default is:
+ *   • true  for *in-app* and *e-mail*
+ *   • false for *sms*    (opt-in only)
+ *
+ * Types must be prefixed with <b>app_</b>, <b>email_</b>, or <b>sms_</b>
+ * (e.g. <i>app_orderReady</i>, <i>email_newsletter</i>).
+ */
 public class NotificationHelper {
+
     private static final String CHANNEL_ID = "realized_vision_notifications";
+
     private final Context context;
-    private DatabaseReference userPrefsRef;
-    private FirebaseUser currentUser;
+    private final DatabaseReference prefsRef;
+    private final FirebaseUser user;
 
-    public NotificationHelper(Context context){
-        this.context = context;
-        currentUser = FirebaseAuth.getInstance().getCurrentUser();
-        if(currentUser != null){
-            userPrefsRef = FirebaseDatabase.getInstance()
-                    .getReference("Users")
-                    .child(currentUser.getUid())
-                    .child("notificationPreferences");
-        }
-        createNotificationChannel();
+    public NotificationHelper(Context ctx) {
+        this.context = ctx;
+        this.user = FirebaseAuth.getInstance().getCurrentUser();
+
+        if (user == null)
+            throw new IllegalStateException("NotificationHelper: user not signed-in");
+
+        this.prefsRef = FirebaseDatabase.getInstance()
+                .getReference("Users")
+                .child(user.getUid())
+                .child("notificationPreferences");
+
+        ensureChannel();
     }
 
-    public void checkAndSendNotification(String notificationType, String title, String message){
-        userPrefsRef.child(notificationType).addListenerForSingleValueEvent(
+    /* ───────────────────────── public API ───────────────────────── */
+    public void deliver(String type, String title, String body) {
+        prefsRef.child(type).addListenerForSingleValueEvent(
                 new ValueEventListener() {
-                    @Override
-                    public void onDataChange(@NonNull DataSnapshot snapshot) {
-                        Boolean isEnabled = snapshot.getValue(Boolean.class);
-                        boolean shouldSend = isEnabled != null ? isEnabled :
-                                !notificationType.startsWith("sms_");
-
-                        if (shouldSend) {
-                            sendNotification(notificationType, title, message);
-                        }
+                    @Override public void onDataChange(@NonNull DataSnapshot snap) {
+                        Boolean enabled = snap.getValue(Boolean.class);
+                        boolean shouldSend = enabled != null ? enabled : !type.startsWith("sms_");
+                        if (shouldSend) route(type, title, body);
                     }
-
-                    @Override
-                    public void onCancelled(@NonNull DatabaseError error) {
-
-                    }
-                }
-        );
+                    @Override public void onCancelled(@NonNull DatabaseError e) { /* no-op */ }
+                });
     }
 
-    public void createNotificationChannel(){
-        if(Build.VERSION.SDK_INT >= Build.VERSION_CODES.O){
-            CharSequence name = "App Notifications";
-            String description = "Channel for app notifications";
-            int importance = NotificationManager.IMPORTANCE_DEFAULT;
-            NotificationChannel channel = new NotificationChannel(CHANNEL_ID, name, importance);
-            channel.setDescription(description);
-
-            NotificationManager notificationManager = context.getSystemService(NotificationManager.class);
-            notificationManager.createNotificationChannel(channel);
+    /* ─────────────────────── routing layer ─────────────────────── */
+    private void route(String type, String title, String body) {
+        switch (type.split("_")[0]) {
+            case "app":   inApp(title, body);   break;
+            case "email": email(title, body);   break;
+            case "sms":   sms(title, body);     break;
         }
     }
 
-    public void sendNotification(String type, String title, String content){
-        switch (type.split("_")[0]){
-            case "app":
-                sendInAppNotification(title, content);
-                break;
-            case "email":
-                sendEmailNotification(title, content);
-                break;
-            case "sms":
-                sendSMSNotification(title, content);
-                break;
-        }
-    }
-    public void sendInAppNotification(String title, String content){
-        Intent intent = new Intent(context, MainActivity.class);
-        intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
-        PendingIntent pendingIntent = PendingIntent.getActivity(context,0, intent, PendingIntent.FLAG_IMMUTABLE);
-        NotificationCompat.Builder builder = new NotificationCompat.Builder(context, CHANNEL_ID)
+    /* ───────────────────── transports (stubs) ───────────────────── */
+    private void inApp(String title, String body) {
+        Intent i = new Intent(context, MainActivity.class)
+                .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
+        PendingIntent pi = PendingIntent.getActivity(context, 0, i,
+                PendingIntent.FLAG_IMMUTABLE);
+
+        NotificationCompat.Builder b = new NotificationCompat.Builder(context, CHANNEL_ID)
                 .setSmallIcon(R.drawable.reicon)
                 .setContentTitle(title)
-                .setContentInfo(content)
+                .setContentText(body)
+                .setAutoCancel(true)
                 .setPriority(NotificationCompat.PRIORITY_DEFAULT)
-                .setContentIntent(pendingIntent)
-                .setAutoCancel(true);
-        NotificationManager notificationManager = (NotificationManager) context.getSystemService(Context.NOTIFICATION_SERVICE);
-        notificationManager.notify((int) System.currentTimeMillis(), builder.build());
+                .setContentIntent(pi);
+
+        NotificationManager nm = (NotificationManager)
+                context.getSystemService(Context.NOTIFICATION_SERVICE);
+        nm.notify((int) System.currentTimeMillis(), b.build());
     }
 
-    public void sendEmailNotification(String title, String content){
-        if(currentUser == null || currentUser.getEmail() == null){
-            return;
-        }
-        new Thread(() ->{
-            try {
-                //email properties
-                java.util.Properties props = new java.util.Properties();
-                props.put("mail.smtp.host", "your.smtp.server.com");
-                props.put("mail.smtp.port", "587");
-                props.put("mail.smtp.auth", "true");
-                props.put("mail.smtp.starttls.enable", "true");
-//                 TODO: implement javax api, setup SMTP server
-//                javax.mail.Session session = javax.mail.Session.getInstance(props);
-//                Message message = new MimeMessage(session);
-            }catch (Exception e){
-//                e.printStackTrace();
-            }
-        }).start();
+    private void email(String title, String body) {
+        if (user.getEmail() == null) return;
+        /* TODO — hook up JavaMail / SendGrid / etc.
+           Stub left as demonstration. */
     }
 
-    public void sendSMSNotification(String title, String content){
-//TODO: decide between Twilio API or smsManager
+    private void sms(String title, String body) {
+        /* TODO — integrate Twilio or Android SmsManager as per requirements. */
+    }
 
+    /* ──────────────────── notif-channel helper ─────────────────── */
+    private void ensureChannel() {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O) return;
+
+        NotificationManager nm = context.getSystemService(NotificationManager.class);
+        if (nm.getNotificationChannel(CHANNEL_ID) != null) return;
+
+        NotificationChannel ch = new NotificationChannel(
+                CHANNEL_ID,
+                "App notifications",
+                NotificationManager.IMPORTANCE_DEFAULT);
+        ch.setDescription("Realized Vision notifications");
+        nm.createNotificationChannel(ch);
     }
 }

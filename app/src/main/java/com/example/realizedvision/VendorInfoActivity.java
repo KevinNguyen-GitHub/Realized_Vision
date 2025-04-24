@@ -1,307 +1,131 @@
 package com.example.realizedvision;
 
-import android.content.Intent;
 import android.os.Bundle;
 import android.text.TextUtils;
-import android.util.Log;
 import android.view.View;
-import android.widget.Button;
-import android.widget.EditText;
-import android.widget.ImageButton;
-import android.widget.TextView;
-import android.widget.Toast;
+import android.widget.*;
 
-import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 
-import com.google.android.gms.tasks.OnFailureListener;
-import com.google.android.gms.tasks.OnSuccessListener;
 import com.google.firebase.auth.FirebaseAuth;
-import com.google.firebase.auth.FirebaseUser;
-import com.google.firebase.firestore.DocumentReference;
-import com.google.firebase.firestore.DocumentSnapshot;
-import com.google.firebase.firestore.FirebaseFirestore;
+import com.google.firebase.firestore.*;
 
 import java.util.HashMap;
+import java.util.Map;
 
+/**
+ * One-time “upgrade to vendor” screen.
+ *
+ * – Collects company name, years in business and a postal address.
+ * – Writes a vendor profile under <pre>Vendors/{uid}</pre> and flips
+ *   <code>Users/{uid}.isVendor = true</code>.
+ * – If the user is already a vendor the form is hidden and a message is shown.
+ */
 public class VendorInfoActivity extends AppCompatActivity {
 
-    private FirebaseUser currentUser;
-    private FirebaseFirestore firestore;
+    /* ---------------- Firebase ---------------- */
+    private final FirebaseAuth     auth = FirebaseAuth.getInstance();
+    private final FirebaseFirestore db   = FirebaseFirestore.getInstance();
 
-    private EditText etCompanyName, etYears;
-    private EditText etStreetAddress, etCity, etState, etZipCode;
+    /* ----------------  UI -------------------- */
+    private EditText etCompany, etYears;
+    private EditText etStreet,  etCity, etState, etZip;
+    private Button   btnSubmit;
+    private TextView tvStatus;
 
-    private TextView tvVendorStatus;
-    private Button submitBtn;
-
-    @Override
-    protected void onCreate(Bundle savedInstanceState) {
-        super.onCreate(savedInstanceState);
+    /* ---------------- life-cycle -------------- */
+    @Override protected void onCreate(Bundle b) {
+        super.onCreate(b);
         setContentView(R.layout.activity_vendorinfo);
 
-        // Initialize Firebase
-        currentUser = FirebaseAuth.getInstance().getCurrentUser();
-        if (currentUser != null) {
-            firestore = FirebaseFirestore.getInstance();
-        }
+        if (auth.getCurrentUser() == null) { finish(); return; }
 
-        fetchUserData();
-
-        // Set UI references
-        tvVendorStatus = findViewById(R.id.vendorStatus);
-        etCompanyName = findViewById(R.id.companyName);
-        etYears = findViewById(R.id.yearsInBusiness);
-
-        etStreetAddress = findViewById(R.id.streetAddressEditText);
-        etCity = findViewById(R.id.cityEditText);
-        etState = findViewById(R.id.stateEditText);
-        etZipCode = findViewById(R.id.zipCodeEditText);
-
-        submitBtn = findViewById(R.id.submitButton);
-
-        // Back button
-        ImageButton backButton = findViewById(R.id.backButtonVendor);
-        backButton.setOnClickListener(v -> finish());
-
-        // Save button logic
-        submitBtn.setOnClickListener(v -> updateUserInfo());
+        bindViews();
+        loadUserState();
     }
 
-    private void updateUserInfo() {
-        String companyName = etCompanyName.getText().toString().trim();
-        String street = etStreetAddress.getText().toString().trim();
-        String city = etCity.getText().toString().trim();
-        String state = etState.getText().toString().trim();
-        String zipCode = etZipCode.getText().toString().trim();
-        String fullAddress = street + " " + city + " " + state + " " + zipCode;
+    /* ------------ bind + click listeners ------ */
+    private void bindViews() {
+        etCompany = findViewById(R.id.companyName);
+        etYears   = findViewById(R.id.yearsInBusiness);
+        etStreet  = findViewById(R.id.streetAddressEditText);
+        etCity    = findViewById(R.id.cityEditText);
+        etState   = findViewById(R.id.stateEditText);
+        etZip     = findViewById(R.id.zipCodeEditText);
 
-        int yearsInBusiness;
-        try {
-            yearsInBusiness = Integer.parseInt(etYears.getText().toString().trim());
-        } catch (NumberFormatException e) {
-            Toast.makeText(this, "Please enter an integer for years.", Toast.LENGTH_SHORT).show();
-            return;
+        btnSubmit = findViewById(R.id.submitButton);
+        tvStatus  = findViewById(R.id.vendorStatus);
+
+        findViewById(R.id.backButtonVendor).setOnClickListener(v -> finish());
+        btnSubmit.setOnClickListener(v -> saveVendorInfo());
+    }
+
+    /* -------------- save to Firestore --------- */
+    private void saveVendorInfo() {
+
+        String company = etCompany.getText().toString().trim();
+        String street  = etStreet .getText().toString().trim();
+        String city    = etCity   .getText().toString().trim();
+        String state   = etState  .getText().toString().trim();
+        String zip     = etZip    .getText().toString().trim();
+        String yearsTx = etYears  .getText().toString().trim();
+
+        if (company.isEmpty() || street.isEmpty() || city.isEmpty()
+                || state.isEmpty() || zip.isEmpty() || yearsTx.isEmpty()) {
+            toast("Please fill in every field"); return;
         }
-
-        if (TextUtils.isEmpty(companyName) || TextUtils.isEmpty(street) || TextUtils.isEmpty(city)
-                || TextUtils.isEmpty(state) || TextUtils.isEmpty(zipCode)) {
-            Toast.makeText(this, "Please fill in all fields.", Toast.LENGTH_SHORT).show();
-            return;
+        if (!TextUtils.isDigitsOnly(yearsTx)) {
+            toast("Years in business must be a number"); return;
         }
+        int years = Integer.parseInt(yearsTx);
 
-        String userId = currentUser.getUid();
-        firestore.collection("Users").document(userId)
-                .update("isVendor", true);
+        String uid = auth.getUid();
+        Map<String,Object> vendor = new HashMap<>();
+        vendor.put("companyName",     company);
+        vendor.put("address",         String.format("%s %s %s %s", street, city, state, zip));
+        vendor.put("yearsInBusiness", years);
+        vendor.put("vendorID",        uid);
 
-        HashMap<String, Object> userMap = new HashMap<>();
-        userMap.put("companyName", companyName);
-        userMap.put("address", fullAddress);
-        userMap.put("years", yearsInBusiness);
-        userMap.put("vendorID", userId);
+        WriteBatch batch = db.batch();
+        batch.update(db.collection("Users").document(uid), "isVendor", true);
+        batch.set   (db.collection("Vendors").document(uid), vendor, SetOptions.merge());
 
-        firestore.collection("Vendors").document(userId)
-                .set(userMap)
-                .addOnSuccessListener(unused -> {
-                    Log.d("Firestore", "Updated user status");
-                    navigateTo(StorefrontActivity.class);
-                    finish();
+        btnSubmit.setEnabled(false);
+
+        batch.commit()
+                .addOnSuccessListener(x -> {
+                    toast("You are now a vendor!");
+                    finish();                            // return to previous screen
                 })
-                .addOnFailureListener(e -> Log.w("Failed to update user status", e));
-
-//        firestore.collection("Users").document(userId)
-//                .set(userMap)
-//                .addOnSuccessListener(unused -> {
-//                    Log.d("Firestore", "Updated user status");
-//                    navigateTo(StorefrontActivity.class);
-//                    finish();
-//                })
-//                .addOnFailureListener(e -> Log.w("Failed to update user status", e));
-
+                .addOnFailureListener(e -> {
+                    btnSubmit.setEnabled(true);
+                    toast("Failed to save: " + e.getMessage());
+                });
     }
 
-    private void fetchUserData() {
-        if (currentUser != null) {
-            String userId = currentUser.getUid();
-            DocumentReference userDocRef = firestore.collection("Users").document(userId);
+    /* -------------- show/hide if already vendor -------------- */
+    private void loadUserState() {
+        db.collection("Users").document(auth.getUid()).get()
+                .addOnSuccessListener(doc -> {
+                    boolean vendor = Boolean.TRUE.equals(doc.getBoolean("isVendor"));
+                    setFormVisible(!vendor);
+                })
+                .addOnFailureListener(e -> toast("Error loading user: " + e.getMessage()));
+    }
 
-            userDocRef.get().addOnCompleteListener(task -> {
-                if (task.isSuccessful()) {
-                    DocumentSnapshot snapshot = task.getResult();
-                    if (snapshot.exists() && Boolean.TRUE.equals(snapshot.getBoolean("isVendor"))) {
-                        etCompanyName.setVisibility(View.INVISIBLE);
-                        etYears.setVisibility(View.INVISIBLE);
-                        etStreetAddress.setVisibility(View.INVISIBLE);
-                        etCity.setVisibility(View.INVISIBLE);
-                        etState.setVisibility(View.INVISIBLE);
-                        etZipCode.setVisibility(View.INVISIBLE);
-                        submitBtn.setVisibility(View.INVISIBLE);
-                        tvVendorStatus.setVisibility(View.VISIBLE);
-                    } else if (snapshot.exists()) {
-                        // Not a vendor yet
-                    } else {
-                        Toast.makeText(this, "User data not found.", Toast.LENGTH_SHORT).show();
-                    }
-                } else {
-                    Toast.makeText(this, "Error: " + task.getException().getMessage(), Toast.LENGTH_SHORT).show();
-                }
-            });
+    private void setFormVisible(boolean show) {
+        int f = show ? View.VISIBLE : View.GONE;
+        for (int id : new int[]{
+                R.id.companyName, R.id.yearsInBusiness,
+                R.id.streetAddressEditText, R.id.cityEditText,
+                R.id.stateEditText, R.id.zipCodeEditText, R.id.submitButton }) {
+            findViewById(id).setVisibility(f);
         }
+        tvStatus.setVisibility(show ? View.GONE : View.VISIBLE);
     }
 
-    private void navigateTo(Class<?> targetActivity) {
-        Intent intent = new Intent(VendorInfoActivity.this, targetActivity);
-        startActivity(intent);
+    /* ---------------- util -------------------- */
+    private void toast(String m){
+        Toast.makeText(this,m,Toast.LENGTH_SHORT).show();
     }
 }
-
-
-
-
-
-
-//package com.example.realizedvision;
-//
-//import android.content.Intent;
-//import android.os.Bundle;
-//import android.text.TextUtils;
-//import android.util.Log;
-//import android.view.View;
-//import android.widget.Button;
-//import android.widget.EditText;
-//import android.widget.ImageButton;
-//import android.widget.TextView;
-//import android.widget.Toast;
-//
-//import androidx.annotation.NonNull;
-//import androidx.appcompat.app.AppCompatActivity;
-//
-//import com.google.android.gms.tasks.OnFailureListener;
-//import com.google.android.gms.tasks.OnSuccessListener;
-//import com.google.firebase.auth.FirebaseAuth;
-//import com.google.firebase.auth.FirebaseUser;
-//import com.google.firebase.firestore.DocumentReference;
-//import com.google.firebase.firestore.DocumentSnapshot;
-//import com.google.firebase.firestore.FirebaseFirestore;
-//
-//import java.util.HashMap;
-//
-//public class VendorInfoActivity extends AppCompatActivity {
-//
-//    private FirebaseUser currentUser;
-//    private FirebaseFirestore firestore;
-//
-//    private EditText etCompanyName, etAddress, etYears;
-//
-//    private TextView tvVendorStatus;
-//    private Button submitBtn;
-//
-//    @Override
-//    protected void onCreate(Bundle savedInstanceState) {
-//        super.onCreate(savedInstanceState);
-//        setContentView(R.layout.activity_vendorinfo);
-//
-//        // Initialize Firebase
-//        currentUser = FirebaseAuth.getInstance().getCurrentUser();
-//        if (currentUser != null) {
-//            firestore = FirebaseFirestore.getInstance();
-//        }
-//
-//        fetchUserData();
-//
-//        // Setting UI connections
-//        tvVendorStatus = findViewById(R.id.vendorStatus);
-//        etCompanyName = findViewById(R.id.companyName);
-//        etAddress = findViewById(R.id.address);
-//        etYears = findViewById(R.id.yearsInBusiness);
-//        submitBtn = findViewById(R.id.submitButton);
-//
-//        // Back Button
-//        ImageButton backButton = findViewById(R.id.backButtonVendor);
-//        backButton.setOnClickListener(v -> finish());
-//
-//        // Save button logic
-//        submitBtn.setOnClickListener(v -> updateUserInfo());
-//    }
-//
-//    private void updateUserInfo(){
-//        String companyName = etCompanyName.getText().toString().trim();
-//        String address = etAddress.getText().toString().trim();
-//        int yearsInBusiness;
-//
-//        try{
-//            yearsInBusiness = Integer.parseInt(etYears.getText().toString().trim());
-//        }
-//        catch (NumberFormatException e){
-//            Toast.makeText(this, "Please enter an integer for years.", Toast.LENGTH_SHORT).show();
-//            return;
-//        }
-//
-//        if (TextUtils.isEmpty(companyName) || TextUtils.isEmpty(address)) {
-//            Toast.makeText(this, "Please fill in both name fields.", Toast.LENGTH_SHORT).show();
-//            return;
-//        }
-//
-//        String userId = currentUser.getUid();
-//        firestore.collection("Users").document(userId)
-//                        .update("isVendor", true);
-//
-//        HashMap<String, Object> userMap = new HashMap<>();
-//        userMap.put("companyName", companyName);
-//        userMap.put("address", address);
-//        userMap.put("years", yearsInBusiness);
-//        userMap.put("vendorID", userId);
-//
-//
-//        firestore.collection("Vendors").document(userId)
-//                        .set(userMap)
-//                        .addOnSuccessListener(new OnSuccessListener<Void>() {
-//                            @Override
-//                            public void onSuccess(Void unused) {
-//                                Log.d("Firestore", "Updated user status");
-//                                finish();
-//                            }
-//                        })
-//                        .addOnFailureListener(new OnFailureListener() {
-//                            @Override
-//                            public void onFailure(@NonNull Exception e) {
-//                                Log.w("Failed to update user status", e);
-//                            }
-//                        });
-//        navigateTo(StorefrontActivity.class);
-//    }
-//    private void fetchUserData() {
-//        if (currentUser != null) {
-//            String userId = currentUser.getUid();
-//
-//            DocumentReference userDocRef = firestore.collection("Users").document(userId);
-//
-//            userDocRef.get().addOnCompleteListener(task -> {
-//                if (task.isSuccessful()) {
-//                    DocumentSnapshot snapshot = task.getResult();
-//
-//                    if (snapshot.exists() && Boolean.TRUE.equals(snapshot.getBoolean("isVendor"))) {
-//                        etCompanyName.setVisibility(View.INVISIBLE);
-//                        etAddress.setVisibility(View.INVISIBLE);
-//                        etYears.setVisibility(View.INVISIBLE);
-//
-//                        submitBtn.setVisibility(View.INVISIBLE);
-//
-//                        tvVendorStatus.setVisibility(View.VISIBLE);
-//                    } else if (snapshot.exists() && Boolean.FALSE.equals(snapshot.getBoolean("isVendor"))) {
-//
-//                    } else {
-//                        Toast.makeText(VendorInfoActivity.this, "User data not found.", Toast.LENGTH_SHORT).show();
-//                    }
-//                } else {
-//                    Toast.makeText(VendorInfoActivity.this, "Error: " + task.getException().getMessage(), Toast.LENGTH_SHORT).show();
-//                }
-//            });
-//        }
-//    }
-//    private void navigateTo(Class<?> targetActivity) {
-//        Intent intent = new Intent(VendorInfoActivity.this, targetActivity);
-//        startActivity(intent);
-//    }
-//
-//}

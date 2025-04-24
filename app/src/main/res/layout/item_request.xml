@@ -15,7 +15,7 @@
         android:padding="16dp"
         android:background="@color/maroon">
 
-        <!-- Reject Order Button (far right) -->
+        <!-- Reject Order Button -->
         <ImageButton
             android:id="@+id/close_button"
             android:layout_width="wrap_content"
@@ -28,7 +28,7 @@
             android:scaleX="2"
             android:scaleY="2" />
 
-        <!-- Accept Order Button (to the left of Reject Order) -->
+        <!-- Accept Order Button -->
         <ImageButton
             android:id="@+id/checkmark_button"
             android:layout_width="wrap_content"
@@ -41,7 +41,7 @@
             android:scaleX="2"
             android:scaleY="2" />
 
-        <!-- Order Title (e.g., Name) -->
+        <!-- Name -->
         <TextView
             android:id="@+id/order_title"
             android:layout_width="wrap_content"
@@ -54,7 +54,7 @@
             android:textColor="@android:color/white"
             android:textSize="16sp" />
 
-        <!-- Order Details (e.g., Type) -->
+        <!-- Type -->
         <TextView
             android:id="@+id/order_details"
             android:layout_width="wrap_content"

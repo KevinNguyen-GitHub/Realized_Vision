@@ -15,7 +15,6 @@ class StripeApiHelper(private val stripeApiService: StripeApiService) {
 
     fun generateDashboardLink(
         accountId: String,
-        refreshUrl: String,
         returnUrl: String,
         callback: Callback<GenerateDashboardLinkResponse>
     ) {
@@ -23,9 +22,7 @@ class StripeApiHelper(private val stripeApiService: StripeApiService) {
             try {
                 val request = GenerateDashboardLinkRequest(
                     accountId = accountId,
-                    refreshUrl = refreshUrl,
-                    returnUrl = returnUrl,
-                    failedToGenerateUrl = returnUrl
+                    returnUrl = returnUrl
                 )
                 val response = stripeApiService.generateDashboardLink(request)
                 withContext(Dispatchers.Main) {

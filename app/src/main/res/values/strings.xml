@@ -24,4 +24,6 @@
     <string name="item_image">Item Image</string>
     <string name="product_vendor">Product Vendor</string>
     <string name="product_description">Product description</string>
+    <string name="category">Category</string>
+    <string name="back_button">Back button</string>
 </resources>

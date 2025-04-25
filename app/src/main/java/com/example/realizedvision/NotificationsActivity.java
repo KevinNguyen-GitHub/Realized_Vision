@@ -21,7 +21,7 @@ public class NotificationsActivity extends AppCompatActivity {
 
     private Switch appSwitchPurchases, appSwitchMessages, appSwitchReservations;
     private Switch emailSwitchPurchases, emailSwitchMessages, emailSwitchReservations;
-    private Switch smsSwitchPurchases, smsSwitchReservations;
+    private Switch switchSystemAlertsApp, switchSystemAlertsEmail;
 
 
     private DatabaseReference databaseReference;
@@ -51,9 +51,10 @@ public class NotificationsActivity extends AppCompatActivity {
         emailSwitchPurchases = findViewById(R.id.switchEmailPurchaseNotis);
         emailSwitchMessages = findViewById(R.id.switchEmailMessageNotis);
         emailSwitchReservations = findViewById(R.id.switchEmailReservationNotis);
-        //SMS switches
-        smsSwitchPurchases = findViewById(R.id.switchSMSPurchaseNotis);
-        smsSwitchReservations = findViewById(R.id.switchSMSReservationNotis);
+        //System alert switch
+        switchSystemAlertsApp = findViewById(R.id.switchSystemAlertsApp);
+        switchSystemAlertsEmail = findViewById(R.id.switchSystemAlertsEmail);
+
 
 
         // Fetch existing preferences
@@ -81,8 +82,9 @@ public class NotificationsActivity extends AppCompatActivity {
                         emailSwitchMessages.setChecked(snapshot.child("email_messages").getValue(Boolean.class));
                         emailSwitchReservations.setChecked(snapshot.child("email_reservations").getValue(Boolean.class));
 
-                        smsSwitchPurchases.setChecked(snapshot.child("sms_purchases").getValue(Boolean.class));
-                        smsSwitchReservations.setChecked(snapshot.child("sms_reservations").getValue(Boolean.class));
+                        switchSystemAlertsApp.setChecked(snapshot.child("app_security").getValue(Boolean.class));
+                        switchSystemAlertsEmail.setChecked(snapshot.child("email_security").getValue(Boolean.class));
+
                     }
                 }
 
@@ -119,8 +121,8 @@ public class NotificationsActivity extends AppCompatActivity {
         defaults.put("email_messages", true);
         defaults.put("email_reservations", true);
         //default sms notis to false
-        defaults.put("sms_purchases", false);
-        defaults.put("sms_reservations", false);
+        defaults.put("app_security", true);
+        defaults.put("email_security", true);
 
         databaseReference.updateChildren(defaults);
 
@@ -128,12 +130,13 @@ public class NotificationsActivity extends AppCompatActivity {
         appSwitchPurchases.setChecked(true);
         appSwitchMessages.setChecked(true);
         appSwitchReservations.setChecked(true);
+
         emailSwitchPurchases.setChecked(true);
         emailSwitchMessages.setChecked(true);
         emailSwitchReservations.setChecked(true);
-        smsSwitchPurchases.setChecked(false);
-        smsSwitchReservations.setChecked(false);
 
+        switchSystemAlertsApp.setChecked(true);
+        switchSystemAlertsEmail.setChecked(true);
 
     }
     private void setupSwitchListeners() {
@@ -145,9 +148,9 @@ public class NotificationsActivity extends AppCompatActivity {
         emailSwitchPurchases.setOnCheckedChangeListener(createSwitchListener("email_purchases"));
         emailSwitchMessages.setOnCheckedChangeListener(createSwitchListener("email_messages"));
         emailSwitchReservations.setOnCheckedChangeListener(createSwitchListener("email_reservations"));
-        //sms noti listeners
-        smsSwitchPurchases.setOnCheckedChangeListener(createSwitchListener("sms_purchases"));
-        smsSwitchReservations.setOnCheckedChangeListener(createSwitchListener("sms_reservations"));
+        //system notis listeners
+        switchSystemAlertsApp.setOnCheckedChangeListener(createSwitchListener("app_security"));
+        switchSystemAlertsEmail.setOnCheckedChangeListener(createSwitchListener("email_security"));
     }
 
     private CompoundButton.OnCheckedChangeListener createSwitchListener(final String preferenceKey) {

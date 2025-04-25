@@ -6,6 +6,7 @@ import android.net.Uri
 import android.os.Bundle
 import android.util.Log
 import android.widget.Button
+import android.widget.ImageButton
 import android.widget.TextView
 import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
@@ -24,6 +25,7 @@ class VendorOnboardActivity : AppCompatActivity() {
     private lateinit var onboardButton: Button
     private lateinit var accountStatusTextView: TextView
     private lateinit var accountRequirementsTextView: TextView
+    private lateinit var backButton: ImageButton
 
     private var accountStatus: String = "Not Onboarded"
     private var accountRequirements: String = "Please note that you are responsible for any refunds, disputes, or fees."
@@ -39,11 +41,14 @@ class VendorOnboardActivity : AppCompatActivity() {
         accountStatusTextView = findViewById(R.id.onboardStatusTextView)
         accountRequirementsTextView = findViewById(R.id.onboardRequirementsTextView)
         onboardButton = findViewById(R.id.vendorOnboardButton)
+        backButton  = findViewById(R.id.backButtonOnboarding)
 
         updateStatus(accountStatus)
         updateRequirements(accountRequirements)
         checkForExistingAccount()
-
+        backButton.setOnClickListener{
+            finish()
+        }
         onboardButton.setOnClickListener {
             handleOnboardButtonClick()
         }

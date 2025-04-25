@@ -11,13 +11,17 @@ import android.view.Gravity;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.AdapterView;
+import android.widget.ArrayAdapter;
 import android.widget.Button;
 import android.widget.ImageView;
 import android.widget.PopupWindow;
+import android.widget.Spinner;
 import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.annotation.Nullable;
+import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
@@ -45,6 +49,19 @@ public class MainActivity extends AppCompatActivity implements ItemAdapter.OnIte
     private List<Item> itemListFilter;
 
     private List<String> preferredCategories = new ArrayList<>();
+
+    private static final String[] CATEGORIES = {
+            "All",
+            "Art",
+            "Metalwork",
+            "Woodwork",
+            "Programming",
+            "Flooring",
+            "Graphic Design",
+            "Welding",
+            "Video & Animation",
+            "Ceramic"
+    };
     private FirebaseFirestore firestore;
     private FirebaseUser currentUser;
 
@@ -369,7 +386,6 @@ public class MainActivity extends AppCompatActivity implements ItemAdapter.OnIte
 
     private void checkUserType() {
         if (currentUser == null) {
-            Toast.makeText(this, "User not authenticated", Toast.LENGTH_SHORT).show();
             return;
         }
 
@@ -406,8 +422,47 @@ public class MainActivity extends AppCompatActivity implements ItemAdapter.OnIte
                 });
     }
 
-    private void addFilter(){
+    private void addFilter() {
+        AlertDialog.Builder builder = new AlertDialog.Builder(this);
+        builder.setTitle("Select Filter Category");
 
+        LayoutInflater inflater = getLayoutInflater();
+        View dialogView = inflater.inflate(R.layout.dialog_add_filter, null);
+        Spinner filterSpinner = dialogView.findViewById(R.id.filterSpinner);
+        builder.setView(dialogView);
+
+        // Create adapter with categories
+        ArrayAdapter<String> adapter = new ArrayAdapter<>(
+                this,
+                com.google.android.material.R.layout.support_simple_spinner_dropdown_item,
+                CATEGORIES);
+        adapter.setDropDownViewResource(com.google.android.material.R.layout.support_simple_spinner_dropdown_item);
+        filterSpinner.setAdapter(adapter);
+
+        builder.setNegativeButton("Cancel", null);
+
+        AlertDialog dialog = builder.create();
+        dialog.show();
+
+        // Add temporary variable to track if selection is from user
+        final boolean[] isUserSelection = {false};
+
+        filterSpinner.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
+            @Override
+            public void onItemSelected(AdapterView<?> adapterView, View view, int position, long l) {
+                if (isUserSelection[0]) {
+                    String selectedCategory = CATEGORIES[position];
+                    itemAdapter.getFilter().filter(selectedCategory);
+                    dialog.dismiss();
+                }
+                isUserSelection[0] = true;
+            }
+
+            @Override
+            public void onNothingSelected(AdapterView<?> adapterView) {
+                // Do nothing
+            }
+        });
     }
     private void navigateToVendorStorefront(String vendorID) {
         Intent intent = new Intent(MainActivity.this, StorefrontActivity.class);

@@ -21,4 +21,8 @@ interface StripeApiService {
 
     @GET("/connect-account/{accountId}")
     suspend fun getAccountDetails(@Path("accountId") accountId: String): Response<AccountDetailsResponse>
+
+    @POST("/generate-dashboard-link")
+    suspend fun generateDashboardLink(@Body request: GenerateDashboardLinkRequest): Response<GenerateDashboardLinkResponse>
+
 }

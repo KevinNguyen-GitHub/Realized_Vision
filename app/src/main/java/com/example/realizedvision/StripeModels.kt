@@ -36,6 +36,17 @@ data class GenerateAccountLinkResponse(
     val url: String
 )
 
+data class GenerateDashboardLinkRequest(
+    val accountId: String,
+    val refreshUrl: String,
+    val returnUrl: String,
+    val failedToGenerateUrl: String
+)
+
+data class GenerateDashboardLinkResponse(
+    val url: String
+)
+
 data class AccountDetailsResponse(
     val id: String,
     val charges_enabled: Boolean,

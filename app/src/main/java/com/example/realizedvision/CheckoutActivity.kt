@@ -45,6 +45,7 @@ class CheckoutActivity : AppCompatActivity() {
         payNowButton = findViewById(R.id.pay_now_button)
         backButton = findViewById(R.id.backButtonCheckout)
 
+        NotificationHelper(this).createNotificationChannel()
         paymentSheet = PaymentSheet(this, ::onPaymentSheetResult)
         fetchStripeConfig()
         fetchShoppingCart()
@@ -188,6 +189,28 @@ class CheckoutActivity : AppCompatActivity() {
                             db.collection("Users").document(userId).collection("Shopping Cart")
                                 .document(document.id)
                                 .delete()
+                        }
+
+                        //Send Order Confirmation Notification
+                        NotificationHelper(this).apply {
+                            //In-app Notification
+                            if (documentReference != null) {
+                                checkAndSendNotification(
+                                    "app_purchases",
+                                    "Order Confirmed",
+                                    "Your order #${documentReference.id.take(6)} is confirmed."
+                                )
+                                //Email notification
+                                checkAndSendNotification(
+                                    "email_purchases",
+                                    "Order Confirmation",
+                                    "#${documentReference.id.take(6)}"+
+                                    "Items: ${items.size}\n" + "Total: $${"%.2f".format(items.sumOf {
+                                                it?.get("price") as Double * (it["quantity"] as? Long ?: 0L).toInt()
+                                            })}"
+                                )
+                            }
+
                         }
                     }
                     .addOnFailureListener { e: java.lang.Exception? -> println("Shopping cart is empty for user: $e")}

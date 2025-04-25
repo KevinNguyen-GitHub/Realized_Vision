@@ -38,9 +38,7 @@ data class GenerateAccountLinkResponse(
 
 data class GenerateDashboardLinkRequest(
     val accountId: String,
-    val refreshUrl: String,
-    val returnUrl: String,
-    val failedToGenerateUrl: String
+    val returnUrl: String
 )
 
 data class GenerateDashboardLinkResponse(

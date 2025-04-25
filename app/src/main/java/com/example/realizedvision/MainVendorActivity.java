@@ -290,11 +290,9 @@ public class MainVendorActivity extends AppCompatActivity{
         }
         String uniqueId = UUID.randomUUID().toString();
         String returnUrl = "https://f-andrade27.github.io/stripe_return.html?id=" + uniqueId;
-        String refreshUrl = "https://f-andrade27.github.io/stripe_refresh.html?id=" + uniqueId;
 
         stripeApiHelper.generateDashboardLink(
                 stripeAccountId,
-                refreshUrl,
                 returnUrl,
                 new StripeApiHelper.Callback<GenerateDashboardLinkResponse>(){
                     @Override

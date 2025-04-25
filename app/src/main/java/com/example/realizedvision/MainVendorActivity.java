@@ -1,13 +1,12 @@
 package com.example.realizedvision;
 import android.app.AlertDialog;
+import android.content.ActivityNotFoundException;
 import android.content.Context;
 import android.content.Intent;
 import android.graphics.Color;
-import android.graphics.drawable.ColorDrawable;
+import android.net.Uri;
 import android.os.Bundle;
-import android.util.DisplayMetrics;
 import android.util.Log;
-import android.view.Gravity;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -18,12 +17,10 @@ import android.widget.PopupWindow;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
-import androidx.recyclerview.widget.LinearLayoutManager;
-import androidx.recyclerview.widget.RecyclerView;
 
-import com.bumptech.glide.Glide;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
 import com.google.firebase.firestore.CollectionReference;
@@ -39,12 +36,22 @@ import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
+import java.util.UUID;
+
+import retrofit2.Call;
+import retrofit2.Response;
 
 public class MainVendorActivity extends AppCompatActivity{
     private FirebaseFirestore firestore;
     private FirebaseUser currentUser;
     private String vendorId;
+    private String stripeAccountId;
+    private StripeApiService stripeApiService = NetworkModule.INSTANCE.provideStripeApiService();
+    private StripeApiHelper stripeApiHelper;
     private TextView profileNameTextView;
+    private TextView totalSales;
+    private TextView totalOrders;
+
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -55,6 +62,7 @@ public class MainVendorActivity extends AppCompatActivity{
         currentUser = FirebaseAuth.getInstance().getCurrentUser();
         firestore = FirebaseFirestore.getInstance();
         vendorId = currentUser.getUid();
+        stripeApiHelper = new StripeApiHelper(stripeApiService);
 
         ImageView messageIcon = findViewById(R.id.messages_icon);
         ImageView profileIcon = findViewById(R.id.profile_icon);
@@ -62,18 +70,23 @@ public class MainVendorActivity extends AppCompatActivity{
         Button addItemButton = findViewById(R.id.add_item_button);
         Button deleteItemButton = findViewById(R.id.delete_item_button);
         Button viewOrdersButton = findViewById(R.id.view_orders_button);
+        Button viewMoreButton = findViewById(R.id.btn_view_analytics);
         profileNameTextView = findViewById(R.id.main_vendor_name);
 
 //        Clicking on add or delete buttons
+        viewMoreButton.setOnClickListener(v -> openStripeDashboard());
         addItemButton.setOnClickListener(v -> addItem(vendorId));
         deleteItemButton.setOnClickListener(v -> deleteItem(vendorId));
         viewOrdersButton.setOnClickListener(v -> navigateTo(OrderHistoryActivity.class));
+
 
 //        Navigate to desired elements when clicked
         messageIcon.setOnClickListener(view -> navigateTo(MessagesActivity.class));
         profileIcon.setOnClickListener(view -> navigateTo(StorefrontActivity.class));
 
+
         fetchUserData();
+        checkForStripeAccount();
     }
 
     private void addItem(String vendorId) {
@@ -122,8 +135,8 @@ public class MainVendorActivity extends AppCompatActivity{
 
         AlertDialog dialog = builder.create();
         dialog.setOnShowListener(dialogInterface -> {
-            dialog.getButton(AlertDialog.BUTTON_POSITIVE).setTextColor(getResources().getColor(android.R.color.black));
-            dialog.getButton(AlertDialog.BUTTON_NEGATIVE).setTextColor(getResources().getColor(android.R.color.black));
+            dialog.getButton(AlertDialog.BUTTON_POSITIVE).setTextColor(getColor(android.R.color.black));
+            dialog.getButton(AlertDialog.BUTTON_NEGATIVE).setTextColor(getColor(android.R.color.black));
         });
         dialog.show();
     }
@@ -260,4 +273,139 @@ public class MainVendorActivity extends AppCompatActivity{
         Intent intent = new Intent(MainVendorActivity.this, targetActivity);
         startActivity(intent);
     }
+
+    private void openStripeDashboard(){
+        if(stripeAccountId == null){
+            createConnectAccount();
+            return;
+        }
+        generateDashboardLink();
+    }
+
+    private void generateDashboardLink(){
+        if(stripeAccountId == null || stripeAccountId.isEmpty()){
+            Toast.makeText(MainVendorActivity.this, "Stripe account not set up", Toast.LENGTH_SHORT).show();
+            createConnectAccount();
+            return;
+        }
+        String uniqueId = UUID.randomUUID().toString();
+        String returnUrl = "https://f-andrade27.github.io/stripe_return.html?id=" + uniqueId;
+        String refreshUrl = "https://f-andrade27.github.io/stripe_refresh.html?id=" + uniqueId;
+
+        stripeApiHelper.generateDashboardLink(
+                stripeAccountId,
+                refreshUrl,
+                returnUrl,
+                new StripeApiHelper.Callback<GenerateDashboardLinkResponse>(){
+                    @Override
+                    public void onSuccess(@NonNull Response<GenerateDashboardLinkResponse> response) {
+                        if(response.isSuccessful() && response.body() != null){
+                            String url = response.body().getUrl();
+                            openUrlInBrowser(url);
+                        }else{
+                            Toast.makeText(MainVendorActivity.this, "Failed to generate url",Toast.LENGTH_SHORT).show();
+                        }
+                    }
+                    @Override
+                    public void onError(@NonNull Throwable throwable) {
+                        Toast.makeText(MainVendorActivity.this, "Error: " + throwable.getMessage(), Toast.LENGTH_SHORT).show();
+                    }
+                }
+        );
+
+    }
+    private void checkForStripeAccount(){
+        String userId = FirebaseAuth.getInstance().getUid();
+        FirebaseFirestore.getInstance().collection("Vendors")
+                .document(userId)
+                .get()
+                .addOnSuccessListener(documentSnapshot -> {
+                    if(documentSnapshot.exists()){
+                        stripeAccountId = documentSnapshot.getString("stripeAccountId");
+                        if(stripeAccountId != null && !stripeAccountId.isEmpty()){
+                            generateDashboardLink();
+                        }
+                        else{
+                            createConnectAccount();
+                        }
+                    }
+                }).addOnFailureListener(e ->{
+                    Log.e("Vendor Main", "Error checking vendors" + e.getMessage());
+                });
+    }
+
+    private void createConnectAccount(){
+        AlertDialog.Builder builder = new AlertDialog.Builder(this);
+        builder.setTitle("Stripe Account Setup");
+        builder.setMessage("You must create a Stripe Account to view your analytics");
+        builder.setPositiveButton("Set up", ((dialogInterface, i) -> {
+            View loadingView = getLayoutInflater().inflate(R.layout.loading_overlay, null);
+            TextView loadingText = loadingView.findViewById(R.id.loading_text);
+            loadingText.setText("Creating account...");
+
+            ViewGroup rootView = findViewById(android.R.id.content);
+            rootView.addView(loadingView);
+
+            //Get the user's email from Firebase
+            String userEmail = FirebaseAuth.getInstance().getCurrentUser().getEmail();
+
+            stripeApiHelper.createConnectAccount(
+                    userEmail,
+                    vendorId,
+                    new StripeApiHelper.Callback<CreateConnectAccountResponse>() {
+                        @Override
+                        public void onSuccess(@NonNull Response<CreateConnectAccountResponse> response) {
+                            rootView.removeView(loadingView);
+
+                            if(response.isSuccessful() && response.body() != null){
+                                stripeAccountId = response.body().getAccountId();
+                                saveStripeAccountId(stripeAccountId);
+
+                                generateDashboardLink();
+                            }
+                        }
+
+                        @Override
+                        public void onError(@NonNull Throwable throwable) {
+                            rootView.removeView(loadingView);
+                            Toast.makeText(MainVendorActivity.this, "Error: "+throwable.getMessage(), Toast.LENGTH_SHORT).show();
+                        }
+                    }
+            );
+
+        }));
+        builder.setNegativeButton("Cancel", ((dialogInterface, i) -> dialogInterface.cancel()));
+
+        AlertDialog dialog = builder.create();
+        dialog.setOnShowListener(dialogInterface -> {
+            dialog.getButton(AlertDialog.BUTTON_POSITIVE).setTextColor(getColor(R.color.black));
+            dialog.getButton(AlertDialog.BUTTON_NEGATIVE).setTextColor(getColor(R.color.black));
+        });
+        dialog.show();
+    }
+    private void openUrlInBrowser(String url){
+        try {
+            Intent intent = new Intent(Intent.ACTION_VIEW, Uri.parse(url));
+            if(intent.resolveActivity(getPackageManager()) != null){
+                startActivity(intent);
+            }
+            else{
+                Toast.makeText(MainVendorActivity.this, "No browser to open", Toast.LENGTH_SHORT).show();
+            }
+        }catch(ActivityNotFoundException e){
+            Toast.makeText(this, "No browser available", Toast.LENGTH_SHORT).show();
+        }
+    }
+
+    private void saveStripeAccountId(String accountId){
+        FirebaseFirestore.getInstance().collection("Vendors")
+                .document(vendorId)
+                .update("stripeAccountId", accountId)
+                .addOnSuccessListener(s ->{
+                    Log.d("Main Vendor Activity", "accountId saved successfully");
+                }).addOnFailureListener(e->{
+                    Log.e("Main Vendor Activity", "Error saving Stripe account id: "+ e.getMessage());
+                });
+    }
+
 }

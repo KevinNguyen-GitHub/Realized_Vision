@@ -96,9 +96,6 @@ public class NotificationHelper {
             case "email":
                 sendEmailNotification(title, content);
                 break;
-            case "sms":
-                sendSMSNotification(title, content);
-                break;
         }
     }
     public void sendInAppNotification(String title, String content){
@@ -108,7 +105,7 @@ public class NotificationHelper {
         NotificationCompat.Builder builder = new NotificationCompat.Builder(context, CHANNEL_ID)
                 .setSmallIcon(R.drawable.reicon)
                 .setContentTitle(title)
-                .setContentInfo(content)
+                .setContentText(content)
                 .setPriority(NotificationCompat.PRIORITY_DEFAULT)
                 .setContentIntent(pendingIntent)
                 .setAutoCancel(true);
@@ -152,10 +149,5 @@ public class NotificationHelper {
                 Log.e("Notification Helper", "Error sending email");
             }
         }).start();
-    }
-
-    public void sendSMSNotification(String title, String content){
-        //TODO: decide between Twilio API or smsManager
-
     }
 }

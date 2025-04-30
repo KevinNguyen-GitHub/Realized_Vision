@@ -38,6 +38,7 @@ class CheckoutActivity : AppCompatActivity() {
     private lateinit var payNowButton: Button
     private lateinit var backButton: ImageButton
     private var subtotal: Double = 0.0
+    private lateinit var notificationHelper: NotificationHelper
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -48,7 +49,7 @@ class CheckoutActivity : AppCompatActivity() {
         payNowButton = findViewById(R.id.pay_now_button)
         backButton = findViewById(R.id.backButtonCheckout)
 
-        NotificationHelper(this).createNotificationChannel()
+        notificationHelper = NotificationHelper(this)
         paymentSheet = PaymentSheet(this, ::onPaymentSheetResult)
         fetchStripeConfig()
         fetchShoppingCart()
@@ -227,12 +228,6 @@ class CheckoutActivity : AppCompatActivity() {
 
         //Enhanced email handling
         try {
-            // Verify SMTP configuration first
-            if (System.getenv("SMTP_USER").isNullOrEmpty() ||
-                System.getenv("SMTP_PASSWORD").isNullOrEmpty()) {
-                Log.e("Email", "SMTP credentials not configured")
-                return
-            }
 
             val emailBody = """
             Order Confirmation #$shortId

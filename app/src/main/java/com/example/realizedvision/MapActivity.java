@@ -233,57 +233,144 @@ public class MapActivity extends FragmentActivity implements OnMapReadyCallback 
     @SuppressLint("PotentialBehaviorOverride")
     @Override
     public void onMapReady(GoogleMap googleMap) {
-        //saves instance of map to a variable
         mMap = googleMap;
 
-        //Use the geocoded user location and plot (geocoding of userLocation happned in onCreate())
-        //Plots and makes the marker green to signifiy the current location of the user
-        LatLng userLocation = new LatLng(latitude, longitude);
-        Marker userMarker = mMap.addMarker(new MarkerOptions()
-                .position(userLocation)
-                .title("Your Location")
-                .icon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_GREEN)));
+        // Get the intent extra to check if user location is available
+        boolean hasUserLocation = getIntent().getBooleanExtra("hasUserLocation", false);
 
-        // Move camera to user's location
-        mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(userLocation, 12));
+        // Only plot user location if available and coordinates are valid
+        if (hasUserLocation && latitude != 0 && longitude != 0) {
+            LatLng userLocation = new LatLng(latitude, longitude);
+            mMap.addMarker(new MarkerOptions()
+                    .position(userLocation)
+                    .title("Your Location")
+                    .icon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_GREEN)));
+
+            // Center map on user location if available
+            mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(userLocation, 12));
+        }
+
+        // Get the selected address from intent
+        String selectedAddress = getIntent().getStringExtra("selectedAddress");
+
+        // Plot the selected vendor location (red pin) if available
+        if (selectedAddress != null && !selectedAddress.isEmpty()) {
+            geocodeAddress(selectedAddress, (lat, lon) -> {
+                LatLng vendorLocation = new LatLng(lat, lon);
+                mMap.addMarker(new MarkerOptions()
+                        .position(vendorLocation)
+                        .title("Vendor Location")
+                        .icon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_RED)));
+
+                // If no user location, center on vendor
+                if (!hasUserLocation) {
+                    mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(vendorLocation, 12));
+                }
+
+                // If both locations are available, calculate route and durations
+                if (hasUserLocation && latitude != 0 && longitude != 0) {
+                    LatLng userLocation = new LatLng(latitude, longitude);
+                    double distance = calculateDistance(userLocation, vendorLocation);
+                    drawRouteWithORS(userLocation, vendorLocation);
+                    fetchTravelDurations(userLocation, vendorLocation);
+
+                    // Update UI for distance
+                    distanceTextView.setText("Distance: " + String.format("%.2f", distance) + " mi");
+                    distanceTextView.setVisibility(TextView.VISIBLE);
+                }
+            });
+        }
+
+        // Keep all your existing map settings and click listeners
         mMap.getUiSettings().setZoomControlsEnabled(true);
         mMap.getUiSettings().setZoomGesturesEnabled(true);
 
-        //Allow real time interaction with map
-        //Upon clicking on a location, distance and durations will change accordingly
+        // Marker click listener remains the same
         mMap.setOnMarkerClickListener(marker -> {
             LatLng destination = marker.getPosition();
-            //If you click on a location that is not your own, calc route, plot distance, and calc durations
-            if (!destination.equals(userLocation)) {
-                double distance = calculateDistance(userLocation, destination);
-                //get route and display to selected pin
-                drawRouteWithORS(userLocation, destination);
-                //get the travel durations for 3 modes and display
-                fetchTravelDurations(userLocation, destination);
+            if (hasUserLocation && latitude != 0 && longitude != 0) {
+                LatLng userLocation = new LatLng(latitude, longitude);
+                if (!destination.equals(userLocation)) {
+                    double distance = calculateDistance(userLocation, destination);
+                    drawRouteWithORS(userLocation, destination);
+                    fetchTravelDurations(userLocation, destination);
 
-                // Update UI for distance
-                distanceTextView.setText("Distance: " + String.format("%.2f", distance) + " mi");
-                distanceTextView.setVisibility(TextView.VISIBLE);
+                    // Update UI for distance
+                    distanceTextView.setText("Distance: " + String.format("%.2f", distance) + " mi");
+                    distanceTextView.setVisibility(TextView.VISIBLE);
+                } else {
+                    clearRoute();
+                    distanceTextView.setText("Distance: 0.0 mi");
+                    walkingDurationTextView.setText("0.0 mi");
+                    bikingDurationTextView.setText("0.0 mi");
+                    drivingDurationTextView.setText("0.0 mi");
+                }
             } else {
-                //if you click on your current location, clear any drawn routes
+                // No user location available - just clear any existing route
                 clearRoute();
-
-                //reset distances to 0 because you clicked on your location
-                distanceTextView.setText("Distance: 0.0 mi");
-                distanceTextView.setVisibility(TextView.VISIBLE);
-
-                walkingDurationTextView.setText("0.0 mi");
-                walkingDurationTextView.setVisibility(TextView.VISIBLE);
-
-                bikingDurationTextView.setText("0.0 mi");
-                bikingDurationTextView.setVisibility(TextView.VISIBLE);
-
-                drivingDurationTextView.setText("0.0 mi");
-                drivingDurationTextView.setVisibility(TextView.VISIBLE);
+                distanceTextView.setText("Distance: N/A");
+                walkingDurationTextView.setText("N/A");
+                bikingDurationTextView.setText("N/A");
+                drivingDurationTextView.setText("N/A");
             }
             return false;
         });
     }
+
+//    @SuppressLint("PotentialBehaviorOverride")
+//    @Override
+//    public void onMapReady(GoogleMap googleMap) {
+//        //saves instance of map to a variable
+//        mMap = googleMap;
+//
+//        //Use the geocoded user location and plot (geocoding of userLocation happned in onCreate())
+//        //Plots and makes the marker green to signifiy the current location of the user
+//        LatLng userLocation = new LatLng(latitude, longitude);
+//        Marker userMarker = mMap.addMarker(new MarkerOptions()
+//                .position(userLocation)
+//                .title("Your Location")
+//                .icon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_GREEN)));
+//
+//        // Move camera to user's location
+//        mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(userLocation, 12));
+//        mMap.getUiSettings().setZoomControlsEnabled(true);
+//        mMap.getUiSettings().setZoomGesturesEnabled(true);
+//
+//        //Allow real time interaction with map
+//        //Upon clicking on a location, distance and durations will change accordingly
+//        mMap.setOnMarkerClickListener(marker -> {
+//            LatLng destination = marker.getPosition();
+//            //If you click on a location that is not your own, calc route, plot distance, and calc durations
+//            if (!destination.equals(userLocation)) {
+//                double distance = calculateDistance(userLocation, destination);
+//                //get route and display to selected pin
+//                drawRouteWithORS(userLocation, destination);
+//                //get the travel durations for 3 modes and display
+//                fetchTravelDurations(userLocation, destination);
+//
+//                // Update UI for distance
+//                distanceTextView.setText("Distance: " + String.format("%.2f", distance) + " mi");
+//                distanceTextView.setVisibility(TextView.VISIBLE);
+//            } else {
+//                //if you click on your current location, clear any drawn routes
+//                clearRoute();
+//
+//                //reset distances to 0 because you clicked on your location
+//                distanceTextView.setText("Distance: 0.0 mi");
+//                distanceTextView.setVisibility(TextView.VISIBLE);
+//
+//                walkingDurationTextView.setText("0.0 mi");
+//                walkingDurationTextView.setVisibility(TextView.VISIBLE);
+//
+//                bikingDurationTextView.setText("0.0 mi");
+//                bikingDurationTextView.setVisibility(TextView.VISIBLE);
+//
+//                drivingDurationTextView.setText("0.0 mi");
+//                drivingDurationTextView.setVisibility(TextView.VISIBLE);
+//            }
+//            return false;
+//        });
+//    }
 
 
     /**

@@ -1,93 +1,147 @@
 <?xml version="1.0" encoding="utf-8"?>
-<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<androidx.constraintlayout.widget.ConstraintLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
-    android:padding="16dp">
+    android:background="@color/beige"
+    android:padding="24dp">
 
+    <!-- Title -->
     <TextView
         android:id="@+id/filterTitle"
         android:layout_width="0dp"
         android:layout_height="wrap_content"
         android:text="Select Vendor Filters"
+        android:textColor="@color/maroon"
         android:textStyle="bold"
-        android:textSize="18sp"
-        android:layout_marginBottom="16dp"
+        android:textSize="20sp"
+        android:gravity="center"
+        android:layout_marginBottom="24dp"
         app:layout_constraintTop_toTopOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent" />
 
+    <!-- Column 1 -->
     <CheckBox
         android:id="@+id/checkbox_woodworking"
-        android:layout_width="wrap_content"
+        android:layout_width="0dp"
         android:layout_height="wrap_content"
         android:text="Woodworking"
+        android:textColor="@color/maroon"
+        android:buttonTint="@color/maroon"
+        android:layout_marginBottom="16dp"
         app:layout_constraintTop_toBottomOf="@id/filterTitle"
-        app:layout_constraintStart_toStartOf="parent" />
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toStartOf="@id/guideline" />
 
     <CheckBox
         android:id="@+id/checkbox_welding"
-        android:layout_width="wrap_content"
+        android:layout_width="0dp"
         android:layout_height="wrap_content"
         android:text="Welding"
+        android:textColor="@color/maroon"
+        android:buttonTint="@color/maroon"
+        android:layout_marginBottom="16dp"
         app:layout_constraintTop_toBottomOf="@id/checkbox_woodworking"
-        app:layout_constraintStart_toStartOf="parent" />
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toStartOf="@id/guideline" />
 
     <CheckBox
         android:id="@+id/checkbox_programming"
-        android:layout_width="wrap_content"
+        android:layout_width="0dp"
         android:layout_height="wrap_content"
         android:text="Programming"
+        android:textColor="@color/maroon"
+        android:buttonTint="@color/maroon"
+        android:layout_marginBottom="16dp"
         app:layout_constraintTop_toBottomOf="@id/checkbox_welding"
-        app:layout_constraintStart_toStartOf="parent" />
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toStartOf="@id/guideline" />
 
     <CheckBox
         android:id="@+id/checkbox_flooring"
-        android:layout_width="wrap_content"
+        android:layout_width="0dp"
         android:layout_height="wrap_content"
         android:text="Flooring"
+        android:textColor="@color/maroon"
+        android:buttonTint="@color/maroon"
+        android:layout_marginBottom="16dp"
         app:layout_constraintTop_toBottomOf="@id/checkbox_programming"
-        app:layout_constraintStart_toStartOf="parent" />
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toStartOf="@id/guideline" />
 
+    <!-- Column 2 -->
     <CheckBox
         android:id="@+id/checkbox_artist"
-        android:layout_width="wrap_content"
+        android:layout_width="0dp"
         android:layout_height="wrap_content"
         android:text="Artist"
-        app:layout_constraintTop_toBottomOf="@id/checkbox_flooring"
-        app:layout_constraintStart_toStartOf="parent" />
+        android:textColor="@color/maroon"
+        android:buttonTint="@color/maroon"
+        android:layout_marginBottom="16dp"
+        app:layout_constraintTop_toBottomOf="@id/filterTitle"
+        app:layout_constraintStart_toStartOf="@id/guideline"
+        app:layout_constraintEnd_toEndOf="parent" />
 
     <CheckBox
         android:id="@+id/checkbox_mechanic"
-        android:layout_width="wrap_content"
+        android:layout_width="0dp"
         android:layout_height="wrap_content"
         android:text="Mechanic"
+        android:textColor="@color/maroon"
+        android:buttonTint="@color/maroon"
+        android:layout_marginBottom="16dp"
         app:layout_constraintTop_toBottomOf="@id/checkbox_artist"
-        app:layout_constraintStart_toStartOf="parent" />
+        app:layout_constraintStart_toStartOf="@id/guideline"
+        app:layout_constraintEnd_toEndOf="parent" />
 
     <CheckBox
         android:id="@+id/checkbox_video"
-        android:layout_width="wrap_content"
+        android:layout_width="0dp"
         android:layout_height="wrap_content"
         android:text="Video and Automation"
+        android:textColor="@color/maroon"
+        android:buttonTint="@color/maroon"
+        android:layout_marginBottom="16dp"
         app:layout_constraintTop_toBottomOf="@id/checkbox_mechanic"
-        app:layout_constraintStart_toStartOf="parent" />
+        app:layout_constraintStart_toStartOf="@id/guideline"
+        app:layout_constraintEnd_toEndOf="parent" />
 
     <CheckBox
         android:id="@+id/checkbox_design"
-        android:layout_width="wrap_content"
+        android:layout_width="0dp"
         android:layout_height="wrap_content"
         android:text="Graphic Design"
+        android:textColor="@color/maroon"
+        android:buttonTint="@color/maroon"
+        android:layout_marginBottom="24dp"
         app:layout_constraintTop_toBottomOf="@id/checkbox_video"
-        app:layout_constraintStart_toStartOf="parent" />
+        app:layout_constraintStart_toStartOf="@id/guideline"
+        app:layout_constraintEnd_toEndOf="parent" />
 
+    <!-- Center guideline for two-column layout -->
+    <androidx.constraintlayout.widget.Guideline
+        android:id="@+id/guideline"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        app:layout_constraintGuide_percent="0.5" />
+
+    <!-- Search Button -->
     <Button
         android:id="@+id/search_filters_button"
         android:layout_width="0dp"
         android:layout_height="wrap_content"
         android:text="Search"
-        android:layout_marginTop="20dp"
+        android:backgroundTint="@color/maroon"
+        android:textColor="@color/white"
+        android:textAllCaps="false"
+        android:paddingVertical="12dp"
+        android:layout_marginTop="16dp"
         app:layout_constraintTop_toBottomOf="@id/checkbox_design"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent" />
+
 </androidx.constraintlayout.widget.ConstraintLayout>
+

@@ -6,9 +6,10 @@ import android.app.PendingIntent;
 import android.content.Context;
 import android.content.Intent;
 import android.os.Build;
+import android.os.Handler;
+import android.os.Looper;
 import android.util.Log;
 
-import androidx.annotation.NonNull;
 import androidx.core.app.NotificationCompat;
 
 import com.google.firebase.auth.FirebaseAuth;
@@ -22,7 +23,10 @@ import com.google.firebase.remoteconfig.FirebaseRemoteConfigSettings;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Properties;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
+import javax.mail.AuthenticationFailedException;
 import javax.mail.Authenticator;
 import javax.mail.Message;
 import javax.mail.PasswordAuthentication;
@@ -46,25 +50,18 @@ public class NotificationHelper {
         this.context = context;
         this.firestore = FirebaseFirestore.getInstance();
         this.currentUser = FirebaseAuth.getInstance().getCurrentUser();
+        this.smtpUser = "";
+        this.smtpPass = ""; //initialize as empty to test fetching
 
         //Firebase Remote Config settings for SMTP settings
         this.remoteConfig = FirebaseRemoteConfig.getInstance();
         FirebaseRemoteConfigSettings configSettings = new FirebaseRemoteConfigSettings.Builder()
-                .setMinimumFetchIntervalInSeconds(3600)
+                .setMinimumFetchIntervalInSeconds(0)
                 .build();
         remoteConfig.setConfigSettingsAsync(configSettings);
         remoteConfig.setDefaultsAsync(R.xml.remote_config_defaults);
 
-        // Fetch immediately
-        remoteConfig.fetchAndActivate().addOnCompleteListener(task -> {
-            if(task.isSuccessful()) {
-                smtpUser = remoteConfig.getString("smtp_user");
-                smtpPass = remoteConfig.getString("smtp_password");
-                Log.d("SMTP", "Credentials loaded successfully");
-            } else {
-                Log.e("SMTP", "Failed to load credentials", task.getException());
-            }
-        });
+        loadSmtpCredentials();
 
         if (currentUser != null) {
             this.userPrefsRef = firestore.collection("Users").document(currentUser.getUid());
@@ -73,6 +70,39 @@ public class NotificationHelper {
         createNotificationChannel();
     }
 
+    private void loadSmtpCredentials() {
+        remoteConfig.fetchAndActivate().addOnCompleteListener(task -> {
+            if (task.isSuccessful()) {
+                smtpUser = remoteConfig.getString("smtp_user").trim();
+                smtpPass = remoteConfig.getString("smtp_password").trim();
+                Log.d("SMTP", "Credentials loaded");
+
+                // Verify we got actual values
+                if (smtpUser.isEmpty() || smtpPass.isEmpty()) {
+                    Log.e("SMTP", "Empty credentials from RemoteConfig");
+                }
+            } else {
+                Log.e("SMTP", "Failed to load credentials", task.getException());
+            }
+        });
+    }
+    private synchronized boolean verifyCredentials() {
+        if (smtpUser == null || smtpPass == null) {
+            Log.e("SMTP", "Null credentials detected");
+            return false;
+        }
+
+        // Additional validation
+        boolean isValid = !smtpUser.isEmpty() &&
+                smtpUser.contains("@") &&
+                !smtpPass.isEmpty();
+
+        if (!isValid) {
+            Log.e("SMTP", "Invalid credentials - User: " + smtpUser + " Pass: " + smtpPass.length() + " chars");
+        }
+
+        return isValid;
+    }
     private void initializeNotificationPreferences(){
         userPrefsRef.get().addOnCompleteListener(task -> {
             if(task.isSuccessful()){
@@ -209,31 +239,33 @@ public class NotificationHelper {
     }
 
     public void sendEmailNotification(String title, String content) {
-        if(currentUser == null || currentUser.getEmail() == null) {
+        if (currentUser == null || currentUser.getEmail() == null) {
             Log.e("Email", "No user email available");
             return;
         }
 
-        if(!areSmtpCredentialsValid()) {
-            Log.e("Email", "SMTP credentials not properly configured");
-            // Optionally retry fetching credentials
-            remoteConfig.fetchAndActivate().addOnCompleteListener(task -> {
-                if(task.isSuccessful()) {
-                    smtpUser = remoteConfig.getString("smtp_user");
-                    smtpPass = remoteConfig.getString("smtp_password");
-                    if(areSmtpCredentialsValid()) {
-                        sendEmail(title, content);
-                    }
-                }
-            });
+        // First try with current credentials
+        if (areSmtpCredentialsValid()) {
+            sendEmail(title, content);
             return;
         }
 
-        sendEmail(title, content);
+        // If invalid, reload and try again after 2 seconds
+        Log.w("Email", "Reloading SMTP credentials...");
+        loadSmtpCredentials();
+
+        new Handler(Looper.getMainLooper()).postDelayed(() -> {
+            if (areSmtpCredentialsValid()) {
+                sendEmail(title, content);
+            } else {
+                Log.e("Email", "Failed to send - invalid SMTP credentials");
+            }
+        }, 2000);
     }
 
     private void sendEmail(String title, String content) {
-        new Thread(() -> {
+        ExecutorService executor = Executors.newSingleThreadExecutor();
+        executor.execute(() -> {
             try {
                 Properties props = new Properties();
                 props.put("mail.smtp.host", "smtp.gmail.com");
@@ -241,14 +273,15 @@ public class NotificationHelper {
                 props.put("mail.smtp.auth", "true");
                 props.put("mail.smtp.starttls.enable", "true");
                 props.put("mail.smtp.ssl.protocols", "TLSv1.2");
+                props.put("mail.smtp.connectiontimeout", "10000");
+                props.put("mail.smtp.timeout", "10000");
 
-                Session session = Session.getInstance(props,
-                        new Authenticator() {
-                            @Override
-                            protected PasswordAuthentication getPasswordAuthentication() {
-                                return new PasswordAuthentication(smtpUser, smtpPass);
-                            }
-                        });
+                Session session = Session.getInstance(props, new Authenticator() {
+                    @Override
+                    protected PasswordAuthentication getPasswordAuthentication() {
+                        return new PasswordAuthentication(smtpUser, smtpPass);
+                    }
+                });
 
                 Message message = new MimeMessage(session);
                 message.setFrom(new InternetAddress(smtpUser));
@@ -258,10 +291,17 @@ public class NotificationHelper {
                 message.setText(content);
 
                 Transport.send(message);
-                Log.d("Email", "Email sent successfully");
+                Log.d("Email", "Email successfully sent to " + currentUser.getEmail());
             } catch (Exception e) {
-                Log.e("Email", "Error sending email: " + e.getMessage());
+                Log.e("Email", "SMTP Error: " + e.getClass().getSimpleName() + ": " + e.getMessage());
+
+                // Specific error handling
+                if (e instanceof AuthenticationFailedException) {
+                    Log.e("SMTP", "Invalid credentials - resetting");
+                    smtpUser = "";
+                    smtpPass = "";
+                }
             }
-        }).start();
+        });
     }
 }

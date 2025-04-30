@@ -11,68 +11,157 @@ import android.util.Log;
 import androidx.annotation.NonNull;
 import androidx.core.app.NotificationCompat;
 
-import com.google.firebase.BuildConfig;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
-import com.google.firebase.database.DataSnapshot;
-import com.google.firebase.database.DatabaseError;
-import com.google.firebase.database.DatabaseReference;
-import com.google.firebase.database.FirebaseDatabase;
-import com.google.firebase.database.ValueEventListener;
+import com.google.firebase.firestore.DocumentReference;
+import com.google.firebase.firestore.DocumentSnapshot;
 import com.google.firebase.firestore.FirebaseFirestore;
+import com.google.firebase.remoteconfig.FirebaseRemoteConfig;
+import com.google.firebase.remoteconfig.FirebaseRemoteConfigSettings;
 
-import java.io.IOException;
-import java.io.OutputStream;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Properties;
 
 import javax.mail.Authenticator;
 import javax.mail.Message;
-import javax.mail.MessagingException;
-import javax.mail.Multipart;
 import javax.mail.PasswordAuthentication;
 import javax.mail.Session;
 import javax.mail.Transport;
 import javax.mail.internet.InternetAddress;
 import javax.mail.internet.MimeMessage;
 
-
 public class NotificationHelper {
     private static final String CHANNEL_ID = "realized_vision_notifications";
+    private static final String PREFERENCES_PATH = "notificationPreferences";
+    private final FirebaseRemoteConfig remoteConfig;
+    private String smtpUser;
+    private String smtpPass;
     private final Context context;
-    private DatabaseReference userPrefsRef;
-    private FirebaseUser currentUser;
+    private final FirebaseFirestore firestore;
+    private final FirebaseUser currentUser;
+    private DocumentReference userPrefsRef;
 
-    public NotificationHelper(Context context){
+    public NotificationHelper(Context context) {
         this.context = context;
-        currentUser = FirebaseAuth.getInstance().getCurrentUser();
-        if(currentUser != null){
-            userPrefsRef = FirebaseDatabase.getInstance()
-                    .getReference("Users")
-                    .child(currentUser.getUid())
-                    .child("notificationPreferences");
+        this.firestore = FirebaseFirestore.getInstance();
+        this.currentUser = FirebaseAuth.getInstance().getCurrentUser();
+
+        //Firebase Remote Config settings for SMTP settings
+        this.remoteConfig = FirebaseRemoteConfig.getInstance();
+        FirebaseRemoteConfigSettings configSettings = new FirebaseRemoteConfigSettings.Builder()
+                .setMinimumFetchIntervalInSeconds(3600)
+                .build();
+        remoteConfig.setConfigSettingsAsync(configSettings);
+        remoteConfig.setDefaultsAsync(R.xml.remote_config_defaults);
+
+        // Fetch immediately
+        remoteConfig.fetchAndActivate().addOnCompleteListener(task -> {
+            if(task.isSuccessful()) {
+                smtpUser = remoteConfig.getString("smtp_user");
+                smtpPass = remoteConfig.getString("smtp_password");
+                Log.d("SMTP", "Credentials loaded successfully");
+            } else {
+                Log.e("SMTP", "Failed to load credentials", task.getException());
+            }
+        });
+
+        if (currentUser != null) {
+            this.userPrefsRef = firestore.collection("Users").document(currentUser.getUid());
+            initializeNotificationPreferences(); // Initialize if they don't exist
         }
         createNotificationChannel();
     }
 
-    public void checkAndSendNotification(String notificationType, String title, String message){
-        userPrefsRef.child(notificationType).addListenerForSingleValueEvent(
-                new ValueEventListener() {
-                    @Override
-                    public void onDataChange(@NonNull DataSnapshot snapshot) {
-                        Boolean isEnabled = snapshot.getValue(Boolean.class);
-                        boolean shouldSend = isEnabled != null ? isEnabled :
-                                !notificationType.startsWith("sms_");
+    private void initializeNotificationPreferences(){
+        userPrefsRef.get().addOnCompleteListener(task -> {
+            if(task.isSuccessful()){
+                DocumentSnapshot document = task.getResult();
+                if(document != null && !document.exists()){
+                    //Create new user document for preferences
+                    Map<String, Object> userData = new HashMap<>();
+                    userData.put(PREFERENCES_PATH, getDefaultPreferences());
+                    userPrefsRef.set(userData)
+                            .addOnSuccessListener(w -> {
+                                Log.d("Notification Helper", "User preferences created");
+                            }).addOnFailureListener(e -> {
+                                Log.d("Notification Helper", "Error creating preferences");
+                            });
+                } else if (document != null && !document.contains(PREFERENCES_PATH)) {
+                    //add preferences to path
+                    Map<String, Object> updates = new HashMap<>();
+                    updates.put(PREFERENCES_PATH, getDefaultPreferences());
 
-                        if (shouldSend) {
+                    userPrefsRef.update(updates)
+                            .addOnSuccessListener(w ->{
+                                Log.d("Notification Helper", "User preferences updated successfully");
+                            }).addOnFailureListener(e -> {
+                                Log.e("Notification Helper", "Error updating preferences: "+  e.getMessage());
+                            });
+                }
+            }else{
+                Log.e("Notification Helper", "Error checking preferences", task.getException());
+            }
+        });
+
+
+    }
+
+    private Map<String, Boolean> getDefaultPreferences(){
+        Map<String, Boolean> defaults = new HashMap<>();
+        // App notifications
+        defaults.put("app_purchases", true);
+        defaults.put("app_messages", true);
+        defaults.put("app_reservations", true);
+        // Email notifications
+        defaults.put("email_purchases", true);
+        defaults.put("email_messages", true);
+        defaults.put("email_reservations", true);
+        // System alerts
+        defaults.put("app_security", true);
+        defaults.put("email_security", true);
+        return defaults;
+    }
+    public void checkAndSendNotification(String notificationType, String title, String message) {
+        if (currentUser == null){
+         Log.w("Notification Helper", "Current user is null, cannot send notification");
+         return;
+        }
+
+        userPrefsRef.get().addOnCompleteListener(task -> {
+            if(task.isSuccessful()){
+                DocumentSnapshot document = task.getResult();
+                if(document != null && document.exists()){
+                    Map<String, Boolean> prefs = (Map<String, Boolean>) document.get(PREFERENCES_PATH);
+                    if(prefs != null && prefs.containsKey(notificationType)){
+                        boolean shouldSend = Boolean.TRUE.equals(prefs.get(notificationType));
+                        if(shouldSend){
                             sendNotification(notificationType, title, message);
                         }
-                    }
-
-                    @Override
-                    public void onCancelled(@NonNull DatabaseError error) {
-
+                    }else{
+                        Log.w("Notification Helper", "Notification type not found in preferences");
                     }
                 }
-        );
+            }else{
+                Log.e("Notification Helper", "Error checking notification preferences");
+            }
+        });
+    }
+
+    public void updateNotificationPreference(String preferenceKey, boolean value){
+        if(currentUser == null){
+            return;
+        }
+        Map<String, Object> update = new HashMap<>();
+        update.put(PREFERENCES_PATH + "." + preferenceKey, value);
+
+        userPrefsRef.update(update)
+                .addOnSuccessListener(w ->{
+                    Log.d("Notification Helper", "preferences updated successfully");
+                })
+                .addOnFailureListener(e -> {
+                    Log.e("Notification Helper", "Error updating preferences", e);
+                });
     }
 
     public void createNotificationChannel(){
@@ -113,40 +202,65 @@ public class NotificationHelper {
         notificationManager.notify((int) System.currentTimeMillis(), builder.build());
     }
 
-    public void sendEmailNotification(String title, String content){
-        if(currentUser == null || currentUser.getEmail() == null){
+    private boolean areSmtpCredentialsValid() {
+        return smtpUser != null && !smtpUser.isEmpty() &&
+                smtpPass != null && !smtpPass.isEmpty() &&
+                smtpUser.contains("@") && smtpPass.length() >= 8;
+    }
+
+    public void sendEmailNotification(String title, String content) {
+        if(currentUser == null || currentUser.getEmail() == null) {
+            Log.e("Email", "No user email available");
             return;
         }
-        new Thread(() ->{
+
+        if(!areSmtpCredentialsValid()) {
+            Log.e("Email", "SMTP credentials not properly configured");
+            // Optionally retry fetching credentials
+            remoteConfig.fetchAndActivate().addOnCompleteListener(task -> {
+                if(task.isSuccessful()) {
+                    smtpUser = remoteConfig.getString("smtp_user");
+                    smtpPass = remoteConfig.getString("smtp_password");
+                    if(areSmtpCredentialsValid()) {
+                        sendEmail(title, content);
+                    }
+                }
+            });
+            return;
+        }
+
+        sendEmail(title, content);
+    }
+
+    private void sendEmail(String title, String content) {
+        new Thread(() -> {
             try {
-                //email properties
-                java.util.Properties props = new java.util.Properties();
+                Properties props = new Properties();
                 props.put("mail.smtp.host", "smtp.gmail.com");
                 props.put("mail.smtp.port", "587");
                 props.put("mail.smtp.auth", "true");
                 props.put("mail.smtp.starttls.enable", "true");
-
-                String email = System.getenv("SMTP_USER");
-                String password = System.getenv("SMTP_PASSWORD");
+                props.put("mail.smtp.ssl.protocols", "TLSv1.2");
 
                 Session session = Session.getInstance(props,
                         new Authenticator() {
                             @Override
                             protected PasswordAuthentication getPasswordAuthentication() {
-                                return new PasswordAuthentication(email, password);
+                                return new PasswordAuthentication(smtpUser, smtpPass);
                             }
                         });
-                MimeMessage message = new MimeMessage(session);
-                message.setFrom(new InternetAddress(email));
-                message.setRecipients(Message.RecipientType.TO, InternetAddress.parse(currentUser.getEmail()));
+
+                Message message = new MimeMessage(session);
+                message.setFrom(new InternetAddress(smtpUser));
+                message.setRecipients(Message.RecipientType.TO,
+                        InternetAddress.parse(currentUser.getEmail()));
                 message.setSubject(title);
                 message.setText(content);
 
                 Transport.send(message);
-                Log.d("Notification Helper", "Email sent successfully");
-
-            }catch (Exception e){
-                Log.e("Notification Helper", "Error sending email");
+                Log.d("Email", "Email sent successfully");
+            } catch (Exception e) {
+                Log.e("Email", "Error sending email: " + e.getMessage());
             }
         }).start();
     }

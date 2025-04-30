@@ -1,9 +1,12 @@
 package com.example.realizedvision;
 
 import android.content.Context;
+import android.content.DialogInterface;
 import android.content.Intent;
+import android.content.pm.PackageManager;
 import android.graphics.Color;
 import android.graphics.drawable.ColorDrawable;
+import android.os.Build;
 import android.os.Bundle;
 import android.util.DisplayMetrics;
 import android.util.Log;
@@ -20,15 +23,23 @@ import android.widget.Spinner;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.core.app.ActivityCompat;
+import androidx.core.content.ContextCompat;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.bumptech.glide.Glide;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
+import com.google.firebase.database.DataSnapshot;
+import com.google.firebase.database.DatabaseError;
+import com.google.firebase.database.DatabaseReference;
+import com.google.firebase.database.FirebaseDatabase;
+import com.google.firebase.database.ValueEventListener;
 import com.google.firebase.firestore.CollectionReference;
 import com.google.firebase.firestore.DocumentSnapshot;
 import com.google.firebase.firestore.EventListener;
@@ -40,7 +51,9 @@ import com.google.firebase.firestore.QuerySnapshot;
 
 import java.math.BigDecimal;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 public class MainActivity extends AppCompatActivity implements ItemAdapter.OnItemClickListener{
     private RecyclerView recyclerView;
@@ -64,18 +77,25 @@ public class MainActivity extends AppCompatActivity implements ItemAdapter.OnIte
     };
     private FirebaseFirestore firestore;
     private FirebaseUser currentUser;
+    private NotificationHelper notificationHelper;
+    private static final int NOTIFICATION_PERMISSION_CODE = 100;
+    private static final String POST_NOTIFICATIONS_PERMISSION =
+            Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU ?
+                    "android.permission.POST_NOTIFICATIONS" :
+                    "";
 
     @Override
     protected void onCreate(Bundle savedInstanceState){
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
-        new NotificationHelper(this);
+        notificationHelper = new NotificationHelper(this);
+
         checkUserType();
+        checkNotificationPermission();
 
 //        Connect to db, find user instance
         currentUser = FirebaseAuth.getInstance().getCurrentUser();
         firestore = FirebaseFirestore.getInstance();
-
 
 //      Create recycler view to hold elements
         recyclerView = findViewById(R.id.mainRecyclerView);
@@ -86,6 +106,7 @@ public class MainActivity extends AppCompatActivity implements ItemAdapter.OnIte
         recyclerView.setAdapter(itemAdapter);
 
         itemAdapter.setOnItemClickListener(this);
+
 
         fetchUserPreferencesAndItems();
 
@@ -402,22 +423,16 @@ public class MainActivity extends AppCompatActivity implements ItemAdapter.OnIte
                             if (isVendor != null && isVendor) {
                                 //User is vendor
                                 intent = new Intent(MainActivity.this, MainVendorActivity.class);
-                            } else {
-                                //Regular user
-                                intent = new Intent(MainActivity.this, MainActivity.class);
+                                startActivity(intent);
+                                finish();
                             }
-                            startActivity(intent);
-                            finish();
                         } else {
                             //document doesn't exist, treat like regular user
-                            startActivity(new Intent(MainActivity.this, MainActivity.class));
-                            finish();
+                            Log.e("Main Activity", "User document not found");
                         }
                     } else {
                         Log.e("Main Activity", "Error checking user type", task.getException());
                         //Treat as regular user if error
-                        startActivity(new Intent(MainActivity.this, MainActivity.class));
-                        finish();
                     }
                 });
     }
@@ -469,6 +484,66 @@ public class MainActivity extends AppCompatActivity implements ItemAdapter.OnIte
         intent.putExtra("vendorID", vendorID); // Pass the vendor ID to the storefront activity
         startActivity(intent);
     }
+
+    private void checkNotificationPermission() {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU) {
+            return; // No permission needed below Android 13
+        }
+
+        if (ContextCompat.checkSelfPermission(this, POST_NOTIFICATIONS_PERMISSION)
+                == PackageManager.PERMISSION_GRANTED) {
+            Log.d("Permission", "Notifications enabled");
+            updateNotificationPreference(true); // Save to Firestore
+        } else if (shouldShowRequestPermissionRationale(POST_NOTIFICATIONS_PERMISSION)) {
+            showPermissionExplanationDialog(); // Explain why we need it
+        } else {
+            // Directly request (first time or "Don't ask again" not clicked)
+            ActivityCompat.requestPermissions(
+                    this,
+                    new String[]{POST_NOTIFICATIONS_PERMISSION},
+                    NOTIFICATION_PERMISSION_CODE
+            );
+        }
+    }
+
+    private void updateNotificationPreference(boolean enabled) {
+        String userId = FirebaseAuth.getInstance().getCurrentUser().getUid();
+        FirebaseFirestore.getInstance()
+                .collection("Users")
+                .document(userId)
+                .update("notificationsEnabled", enabled)
+                .addOnFailureListener(e -> Log.e("MainActivity", "Failed to update notification pref", e));
+    }
+    private void showPermissionExplanationDialog() {
+        new AlertDialog.Builder(this)
+                .setTitle("Enable Notifications")
+                .setMessage("This app needs notification permissions to alert you about orders and messages.")
+                .setPositiveButton("Continue", new DialogInterface.OnClickListener() {
+                    @Override
+                    public void onClick(DialogInterface dialog, int which) {
+                        ActivityCompat.requestPermissions(
+                                MainActivity.this,
+                                new String[]{POST_NOTIFICATIONS_PERMISSION},
+                                NOTIFICATION_PERMISSION_CODE
+                        );
+                    }
+                })
+                .setNegativeButton("Cancel", null)
+                .show();
+    }
+    @Override
+    public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults);
+        if (requestCode == NOTIFICATION_PERMISSION_CODE) {
+            boolean granted = grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED;
+            updateNotificationPreference(granted); // Save choice to Firestore
+
+            if (!granted) {
+                Toast.makeText(this, "Notifications disabled. Enable in settings.", Toast.LENGTH_SHORT).show();
+            }
+        }
+    }
+
 
 }
 

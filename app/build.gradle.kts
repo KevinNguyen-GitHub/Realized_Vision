@@ -110,6 +110,10 @@ dependencies {
     implementation(libs.firebase.firestore)
     implementation(libs.firebase.database)
 
+    implementation("com.google.firebase:firebase-config:22.1.1")
+    implementation("com.google.firebase:firebase-auth:23.0.0")
+    implementation("com.google.android.gms:play-services-base:18.4.0")
+    implementation("com.google.android.gms:play-services-basement:18.3.0")
 
     // Custom Calendar dependencies
     implementation("com.kizitonwose.calendar:view:2.6.2")

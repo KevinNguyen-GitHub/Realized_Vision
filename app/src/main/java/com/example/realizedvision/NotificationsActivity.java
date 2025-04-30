@@ -1,167 +1,135 @@
 package com.example.realizedvision;
 
 import android.os.Bundle;
+import android.util.Log;
 import android.widget.CompoundButton;
 import android.widget.ImageButton;
 import android.widget.Switch;
+import android.widget.Toast;
 
 import androidx.appcompat.app.AppCompatActivity;
 
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
-import com.google.firebase.database.DatabaseReference;
-import com.google.firebase.database.FirebaseDatabase;
-import com.google.firebase.database.DataSnapshot;
-import com.google.firebase.database.DatabaseError;
-import com.google.firebase.database.ValueEventListener;
+import com.google.firebase.firestore.DocumentReference;
+import com.google.firebase.firestore.FirebaseFirestore;
 
-import java.util.HashMap;
+import java.util.Map;
 
 public class NotificationsActivity extends AppCompatActivity {
 
+    // App notification switches
     private Switch appSwitchPurchases, appSwitchMessages, appSwitchReservations;
+    // Email switches
     private Switch emailSwitchPurchases, emailSwitchMessages, emailSwitchReservations;
+    // System alert switches
     private Switch switchSystemAlertsApp, switchSystemAlertsEmail;
 
-
-    private DatabaseReference databaseReference;
+    private DocumentReference userPrefsRef;
     private FirebaseUser currentUser;
+    private NotificationHelper notificationHelper;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_notifications);
 
-        // Initialize Firebase
+        // Initialize Firebase Firestore
         currentUser = FirebaseAuth.getInstance().getCurrentUser();
+        notificationHelper = new NotificationHelper(this);
+
         if (currentUser != null) {
-            databaseReference = FirebaseDatabase.getInstance()
-                    .getReference("Users").child(currentUser.getUid()).child("notificationPreferences");
+            userPrefsRef = FirebaseFirestore.getInstance()
+                    .collection("Users")
+                    .document(currentUser.getUid());
         }
 
-        // Back button functionality
+        // Back button
         ImageButton backButton = findViewById(R.id.backButtonNotification);
         backButton.setOnClickListener(v -> finish());
 
-        //App notification switches
+        // Initialize switches
+        initializeSwitches();
+
+        // Load preferences
+        loadNotificationPreferences();
+    }
+
+    private void initializeSwitches() {
+        // App notification switches
         appSwitchPurchases = findViewById(R.id.switchAppPurchasNotis);
         appSwitchMessages = findViewById(R.id.switchAppMessageNotis);
         appSwitchReservations = findViewById(R.id.switchAppReservationNotis);
-        //email switches
+
+        // Email switches
         emailSwitchPurchases = findViewById(R.id.switchEmailPurchaseNotis);
         emailSwitchMessages = findViewById(R.id.switchEmailMessageNotis);
         emailSwitchReservations = findViewById(R.id.switchEmailReservationNotis);
-        //System alert switch
+
+        // System alert switches
         switchSystemAlertsApp = findViewById(R.id.switchSystemAlertsApp);
         switchSystemAlertsEmail = findViewById(R.id.switchSystemAlertsEmail);
 
-
-
-        // Fetch existing preferences
-        loadNotificationPreferences();
-
-        // Update preferences when switches are toggled
+        // Set up listeners
         setupSwitchListeners();
     }
 
     private void loadNotificationPreferences() {
-        if (databaseReference != null) {
-            databaseReference.addListenerForSingleValueEvent(new ValueEventListener() {
-                @Override
-                public void onDataChange(DataSnapshot snapshot) {
-                    if (!snapshot.exists()) {
-                        setDefaultPreferences(); // Writes defaults to Firebase
-                        return;
-                    }
-                    if (snapshot.exists()) {
-                        appSwitchPurchases.setChecked(snapshot.child("app_purchases").getValue(Boolean.class));
-                        appSwitchMessages.setChecked(snapshot.child("app_messages").getValue(Boolean.class));
-                        appSwitchReservations.setChecked(snapshot.child("app_reservations").getValue(Boolean.class));
+        if (currentUser == null) return;
 
-                        emailSwitchPurchases.setChecked(snapshot.child("email_purchases").getValue(Boolean.class));
-                        emailSwitchMessages.setChecked(snapshot.child("email_messages").getValue(Boolean.class));
-                        emailSwitchReservations.setChecked(snapshot.child("email_reservations").getValue(Boolean.class));
+        userPrefsRef.get().addOnSuccessListener(document -> {
+            if (document.exists() && document.contains("notificationPreferences")) {
+                Map<String, Boolean> prefs = (Map<String, Boolean>) document.get("notificationPreferences");
 
-                        switchSystemAlertsApp.setChecked(snapshot.child("app_security").getValue(Boolean.class));
-                        switchSystemAlertsEmail.setChecked(snapshot.child("email_security").getValue(Boolean.class));
+                // App notifications
+                appSwitchPurchases.setChecked(prefs.getOrDefault("app_purchases", true));
+                appSwitchMessages.setChecked(prefs.getOrDefault("app_messages", true));
+                appSwitchReservations.setChecked(prefs.getOrDefault("app_reservations", true));
 
-                    }
-                }
+                // Email notifications
+                emailSwitchPurchases.setChecked(prefs.getOrDefault("email_purchases", true));
+                emailSwitchMessages.setChecked(prefs.getOrDefault("email_messages", true));
+                emailSwitchReservations.setChecked(prefs.getOrDefault("email_reservations", true));
 
-                @Override
-                public void onCancelled(DatabaseError error) {
-                    // Handle database error
-                }
-            });
-        }
-        else{
-            setDefaultPreferences();
-        }
+                // System alerts
+                switchSystemAlertsApp.setChecked(prefs.getOrDefault("app_security", true));
+                switchSystemAlertsEmail.setChecked(prefs.getOrDefault("email_security", true));
+            }
+        }).addOnFailureListener(e -> {
+            Toast.makeText(this, "Failed to load preferences", Toast.LENGTH_SHORT).show();
+            Log.e("NotificationsActivity", "Error loading preferences", e);
+        });
     }
 
-    private void setSwitchState(Switch switchView, DataSnapshot snapshot, String key){
-        if(snapshot.child(key).exists()){
-            switchView.setChecked(snapshot.child(key).getValue(Boolean.class));
-        }
-        else{
-            //default to enabled
-            switchView.setChecked(true);
-        }
-    }
-
-    private void setDefaultPreferences(){
-        HashMap<String, Object> defaults = new HashMap<>();
-
-        //App notis
-        defaults.put("app_purchases",true);
-        defaults.put("app_messages", true);
-        defaults.put("app_reservations", true);
-        //email notis
-        defaults.put("email_purchases", true);
-        defaults.put("email_messages", true);
-        defaults.put("email_reservations", true);
-        //default sms notis to false
-        defaults.put("app_security", true);
-        defaults.put("email_security", true);
-
-        databaseReference.updateChildren(defaults);
-
-        // Update UI for defaults
-        appSwitchPurchases.setChecked(true);
-        appSwitchMessages.setChecked(true);
-        appSwitchReservations.setChecked(true);
-
-        emailSwitchPurchases.setChecked(true);
-        emailSwitchMessages.setChecked(true);
-        emailSwitchReservations.setChecked(true);
-
-        switchSystemAlertsApp.setChecked(true);
-        switchSystemAlertsEmail.setChecked(true);
-
-    }
     private void setupSwitchListeners() {
-        //app noti listeners
+        // App notifications
         appSwitchPurchases.setOnCheckedChangeListener(createSwitchListener("app_purchases"));
         appSwitchMessages.setOnCheckedChangeListener(createSwitchListener("app_messages"));
         appSwitchReservations.setOnCheckedChangeListener(createSwitchListener("app_reservations"));
-        //email noti listeners
+
+        // Email notifications
         emailSwitchPurchases.setOnCheckedChangeListener(createSwitchListener("email_purchases"));
         emailSwitchMessages.setOnCheckedChangeListener(createSwitchListener("email_messages"));
         emailSwitchReservations.setOnCheckedChangeListener(createSwitchListener("email_reservations"));
-        //system notis listeners
+
+        // System alerts
         switchSystemAlertsApp.setOnCheckedChangeListener(createSwitchListener("app_security"));
         switchSystemAlertsEmail.setOnCheckedChangeListener(createSwitchListener("email_security"));
     }
 
-    private CompoundButton.OnCheckedChangeListener createSwitchListener(final String preferenceKey) {
+    private CompoundButton.OnCheckedChangeListener createSwitchListener(String preferenceKey) {
         return (buttonView, isChecked) -> {
-            HashMap<String, Object> update = new HashMap<>();
-            update.put(preferenceKey, isChecked);
-            databaseReference.updateChildren(update);
+            if (currentUser == null) return;
+
+            // Use NotificationHelper to update preferences
+            notificationHelper.updateNotificationPreference(preferenceKey, isChecked);
+
+            // Optional: Show confirmation
+            if (isChecked) {
+                Toast.makeText(NotificationsActivity.this,
+                        preferenceKey.replace("_", " ") + " enabled",
+                        Toast.LENGTH_SHORT).show();
+            }
         };
     }
 }
-
-
-
-

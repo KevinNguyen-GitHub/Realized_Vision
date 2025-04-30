@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<defaultsMap>
+    <entry>
+        <key>smtp_user</key>
+        <value>email@gmail.com</value>
+    </entry>
+    <entry>
+        <key>smtp_password</key>
+        <value>password</value>
+    </entry>
+</defaultsMap>

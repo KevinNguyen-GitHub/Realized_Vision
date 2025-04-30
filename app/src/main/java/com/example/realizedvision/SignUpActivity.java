@@ -10,6 +10,8 @@ import android.widget.TextView;
 import android.widget.Toast;
 import androidx.appcompat.app.AppCompatActivity;
 import com.google.firebase.auth.FirebaseAuth;
+import com.google.firebase.database.DatabaseReference;
+import com.google.firebase.database.FirebaseDatabase;
 import com.google.firebase.firestore.FirebaseFirestore;
 
 import java.util.HashMap;
@@ -27,6 +29,7 @@ public class SignUpActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_signup);
+        NotificationHelper notificationHelper = new NotificationHelper(this);
 
         etFirstName = findViewById(R.id.firstNameEditText);
         etLastName = findViewById(R.id.lastNameEditText);
@@ -70,6 +73,7 @@ public class SignUpActivity extends AppCompatActivity {
                     .addOnCompleteListener(task -> {
                         if (task.isSuccessful() && auth.getCurrentUser() != null) {
                             String userId = auth.getCurrentUser().getUid();
+
                             Map<String, Object> userMap = new HashMap<>();
                             userMap.put("firstName", firstName);
                             userMap.put("lastName", lastName);
@@ -82,6 +86,11 @@ public class SignUpActivity extends AppCompatActivity {
                                     .set(userMap)
                                     .addOnCompleteListener(task1 -> {
                                         if (task1.isSuccessful()) {
+                                            notificationHelper.checkAndSendNotification(
+                                                    "email_purchases",
+                                                    "Welcome to Realized Vision!",
+                                                    "Welcome " + firstName + ", your account was successfully created"
+                                            );
                                             Log.d("Firestore", "User data saved successfully");
                                             Intent intent = new Intent(SignUpActivity.this, MainActivity.class);
                                             intent.putExtra("firstName", firstName);

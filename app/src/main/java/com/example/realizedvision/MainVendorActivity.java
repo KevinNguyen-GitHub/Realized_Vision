@@ -320,12 +320,6 @@ public class MainVendorActivity extends AppCompatActivity{
                 .addOnSuccessListener(documentSnapshot -> {
                     if(documentSnapshot.exists()){
                         stripeAccountId = documentSnapshot.getString("stripeAccountId");
-                        if(stripeAccountId != null && !stripeAccountId.isEmpty()){
-                            generateDashboardLink();
-                        }
-                        else{
-                            createConnectAccount();
-                        }
                     }
                 }).addOnFailureListener(e ->{
                     Log.e("Vendor Main", "Error checking vendors" + e.getMessage());

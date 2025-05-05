@@ -24,6 +24,7 @@ public class ChangePasswordActivity extends AppCompatActivity {
     private Button buttonSave;
     private FirebaseAuth mAuth;
     private FirebaseUser currentUser;
+    private NotificationHelper notificationHelper;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -39,6 +40,7 @@ public class ChangePasswordActivity extends AppCompatActivity {
         editTextNewPassword = findViewById(R.id.newPassword);
         editTextConfirmPassword = findViewById(R.id.confirmPassword);
         buttonSave = findViewById(R.id.saveButton);
+        notificationHelper = new NotificationHelper(this);
 
         ImageButton backButton = findViewById(R.id.backButtonChangePass);
         backButton.setOnClickListener(v -> finish());
@@ -90,6 +92,16 @@ public class ChangePasswordActivity extends AppCompatActivity {
                                 .addOnCompleteListener(task1 -> {
                                     if (task1.isSuccessful()) {
                                         Toast.makeText(this, "Password updated successfully!", Toast.LENGTH_SHORT).show();
+                                        notificationHelper.checkAndSendNotification(
+                                                "email_security",
+                                                "Password Changed",
+                                                "Your password was successfully updated. You can now log in to your account."
+                                        );
+                                        notificationHelper.checkAndSendNotification(
+                                                "app_security",
+                                                "Security Alert",
+                                                "Password changed"
+                                        );
                                         finish();
                                     } else {
                                         Toast.makeText(this, "Password update failed. Try again.", Toast.LENGTH_SHORT).show();

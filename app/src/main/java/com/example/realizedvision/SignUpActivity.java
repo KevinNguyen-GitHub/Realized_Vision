@@ -24,12 +24,13 @@ public class SignUpActivity extends AppCompatActivity {
     private FirebaseAuth auth;
     private FirebaseFirestore firestore;
     private TextView textViewLogin;
+    private NotificationHelper notificationHelper;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_signup);
-        NotificationHelper notificationHelper = new NotificationHelper(this);
+        notificationHelper = new NotificationHelper(this);
 
         etFirstName = findViewById(R.id.firstNameEditText);
         etLastName = findViewById(R.id.lastNameEditText);
@@ -87,7 +88,7 @@ public class SignUpActivity extends AppCompatActivity {
                                     .addOnCompleteListener(task1 -> {
                                         if (task1.isSuccessful()) {
                                             notificationHelper.checkAndSendNotification(
-                                                    "email_purchases",
+                                                    "email_security",
                                                     "Welcome to Realized Vision!",
                                                     "Welcome " + firstName + ", your account was successfully created"
                                             );

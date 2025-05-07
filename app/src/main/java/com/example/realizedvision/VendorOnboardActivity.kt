@@ -8,6 +8,8 @@ import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.lifecycleScope
 import com.example.realizedvision.*
+import com.example.realizedvision.stripe.CreateConnectAccountRequest
+import com.example.realizedvision.stripe.GenerateAccountLinkRequest
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
 import kotlinx.coroutines.Dispatchers

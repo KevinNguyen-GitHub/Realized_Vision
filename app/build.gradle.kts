@@ -88,28 +88,28 @@ dependencies {
     implementation(libs.firebase.database)
 
     /* ---------- Google Maps / Location / Volley ---------- */
-    implementation("com.google.android.gms:play-services-maps:18.1.0")
-    implementation("com.google.android.gms:play-services-location:21.0.1")
+    implementation("com.google.android.gms:play-services-maps:19.2.0")
+    implementation("com.google.android.gms:play-services-location:21.3.0")
     implementation("com.android.volley:volley:1.2.1")
-    implementation("com.google.maps.android:android-maps-utils:2.2.3")
+    implementation(libs.android.maps.utils)
 
     /* ---------- Glide (image loading) ---------- */
-    implementation("com.github.bumptech.glide:glide:4.16.0")
-    kapt("com.github.bumptech.glide:compiler:4.16.0")
+    implementation(libs.glide)
+//    kapt("com.github.bumptech.glide:compiler:4.16.0")
 
     /* ---------- Coroutines ---------- */
-    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.7.3")
+    implementation(libs.kotlinx.coroutines.android)
 
     /* ---------- Retrofit / OkHttp / Gson ---------- */
-    implementation("com.squareup.retrofit2:retrofit:2.9.0")
+    implementation(libs.retrofit)
     implementation("com.squareup.retrofit2:converter-gson:2.9.0")
-    implementation("com.squareup.okhttp3:logging-interceptor:4.11.0")
+    implementation(libs.logging.interceptor)
 
     /* ---------- Stripe Android SDK ---------- */
-    implementation("com.stripe:stripe-android:20.39.0")
+    implementation("com.stripe:stripe-android:21.12.0")
 
     /* ---------- Kizitonwose CalendarView ---------- */
-    implementation("com.kizitonwose.calendarview:calendarview:1.0.4")
+    implementation("com.kizitonwose.calendar:view:2.6.2")
 
     /* ---------- Testing ---------- */
     testImplementation(libs.junit)

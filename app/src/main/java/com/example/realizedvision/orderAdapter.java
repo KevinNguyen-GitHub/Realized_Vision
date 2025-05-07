@@ -29,6 +29,9 @@ public class orderAdapter extends RecyclerView.Adapter<orderAdapter.VH> {
         setHasStableIds(true);          // smoother RecyclerView animations
     }
 
+    public orderAdapter(cancel_order cancelOrder, List<String> orderList) {
+    }
+
     /* ───────────────────────── ViewHolder ───────────────────────── */
     static final class VH extends RecyclerView.ViewHolder {
         final ImageView img;

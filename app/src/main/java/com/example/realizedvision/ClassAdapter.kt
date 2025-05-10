@@ -48,18 +48,22 @@ class ClassAdapter(private val isViewingOtherAccount: Boolean) : ListAdapter<Cla
                 reserveButton.visibility = View.VISIBLE
                 reserveButton.text = "View Seats"
             }
+            itemView.tag = classData
 
         }
         init {
+            itemView.setOnClickListener {
+                val position = getBindingAdapterPosition()
+                if (position != RecyclerView.NO_POSITION) {
+                    val classData = itemView.tag as ClassInfo
+                    listener?.onItemClick(classData)
+                }
+            }
             reserveButton.setOnClickListener {
                 val position = getBindingAdapterPosition()
                 if (position != RecyclerView.NO_POSITION) {
                     val classData = itemView.tag as ClassInfo
-                    if (isViewingOtherAccount) {
-                        listener?.onReserveClick(classData)
-                    } else {
-                        listener?.onItemClick(classData)
-                    }
+                    listener?.onReserveClick(classData)
                 }
             }
         }

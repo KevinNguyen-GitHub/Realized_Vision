@@ -112,7 +112,7 @@ class ViewCalendarActivity : AppCompatActivity() {
     private fun loadCalendarData() {
         val currentUser = auth.currentUser
         if (currentUser != null) {
-            val vendorId = "HFRgKpDsOwWvwg32icAu7103f7w2"
+            val vendorId = "rDEWVBzmtnb6S4VCy4D368axIWi2"
             firestore.collection("Classes")
                 .whereEqualTo("vendorID", vendorId)
                 .get()
@@ -192,7 +192,7 @@ class ViewCalendarActivity : AppCompatActivity() {
                     val intent = Intent(this@ViewCalendarActivity, ViewClassActivity::class.java)
                     val formatter = DateTimeFormatter.ofPattern("MMMM d, yyyy", Locale.getDefault())
                     intent.putExtra("selectedDate", data.date.format(formatter))
-                    intent.putExtra("selectedProfileId", "HFRgKpDsOwWvwg32icAu7103f7w2")
+                    intent.putExtra("selectedProfileId", "rDEWVBzmtnb6S4VCy4D368axIWi2")
                     startActivity(intent)
                 }
             }

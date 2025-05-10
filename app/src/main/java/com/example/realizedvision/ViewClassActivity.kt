@@ -83,7 +83,50 @@ class ViewClassActivity : AppCompatActivity(), ClassAdapter.OnItemClickListener 
     }
 
     override fun onReserveClick(classInfo: ClassInfo) {
-        showReserveSeatDialog(classInfo)
+        val isViewingOtherClass = selectedProfileId != auth.currentUser?.uid
+        if (isViewingOtherClass) {
+            showReserveSeatDialog(classInfo)
+        } else {
+            showReservedSeatsDialog(classInfo)
+        }
+    }
+
+    private fun showReservedSeatsDialog(classInfo: ClassInfo) {
+        firestore.collection("Classes")
+            .document(classInfo.classID)
+            .collection("Seats")
+            .get()
+            .addOnSuccessListener { documents ->
+                val reservedSeats = documents.mapNotNull { document ->
+                    val firstName = document.getString("firstName")
+                    val lastName = document.getString("lastName")
+                    if (firstName != null && lastName != null) {
+                        "$firstName $lastName"
+                    } else {
+                        null 
+                    }
+                }
+
+                val dialogMessage = if (reservedSeats.isNotEmpty()) {
+                    reservedSeats.joinToString("\n")
+                } else {
+                    "No seats reserved yet."
+                }
+
+                AlertDialog.Builder(ContextThemeWrapper(this, R.style.CustomAlertDialog))
+                    .setTitle("Reserved Seats for ${classInfo.title}")
+                    .setMessage(dialogMessage)
+                    .setPositiveButton("Close") { dialog, _ ->
+                        dialog.dismiss()
+                    }
+                    .create()
+                    .show()
+
+            }
+            .addOnFailureListener { e ->
+                Log.w("ViewClassActivity", "Error getting reserved seats", e)
+                Toast.makeText(this, "Error loading reserved seats.", Toast.LENGTH_SHORT).show()
+            }
     }
 
     private fun showReserveSeatDialog(classInfo: ClassInfo) {

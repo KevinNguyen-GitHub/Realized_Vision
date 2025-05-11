@@ -66,6 +66,9 @@ public class OrderHistoryAdapter extends RecyclerView.Adapter<OrderHistoryAdapte
                 Toast.makeText(context, "User not logged in", Toast.LENGTH_SHORT).show();
             }
         });
+        holder.requestRefundButton.setOnClickListener(v -> {
+            Toast.makeText(context, "Requesting refund for " + item.getName(), Toast.LENGTH_SHORT).show();
+        });
     }
 
     @Override
@@ -79,6 +82,7 @@ public class OrderHistoryAdapter extends RecyclerView.Adapter<OrderHistoryAdapte
         TextView itemPriceTextView;
         TextView itemQuantityTextView;
         TextView buyAgainButton;
+        TextView requestRefundButton;
 
         public ViewHolder(@NonNull View itemView) {
             super(itemView);
@@ -87,6 +91,7 @@ public class OrderHistoryAdapter extends RecyclerView.Adapter<OrderHistoryAdapte
             itemPriceTextView = itemView.findViewById(R.id.item_price);
             itemQuantityTextView = itemView.findViewById(R.id.item_quantity);
             buyAgainButton = itemView.findViewById(R.id.buy_again);
+            requestRefundButton = itemView.findViewById(R.id.request_refund);
         }
     }
 

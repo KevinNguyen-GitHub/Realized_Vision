@@ -137,7 +137,7 @@ class CheckoutActivity : AppCompatActivity() {
                 try {
                     // **Query the Vendors collection to find the vendor by vendorId**
                     val querySnapshot = db.collection("Vendors")
-                        .whereEqualTo("vendorId", vendorId)
+                        .whereEqualTo("vendorID", vendorId)
                         .limit(1) // Limit to 1 as vendorId should be unique
                         .get()
                         .await()
@@ -176,7 +176,7 @@ class CheckoutActivity : AppCompatActivity() {
                 }
 
                 val amountInCents = (subtotal * 100).toLong()
-                val transferData = TransferData(destination = destinationAccountId)!!)
+                val transferData = TransferData(destination = destinationAccountId!!)
                 val request = CreatePaymentIntentRequest(
                     amount = amountInCents,
                     currency = "usd",

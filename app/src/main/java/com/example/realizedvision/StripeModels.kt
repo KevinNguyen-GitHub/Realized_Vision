@@ -3,7 +3,12 @@ package com.example.realizedvision
 data class CreatePaymentIntentRequest(
     val amount: Long,
     val currency: String,
-    val automatic_payment_methods: AutomaticPaymentMethods
+    val automatic_payment_methods: AutomaticPaymentMethods,
+    val transfer_data: TransferData
+)
+
+data class TransferData(
+    val destination: String
 )
 
 data class AutomaticPaymentMethods(

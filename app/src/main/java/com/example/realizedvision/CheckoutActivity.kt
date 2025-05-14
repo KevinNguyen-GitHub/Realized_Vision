@@ -86,7 +86,7 @@ class CheckoutActivity : AppCompatActivity() {
     }
 
     /* ─────────────────────── cart fetch / UI ─────────────────────── */
-    private fun fetchShoppingCart() {
+    private fun fetchShoppingCart(): Int {
         val uid = auth.currentUser?.uid ?: return Log.e(TAG, "User not logged in")
 
         db.collection("Users").document(uid).collection("Shopping Cart")

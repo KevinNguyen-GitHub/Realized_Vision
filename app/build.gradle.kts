@@ -12,7 +12,7 @@ plugins {
 
 android {
     namespace       = "com.example.realizedvision"
-    compileSdk      = 34
+    compileSdk      = 35
 
     defaultConfig {
         applicationId         = "com.csulb.realized_vision"
@@ -88,28 +88,28 @@ dependencies {
     implementation(libs.firebase.database)
 
     /* ---------- Google Maps / Location / Volley ---------- */
-    implementation("com.google.android.gms:play-services-maps:19.2.0")
-    implementation("com.google.android.gms:play-services-location:21.3.0")
-    implementation("com.android.volley:volley:1.2.1")
+    implementation(libs.play.services.maps)
+    implementation(libs.play.services.location)
+    implementation(libs.volley)
     implementation(libs.android.maps.utils)
 
     /* ---------- Glide (image loading) ---------- */
     implementation(libs.glide)
-//    kapt("com.github.bumptech.glide:compiler:4.16.0")
+
 
     /* ---------- Coroutines ---------- */
     implementation(libs.kotlinx.coroutines.android)
 
     /* ---------- Retrofit / OkHttp / Gson ---------- */
     implementation(libs.retrofit)
-    implementation("com.squareup.retrofit2:converter-gson:2.9.0")
+    implementation(libs.converter.gson)
     implementation(libs.logging.interceptor)
 
     /* ---------- Stripe Android SDK ---------- */
-    implementation("com.stripe:stripe-android:21.12.0")
+    implementation(libs.stripe.android)
 
     /* ---------- Kizitonwose CalendarView ---------- */
-    implementation("com.kizitonwose.calendar:view:2.6.2")
+    implementation(libs.view)
 
     /* ---------- Testing ---------- */
     testImplementation(libs.junit)

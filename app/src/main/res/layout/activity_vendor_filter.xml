@@ -1,0 +1,136 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@color/beige">
+
+    <ImageButton
+        android:id="@+id/backButtonVendorFilter"
+        android:layout_width="40dp"
+        android:layout_height="40dp"
+        android:layout_marginStart="24dp"
+        android:layout_marginTop="24dp"
+        android:background="@color/beige"
+        android:scaleType="centerInside"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent"
+        app:srcCompat="@drawable/back_arrow" />
+
+    <TextView
+        android:id="@+id/vendorPreferencesTitle"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="92dp"
+        android:layout_marginTop="35dp"
+        android:layout_marginEnd="92dp"
+        android:text="Vendor Filter Preferences"
+        android:textColor="@color/black"
+        android:textSize="20sp"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent" />
+
+
+    <Switch
+        android:id="@+id/woodworking"
+        android:layout_width="316dp"
+        android:layout_height="48dp"
+        android:layout_marginTop="14dp"
+        android:padding="2dp"
+        android:text="Woodworking"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintHorizontal_bias="0.5"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/vendorPreferencesTitle" />
+
+
+    <Switch
+        android:id="@+id/welding"
+        android:layout_width="316dp"
+        android:layout_height="48dp"
+        android:layout_marginTop="14dp"
+        android:padding="2dp"
+        android:text="Welding"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintHorizontal_bias="0.505"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/woodworking" />
+
+    <Switch
+        android:id="@+id/programming"
+        android:layout_width="316dp"
+        android:layout_height="48dp"
+        android:layout_marginTop="14dp"
+        android:padding="2dp"
+        android:text="Programming"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintHorizontal_bias="0.494"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/welding" />
+
+    <Switch
+        android:id="@+id/flooring"
+        android:layout_width="316dp"
+        android:layout_height="48dp"
+        android:layout_marginTop="14dp"
+        android:padding="2dp"
+        android:text="Flooring"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintHorizontal_bias="0.494"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/programming" />
+
+    <Switch
+        android:id="@+id/artist"
+        android:layout_width="316dp"
+        android:layout_height="48dp"
+        android:layout_marginTop="14dp"
+        android:padding="2dp"
+        android:text="Artist"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintHorizontal_bias="0.494"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/flooring" />
+
+    <Switch
+        android:id="@+id/mechanic"
+        android:layout_width="316dp"
+        android:layout_height="48dp"
+        android:layout_marginTop="14dp"
+        android:padding="2dp"
+        android:text="Mechanic"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintHorizontal_bias="0.494"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/artist" />
+
+    <Switch
+        android:id="@+id/videoAndAutomation"
+        android:layout_width="316dp"
+        android:layout_height="48dp"
+        android:layout_marginTop="14dp"
+        android:padding="2dp"
+        android:text="Video and Automation"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintHorizontal_bias="0.494"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/mechanic" />
+
+
+    <Switch
+        android:id="@+id/graphicDesign"
+        android:layout_width="316dp"
+        android:layout_height="48dp"
+        android:layout_marginTop="14dp"
+        android:padding="2dp"
+        android:text="Graphic Design"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintHorizontal_bias="0.494"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/videoAndAutomation" />
+
+
+
+</androidx.constraintlayout.widget.ConstraintLayout>

@@ -19,7 +19,11 @@ import java.util.HashMap;
 
 public class NotificationsActivity extends AppCompatActivity {
 
-    private Switch switch1, switch2, switch3;
+    private Switch appSwitchPurchases, appSwitchMessages, appSwitchReservations;
+    private Switch emailSwitchPurchases, emailSwitchMessages, emailSwitchReservations;
+    private Switch smsSwitchPurchases, smsSwitchReservations;
+
+
     private DatabaseReference databaseReference;
     private FirebaseUser currentUser;
 
@@ -32,17 +36,25 @@ public class NotificationsActivity extends AppCompatActivity {
         currentUser = FirebaseAuth.getInstance().getCurrentUser();
         if (currentUser != null) {
             databaseReference = FirebaseDatabase.getInstance()
-                    .getReference("Users").child(currentUser.getUid()).child("notifications");
+                    .getReference("Users").child(currentUser.getUid()).child("notificationPreferences");
         }
 
         // Back button functionality
         ImageButton backButton = findViewById(R.id.backButtonNotification);
         backButton.setOnClickListener(v -> finish());
 
-        // Initialize switches
-        switch1 = findViewById(R.id.switch2);
-        switch2 = findViewById(R.id.switch4);
-        switch3 = findViewById(R.id.switch3);
+        //App notification switches
+        appSwitchPurchases = findViewById(R.id.switchAppPurchasNotis);
+        appSwitchMessages = findViewById(R.id.switchAppMessageNotis);
+        appSwitchReservations = findViewById(R.id.switchAppReservationNotis);
+        //email switches
+        emailSwitchPurchases = findViewById(R.id.switchEmailPurchaseNotis);
+        emailSwitchMessages = findViewById(R.id.switchEmailMessageNotis);
+        emailSwitchReservations = findViewById(R.id.switchEmailReservationNotis);
+        //SMS switches
+        smsSwitchPurchases = findViewById(R.id.switchSMSPurchaseNotis);
+        smsSwitchReservations = findViewById(R.id.switchSMSReservationNotis);
+
 
         // Fetch existing preferences
         loadNotificationPreferences();
@@ -56,10 +68,21 @@ public class NotificationsActivity extends AppCompatActivity {
             databaseReference.addListenerForSingleValueEvent(new ValueEventListener() {
                 @Override
                 public void onDataChange(DataSnapshot snapshot) {
+                    if (!snapshot.exists()) {
+                        setDefaultPreferences(); // Writes defaults to Firebase
+                        return;
+                    }
                     if (snapshot.exists()) {
-                        switch1.setChecked(snapshot.child("preference1").getValue(Boolean.class));
-                        switch2.setChecked(snapshot.child("preference2").getValue(Boolean.class));
-                        switch3.setChecked(snapshot.child("preference3").getValue(Boolean.class));
+                        appSwitchPurchases.setChecked(snapshot.child("app_purchases").getValue(Boolean.class));
+                        appSwitchMessages.setChecked(snapshot.child("app_messages").getValue(Boolean.class));
+                        appSwitchReservations.setChecked(snapshot.child("app_reservations").getValue(Boolean.class));
+
+                        emailSwitchPurchases.setChecked(snapshot.child("email_purchases").getValue(Boolean.class));
+                        emailSwitchMessages.setChecked(snapshot.child("email_messages").getValue(Boolean.class));
+                        emailSwitchReservations.setChecked(snapshot.child("email_reservations").getValue(Boolean.class));
+
+                        smsSwitchPurchases.setChecked(snapshot.child("sms_purchases").getValue(Boolean.class));
+                        smsSwitchReservations.setChecked(snapshot.child("sms_reservations").getValue(Boolean.class));
                     }
                 }
 
@@ -69,21 +92,70 @@ public class NotificationsActivity extends AppCompatActivity {
                 }
             });
         }
+        else{
+            setDefaultPreferences();
+        }
     }
 
+    private void setSwitchState(Switch switchView, DataSnapshot snapshot, String key){
+        if(snapshot.child(key).exists()){
+            switchView.setChecked(snapshot.child(key).getValue(Boolean.class));
+        }
+        else{
+            //default to enabled
+            switchView.setChecked(true);
+        }
+    }
+
+    private void setDefaultPreferences(){
+        HashMap<String, Object> defaults = new HashMap<>();
+
+        //App notis
+        defaults.put("app_purchases",true);
+        defaults.put("app_messages", true);
+        defaults.put("app_reservations", true);
+        //email notis
+        defaults.put("email_purchases", true);
+        defaults.put("email_messages", true);
+        defaults.put("email_reservations", true);
+        //default sms notis to false
+        defaults.put("sms_purchases", false);
+        defaults.put("sms_reservations", false);
+
+        databaseReference.updateChildren(defaults);
+
+        // Update UI for defaults
+        appSwitchPurchases.setChecked(true);
+        appSwitchMessages.setChecked(true);
+        appSwitchReservations.setChecked(true);
+        emailSwitchPurchases.setChecked(true);
+        emailSwitchMessages.setChecked(true);
+        emailSwitchReservations.setChecked(true);
+        smsSwitchPurchases.setChecked(false);
+        smsSwitchReservations.setChecked(false);
+
+
+    }
     private void setupSwitchListeners() {
-        CompoundButton.OnCheckedChangeListener listener = (buttonView, isChecked) -> {
-            HashMap<String, Object> updates = new HashMap<>();
-            updates.put("preference1", switch1.isChecked());
-            updates.put("preference2", switch2.isChecked());
-            updates.put("preference3", switch3.isChecked());
+        //app noti listeners
+        appSwitchPurchases.setOnCheckedChangeListener(createSwitchListener("app_purchases"));
+        appSwitchMessages.setOnCheckedChangeListener(createSwitchListener("app_messages"));
+        appSwitchReservations.setOnCheckedChangeListener(createSwitchListener("app_reservations"));
+        //email noti listeners
+        emailSwitchPurchases.setOnCheckedChangeListener(createSwitchListener("email_purchases"));
+        emailSwitchMessages.setOnCheckedChangeListener(createSwitchListener("email_messages"));
+        emailSwitchReservations.setOnCheckedChangeListener(createSwitchListener("email_reservations"));
+        //sms noti listeners
+        smsSwitchPurchases.setOnCheckedChangeListener(createSwitchListener("sms_purchases"));
+        smsSwitchReservations.setOnCheckedChangeListener(createSwitchListener("sms_reservations"));
+    }
 
-            databaseReference.updateChildren(updates);
+    private CompoundButton.OnCheckedChangeListener createSwitchListener(final String preferenceKey) {
+        return (buttonView, isChecked) -> {
+            HashMap<String, Object> update = new HashMap<>();
+            update.put(preferenceKey, isChecked);
+            databaseReference.updateChildren(update);
         };
-
-        switch1.setOnCheckedChangeListener(listener);
-        switch2.setOnCheckedChangeListener(listener);
-        switch3.setOnCheckedChangeListener(listener);
     }
 }
 

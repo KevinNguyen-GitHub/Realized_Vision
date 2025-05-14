@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <item name="item_vendor" type="id" />
+    <item name="popup_cart_button" type="id" />
+    <item name="popup_favorite_button" type="id" />
+</resources>

@@ -1,369 +1,191 @@
-
 package com.example.realizedvision;
 
-import android.content.Context;
-import android.graphics.drawable.ColorDrawable;
+import android.content.Intent;
 import android.os.Bundle;
-import android.text.TextUtils;
-import android.util.Log;
-import android.view.Gravity;
 import android.view.LayoutInflater;
 import android.view.View;
-import android.view.ViewGroup;
-import android.widget.Button;
-import android.widget.PopupWindow;
-import android.widget.Toast;
+import android.widget.*;
 
 import androidx.annotation.Nullable;
+import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
-import com.google.android.material.textfield.TextInputEditText;
-import com.google.android.material.textfield.TextInputLayout;
 import com.google.firebase.auth.FirebaseAuth;
-import com.google.firebase.auth.FirebaseUser;
-import com.google.firebase.firestore.CollectionReference;
-import com.google.firebase.firestore.DocumentSnapshot;
-import com.google.firebase.firestore.EventListener;
-import com.google.firebase.firestore.FirebaseFirestore;
-import com.google.firebase.firestore.FirebaseFirestoreException;
-import com.google.firebase.firestore.QuerySnapshot;
+import com.google.firebase.firestore.*;
 
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
+/**
+ * Vendor-side storefront screen.
+ *
+ *  • Lists every item where <code>vendorID == currentUser</code><br>
+ *  • Lets the vendor add / delete items in-place.<br>
+ *  • Tapping the address opens {@link MapActivity}.<br>
+ *  • Top-bar icons route to core areas.<br>
+ */
 public class StorefrontActivity extends AppCompatActivity {
 
-    private RecyclerView recyclerView;
-    private ItemAdapter itemAdapter;
-    private List<Item> itemList;
-    private FirebaseFirestore firestore;
-    private FirebaseUser currentUser;
-    private Button commissionRequest;
+    /* ───────────────────────── Firebase ───────────────────────── */
+    private final FirebaseAuth      auth = FirebaseAuth.getInstance();
+    private final FirebaseFirestore db   = FirebaseFirestore.getInstance();
 
-    @Override
-    protected void onCreate(Bundle savedInstanceState) {
-        super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_vendor_profile); // Ensure correct XML file
+    /* ───────────────────────── UI / data ───────────────────────── */
+    private RecyclerView        rv;
+    private ItemAdapter         adapter;
+    private final List<Item>    items = new ArrayList<>();
+    private TextView            tvName, tvAddress;
+    private String              vendorId;
 
-        // Initialize Firebase
-        currentUser = FirebaseAuth.getInstance().getCurrentUser();
-        if (currentUser != null) {
-            firestore = FirebaseFirestore.getInstance();
-        }
+    /* ───────────────────────── lifecycle ───────────────────────── */
+    @Override protected void onCreate(Bundle b) {
+        super.onCreate(b);
+        setContentView(R.layout.activity_vendor_profile);
 
-        // Initialize RecyclerView
-        recyclerView = findViewById(R.id.recyclerView);
-        recyclerView.setLayoutManager(new LinearLayoutManager(this));
+        if (auth.getCurrentUser() == null) { finish(); return; }
+        vendorId = auth.getUid();
 
-        // Initialize item list and adapter
-        itemList = new ArrayList<>();
-        itemAdapter = new ItemAdapter(this, itemList);
-        recyclerView.setAdapter(itemAdapter);
-
-        // Check if storefront exists and populate it with 10 sample items if empty
-        checkOrPopulateStorefront();
-
-        // Initialize the commission request button
-                commissionRequest = findViewById(R.id.RequestButton);
-        commissionRequest.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-
-                // Inflate the popup layout (popup_commision_form.xml)
-                LayoutInflater inflater = (LayoutInflater) getSystemService(Context.LAYOUT_INFLATER_SERVICE);
-                final View popupView = inflater.inflate(R.layout.popup_commission_form, null);
-
-                int width = ViewGroup.LayoutParams.WRAP_CONTENT;
-                int height = ViewGroup.LayoutParams.WRAP_CONTENT;
-                boolean focusable = true;
-                final PopupWindow popupWindow = new PopupWindow(popupView, width, height, focusable);
-
-                // Allow the popup to be dismissed when touching outside
-                popupWindow.setOutsideTouchable(true);
-                popupWindow.setBackgroundDrawable(new ColorDrawable(android.graphics.Color.TRANSPARENT));
-
-                // Show the popup at the center of the screen
-                popupWindow.showAtLocation(findViewById(android.R.id.content), Gravity.CENTER, 0, 0);
-
-                // Get references for the required fields and submit button
-                final TextInputLayout nameInputLayout = popupView.findViewById(R.id.nameInputLayout);
-                final TextInputLayout typeInputLayout = popupView.findViewById(R.id.typeInputLayout);
-                final TextInputLayout sizeInputLayout = popupView.findViewById(R.id.sizeInputLayout);
-                final TextInputLayout styleInputLayout = popupView.findViewById(R.id.styleInputLayout);
-
-                final TextInputEditText nameEditText = popupView.findViewById(R.id.nameEditText);
-                final TextInputEditText typeEditText = popupView.findViewById(R.id.typeEditText);
-                final TextInputEditText sizeEditText = popupView.findViewById(R.id.sizeEditText);
-                final TextInputEditText styleEditText = popupView.findViewById(R.id.styleEditText);
-
-                Button submitButton = popupView.findViewById(R.id.submitButton);
-
-                submitButton.setOnClickListener(new View.OnClickListener() {
-                    @Override
-                    public void onClick(View v) {
-                        boolean valid = true;
-                        String name = nameEditText.getText().toString().trim();
-                        String type = typeEditText.getText().toString().trim();
-                        String size = sizeEditText.getText().toString().trim();
-                        String style = styleEditText.getText().toString().trim();
-
-                        // Validate required fields
-                        if (TextUtils.isEmpty(name)) {
-                            nameInputLayout.setError("Name is required");
-                            valid = false;
-                        } else {
-                            nameInputLayout.setError(null);
-                        }
-
-                        if (TextUtils.isEmpty(type)) {
-                            typeInputLayout.setError("Type is required");
-                            valid = false;
-                        } else {
-                            typeInputLayout.setError(null);
-                        }
-
-                        if (TextUtils.isEmpty(size)) {
-                            sizeInputLayout.setError("Size is required");
-                            valid = false;
-                        } else {
-                            sizeInputLayout.setError(null);
-                        }
-
-                        if (TextUtils.isEmpty(style)) {
-                            styleInputLayout.setError("Style is required");
-                            valid = false;
-                        } else {
-                            styleInputLayout.setError(null);
-                        }
-
-                        if (valid) {
-                            // All required fields are filled. Proceed with form submission.
-                            Toast.makeText(StorefrontActivity.this, "Form Submitted", Toast.LENGTH_SHORT).show();
-                            popupWindow.dismiss();
-
-                        }
-                    }
-                });
-            }
-        });
+        initViews();
+        listenForItems();
+        loadVendorMeta();
     }
 
+    /* ───────────────────── view wiring helpers ─────────────────── */
+    private void initViews() {
+        tvName    = findViewById(R.id.profile_name);
+        tvAddress = findViewById(R.id.vendor_address);
 
-    // Check if the storefront contains any items
-    private void checkOrPopulateStorefront() {
-        if (currentUser != null) {
-            String userId = currentUser.getUid();
+        rv = findViewById(R.id.recyclerView);
+        rv.setLayoutManager(new LinearLayoutManager(this));
+        adapter = new ItemAdapter(this, items, /*filterable*/ false);
+        rv.setAdapter(adapter);
 
-            CollectionReference itemsRef = firestore.collection("Storefront");
+        // nav icons
+        int[] ids   = { R.id.home_icon, R.id.favorites_icon, R.id.messages_icon,
+                R.id.profile_icon, R.id.settings_icon };
+        Class<?>[] dest = { MainActivity.class, FavoritesActivity.class,
+                MessagesActivity.class, StorefrontActivity.class,
+                SettingsActivity.class };
+        for (int i = 0; i < ids.length; i++)
+            findViewById(ids[i]).setOnClickListener(v -> nav(dest[i]));
 
-            itemsRef.whereEqualTo("vendorID", userId)
-                    .addSnapshotListener(new EventListener<QuerySnapshot>() {
-                        @Override
-                        public void onEvent(@Nullable QuerySnapshot snapshot, @Nullable FirebaseFirestoreException error) {
-                            if (error != null) {
-                                Log.e("Firestore", "Error loading items", error);
-                                return;
-                            }
+        findViewById(R.id.add_button)   .setOnClickListener(v -> showAddDialog());
+        findViewById(R.id.delete_button).setOnClickListener(v -> showDeleteDialog());
+    }
 
-                            if (snapshot == null || snapshot.isEmpty()) {
-                                Log.d("Firestore", "No items found for this vendor");
-                                populateStorefront(userId);
-                            }
+    /* ─────────────────────── Firestore live-load ───────────────── */
+    private void listenForItems() {
+        db.collection("Storefront")
+                .whereEqualTo("vendorID", vendorId)
+                .addSnapshotListener((@Nullable QuerySnapshot snap,
+                                      @Nullable FirebaseFirestoreException e) -> {
+                    if (e != null) return;
+                    items.clear();
+                    for (DocumentSnapshot d : snap.getDocuments())
+                        items.add(d.toObject(Item.class));
+                    adapter.notifyDataSetChanged();
+                });
+    }
 
-                            loadStorefrontItems(userId);
-                        }
+    /* ───────────────────── vendor meta (name/address) ──────────── */
+    private void loadVendorMeta() {
+        db.collection("Vendors").document(vendorId).get()
+                .addOnSuccessListener(doc -> {
+                    tvName.setText(doc.getString("companyName"));
+                    String addr = doc.getString("address");
+                    if (addr != null && !addr.isEmpty()) {
+                        tvAddress.setText(addr);
+                        tvAddress.setVisibility(View.VISIBLE);
+                        tvAddress.setOnClickListener(v -> {
+                            Intent i = new Intent(this, MapActivity.class);
+                            i.putExtra("selectedAddress", addr);
+                            startActivity(i);
+                        });
+                    }
+                });
+    }
+
+    /* ───────────────────────── add item ───────────────────────── */
+    private void showAddDialog() {
+        View v = LayoutInflater.from(this)
+                .inflate(R.layout.dialog_add_item, null);
+        EditText name = v.findViewById(R.id.input_name);
+        EditText desc = v.findViewById(R.id.input_description);
+        EditText price= v.findViewById(R.id.input_price);
+
+        new AlertDialog.Builder(this).setTitle("Add new item")
+                .setView(v)
+                .setPositiveButton("Add", (d, i) -> {
+                    String n = name.getText().toString().trim();
+                    String de= desc.getText().toString().trim();
+                    String p = price.getText().toString().trim();
+                    if (n.isEmpty()||de.isEmpty()||p.isEmpty()) { toast("All fields"); return; }
+
+                    db.collection("Storefront")
+                            .whereEqualTo("vendorID", vendorId)
+                            .whereEqualTo("name", n)
+                            .limit(1)
+                            .get()
+                            .addOnSuccessListener(q -> {
+                                if (!q.isEmpty()) { toast("Name already exists"); return; }
+                                Map<String,Object> m = new HashMap<>();
+                                m.put("name", n);
+                                m.put("description", de);
+                                m.put("price", Double.parseDouble(p));
+                                m.put("vendorID", vendorId);
+                                m.put("itemID", db.collection("dummy").document().getId());
+                                m.put("imageUrl", "");
+
+                                db.collection("Storefront").document((String) m.get("itemID"))
+                                        .set(m).addOnSuccessListener(vv -> toast("Added!"))
+                                        .addOnFailureListener(er -> toast("Add failed"));
+                            });
+                })
+                .setNegativeButton("Cancel", null)
+                .show();
+    }
+
+    /* ─────────────────────── delete item ───────────────────────── */
+    private void showDeleteDialog() {
+        View v = LayoutInflater.from(this)
+                .inflate(R.layout.dialog_delete_item, null);
+        EditText input = v.findViewById(R.id.input_item_id);
+
+        new AlertDialog.Builder(this).setTitle("Delete item")
+                .setView(v)
+                .setPositiveButton("Delete", (d, i) -> {
+                    String txt = input.getText().toString().trim();
+                    if (txt.isEmpty()) return;
+
+                    // try by ID, else by name
+                    DocumentReference ref = db.collection("Storefront").document(txt);
+                    ref.get().addOnSuccessListener(doc -> {
+                        if (doc.exists() && vendorId.equals(doc.getString("vendorID")))
+                            ref.delete().addOnSuccessListener(vv -> toast("Deleted"));
+                        else deleteByName(txt);
                     });
-        }
+                })
+                .setNegativeButton("Cancel", null)
+                .show();
     }
 
-    private void populateStorefront(String userId) {
-        CollectionReference storefrontColRef = firestore.collection("Storefront");
-
-        String itemID;
-        for (int i = 1; i <= 10; i++) {
-            itemID = storefrontColRef.document().getId();
-
-            HashMap<String, Object> item = new HashMap<>();
-            item.put("name", "Sample Item " + i);
-            item.put("description", "This is a sample item number " + i);
-            item.put("price", (double) (5 + i * 2)); // Different prices
-            item.put("imageUrl", ""); // No image for now
-            item.put("itemID", itemID);
-            item.put("vendorID", userId);
-
-            storefrontColRef.document(itemID).set(item);
-        }
-
-        Toast.makeText(StorefrontActivity.this, "10 Sample Items Added to Storefront!", Toast.LENGTH_SHORT).show();
-
-        // Load the items after populating them
-        loadStorefrontItems(userId);
-    }
-
-    private void loadStorefrontItems(String userId) {
-        CollectionReference itemsRef = firestore.collection("Storefront");
-
-        itemsRef.whereEqualTo("vendorID", userId)
-                .addSnapshotListener(new EventListener<QuerySnapshot>() {
-                    @Override
-                    public void onEvent(@Nullable QuerySnapshot snapshot, @Nullable FirebaseFirestoreException error) {
-                        if (error != null) {
-                            Log.e("Firestore", "Error loading items", error);
-                            return;
-                        }
-                        if (snapshot != null) {
-                            itemList.clear();
-
-                            for (DocumentSnapshot itemDoc : snapshot.getDocuments()) {
-                                Item item = itemDoc.toObject(Item.class);
-
-                                if (item != null) {
-                                    itemList.add(item);
-                                }
-                            }
-                            itemAdapter.notifyDataSetChanged();
-                        }
-                    }
+    private void deleteByName(String name) {
+        db.collection("Storefront")
+                .whereEqualTo("vendorID", vendorId)
+                .whereEqualTo("name", name)
+                .get()
+                .addOnSuccessListener(q -> {
+                    if (q.isEmpty()) { toast("Item not found"); return; }
+                    for (DocumentSnapshot d : q) d.getReference().delete();
+                    toast("Deleted");
                 });
     }
+
+    /* ───────────────────── helper wrappers ────────────────────── */
+    private void nav(Class<?> c){ startActivity(new Intent(this,c)); }
+    private void toast(String m){ Toast.makeText(this,m,Toast.LENGTH_SHORT).show(); }
 }
-
-
-
-// -------------------------READ ME ---------------------------------READ ME--------------------------------READ ME------------------------------------------------
-//COMMENTED CODE BELOW IS FOR USER INPUT VERSION. USE WHEN READY TO
-//IMPLEMENT ADD FUNCTION. CODE ABOVE IS BOILER PLATE VERSION FOR VIEW
-//TESTING.
-
-
-
-
-
-
-//package com.example.realizedvision;
-//
-//import android.os.Bundle;
-//import android.util.Log;
-//import android.widget.Toast;
-//
-//import androidx.annotation.NonNull;
-//import androidx.appcompat.app.AppCompatActivity;
-//import androidx.recyclerview.widget.LinearLayoutManager;
-//import androidx.recyclerview.widget.RecyclerView;
-//
-//import com.google.firebase.auth.FirebaseAuth;
-//import com.google.firebase.auth.FirebaseUser;
-//import com.google.firebase.database.DataSnapshot;
-//import com.google.firebase.database.DatabaseError;
-//import com.google.firebase.database.DatabaseReference;
-//import com.google.firebase.database.FirebaseDatabase;
-//import com.google.firebase.database.ValueEventListener;
-//import com.example.realizedvision.ItemAdapter;
-//
-//import java.util.ArrayList;
-//import java.util.HashMap;
-//import java.util.List;
-//
-//public class StorefrontActivity extends AppCompatActivity {
-//
-//    private RecyclerView recyclerView;
-//    private ItemAdapter itemAdapter;
-//    private List<Item> itemList;
-//    private DatabaseReference userDatabaseRef;
-//    private FirebaseUser currentUser;
-//
-//    @Override
-//    protected void onCreate(Bundle savedInstanceState) {
-//        super.onCreate(savedInstanceState);
-//        setContentView(R.layout.activity_vendor_profile); // Make sure this XML file is correct!
-//
-//        // Initialize Firebase
-//        currentUser = FirebaseAuth.getInstance().getCurrentUser();
-//        userDatabaseRef = FirebaseDatabase.getInstance().getReference("Users");
-//
-//        // Initialize RecyclerView
-//        recyclerView = findViewById(R.id.recyclerView);
-//        recyclerView.setLayoutManager(new LinearLayoutManager(this));
-//
-//        // Initialize item list and adapter
-//        itemList = new ArrayList<>();
-//        itemAdapter = new ItemAdapter(this, itemList);
-//        recyclerView.setAdapter(itemAdapter);
-//
-//        // Check if storefront exists and load items
-//        checkOrCreateStorefront();
-//    }
-//
-//    private void checkOrCreateStorefront() {
-//        if (currentUser != null) {
-//            String userId = currentUser.getUid();
-//            DatabaseReference storefrontRef = userDatabaseRef.child(userId).child("storefront");
-//
-//            // Check if "storefront" exists
-//            storefrontRef.addListenerForSingleValueEvent(new ValueEventListener() {
-//                @Override
-//                public void onDataChange(@NonNull DataSnapshot snapshot) {
-//                    if (!snapshot.exists()) {
-//                        // Storefront doesn't exist, create it
-//                        createDefaultStorefront(userId);
-//                    } else {
-//                        // Load existing items
-//                        loadStorefrontItems(userId);
-//                    }
-//                }
-//
-//                @Override
-//                public void onCancelled(@NonNull DatabaseError error) {
-//                    Toast.makeText(StorefrontActivity.this, "Error: " + error.getMessage(), Toast.LENGTH_SHORT).show();
-//                }
-//            });
-//        }
-//    }
-//
-//    private void createDefaultStorefront(String userId) {
-//        DatabaseReference storefrontRef = userDatabaseRef.child(userId).child("storefront").child("items");
-//
-//        // Create a default item for testing
-//        HashMap<String, Object> defaultItem = new HashMap<>();
-//        defaultItem.put("name", "Sample Item");
-//        defaultItem.put("description", "This is a sample item.");
-//        defaultItem.put("price", 10.99);
-//        defaultItem.put("imageUrl", "https://via.placeholder.com/150");
-//
-//        // Push default item into the storefront collection
-//        storefrontRef.push().setValue(defaultItem).addOnCompleteListener(task -> {
-//            if (task.isSuccessful()) {
-//                Toast.makeText(StorefrontActivity.this, "Storefront created!", Toast.LENGTH_SHORT).show();
-//                loadStorefrontItems(userId);
-//            } else {
-//                Toast.makeText(StorefrontActivity.this, "Failed to create storefront", Toast.LENGTH_SHORT).show();
-//            }
-//        });
-//    }
-//
-//    private void loadStorefrontItems(String userId) {
-//        DatabaseReference itemsRef = userDatabaseRef.child(userId).child("storefront").child("items");
-//
-//        itemsRef.addValueEventListener(new ValueEventListener() {
-//            @Override
-//            public void onDataChange(@NonNull DataSnapshot snapshot) {
-//                itemList.clear();
-//                for (DataSnapshot dataSnapshot : snapshot.getChildren()) {
-//                    Item item = dataSnapshot.getValue(Item.class);
-//                    if (item != null) {
-//                        itemList.add(item);
-//                    }
-//                }
-//                itemAdapter.notifyDataSetChanged();
-//            }
-//
-//            @Override
-//            public void onCancelled(@NonNull DatabaseError error) {
-//                Log.e("Firebase", "Error loading items", error.toException());
-//            }
-//        });
-//    }
-//}

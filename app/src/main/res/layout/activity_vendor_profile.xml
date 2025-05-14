@@ -36,10 +36,11 @@
             android:background="#BF360C"
             android:padding="8dp"
             android:shadowRadius="4"
-            android:text="John Doe"
+
             android:textColor="@color/white"
             android:textSize="18sp"
             android:textStyle="bold" />
+
 
         <ImageView
             android:id="@+id/settings_icon"
@@ -48,53 +49,159 @@
             android:contentDescription="Settings"
             android:src="@drawable/ic_settings"
             app:tint="@color/black" />
+
+
     </LinearLayout>
 
+
+
     <!-- Section Title -->
-    <TextView
-        android:id="@+id/textView10"
-        android:layout_width="0dp"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="8dp"
-        android:background="@color/maroon"
-        android:gravity="center"
-        android:padding="8dp"
-        android:text="TextView"
-        android:textColor="@color/white"
-        android:textSize="18sp"
+
+    <LinearLayout
+        android:id="@+id/storefront_add_delete"
+        android:layout_width="401dp"
+        android:layout_height="57dp"
+        android:gravity="center_vertical"
+        android:orientation="horizontal"
+        android:padding="16dp"
+        app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@id/profile_header" />
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintVertical_bias="0.928">
+
+        <Button
+            android:id="@+id/add_button"
+            android:layout_width="292dp"
+            android:layout_height="36dp"
+            android:layout_weight="1"
+            android:text="Add" />
+
+        <Button
+            android:id="@+id/delete_button"
+            android:layout_width="291dp"
+            android:layout_height="36dp"
+            android:layout_weight="1"
+            android:text="Delete"
+            tools:layout_editor_absoluteX="7dp"
+            tools:layout_editor_absoluteY="642dp" />
+
+    </LinearLayout>
+
+    <TextView
+        android:id="@+id/vendor_address"
+        android:layout_width="311dp"
+        android:layout_height="30dp"
+        android:clickable="true"
+        android:focusable="true"
+        android:gravity="center"
+        android:padding="6dp"
+        android:text=""
+        android:textColor="@color/black"
+        android:textSize="14sp"
+        android:visibility="visible"
+        app:layout_constraintBottom_toTopOf="@id/storefront_nav"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        tools:visibility="visible" />
+
+    <LinearLayout
+        android:id="@+id/storefront_nav"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:background="@color/maroon"
+        android:gravity="center"
+        android:orientation="horizontal"
+        android:padding="8dp"
+        android:weightSum="4"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/profile_header">
+
+
+        <ImageView
+            android:id="@+id/storefront_label"
+            android:layout_width="0dp"
+            android:layout_height="32dp"
+            android:layout_weight="1"
+            android:contentDescription="Storefront"
+            android:src="@drawable/ic_storefront"
+            android:scaleType="centerInside"
+            app:tint="@android:color/white"
+            android:layout_marginEnd="4dp"/>
+        <View
+            android:layout_width="2dp"
+            android:layout_height="30dp"
+            android:background="@android:color/white" />
+
+        <ImageView
+            android:id="@+id/star_icon"
+            android:layout_width="0dp"
+            android:layout_height="32dp"
+            android:layout_weight="1"
+            android:contentDescription="Favorites"
+            android:src="@drawable/ic_star"
+            android:scaleType="centerInside"
+            app:tint="@android:color/white"
+
+            android:layout_marginEnd="4dp"/>
+        <View
+            android:layout_width="2dp"
+            android:layout_height="30dp"
+            android:background="@android:color/white" />
+
+        <ImageView
+            android:id="@+id/calendar_icon"
+            android:layout_width="0dp"
+            android:layout_height="32dp"
+            android:layout_weight="1"
+            android:contentDescription="Calendar"
+            android:src="@drawable/ic_calendar"
+            android:scaleType="centerInside"
+            app:tint="@android:color/white"
+
+            android:layout_marginEnd="4dp"/>
+        <View
+            android:layout_width="2dp"
+            android:layout_height="30dp"
+            android:background="@android:color/white" />
+
+        <ImageView
+            android:id="@+id/book_icon"
+            android:layout_width="0dp"
+            android:layout_height="30dp"
+            android:layout_weight="1"
+            android:contentDescription="Portfolio"
+            android:src="@drawable/ic_book"
+            android:scaleType="centerInside"
+            app:tint="@android:color/white"
+
+            android:layout_marginEnd="4dp"/>
+        <View
+            android:layout_width="2dp"
+            android:layout_height="30dp"
+            android:background="@android:color/white" />
+    </LinearLayout>
+
+
 
     <!-- RecyclerView for Items -->
+
+    <!-- Bottom Navigation -->
+
     <androidx.recyclerview.widget.RecyclerView
         android:id="@+id/recyclerView"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
+        android:layout_width="411dp"
+        android:layout_height="471dp"
+        android:layout_marginBottom="50dp"
+        android:padding="16dp"
         app:layout_constraintBottom_toTopOf="@id/bottom_navigation"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintHorizontal_bias="1.0"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@id/textView10"
-        app:layout_constraintVertical_bias="0.0" />
+        app:layout_constraintTop_toBottomOf="@id/storefront_nav"
+        app:layout_constraintVertical_bias="0.423" />
 
-    <!-- Commission Request -->
-    <com.google.android.material.button.MaterialButton
-        android:id="@+id/RequestButton"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="Commission Request"
-        android:textColor="@color/white"
-        app:cornerRadius="16dp"
-        android:background="@drawable/rounded_button"
-        app:layout_constraintBottom_toTopOf="@id/bottom_navigation"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintHorizontal_bias="0.5"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@id/recyclerView" />
-
-
-    <!-- Bottom Navigation -->
     <LinearLayout
         android:id="@+id/bottom_navigation"
         android:layout_width="0dp"
@@ -144,5 +251,7 @@
             android:contentDescription="@string/profile"
             android:src="@drawable/ic_profile" />
     </LinearLayout>
+
+
 
 </androidx.constraintlayout.widget.ConstraintLayout>

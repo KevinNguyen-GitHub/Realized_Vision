@@ -2,7 +2,6 @@ package com.example.realizedvision;
 
 import android.content.Intent;
 import android.os.Bundle;
-import android.widget.Button;
 import android.widget.ImageView;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -11,111 +10,76 @@ import androidx.appcompat.app.AppCompatActivity;
 
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
-import com.google.firebase.firestore.DocumentReference;
-import com.google.firebase.firestore.DocumentSnapshot;
-import com.google.firebase.firestore.FirebaseFirestore;
+import com.google.firebase.firestore.*;
 
+/**
+ * The customer-side profile screen.
+ *
+ * • Shows the user’s full name
+ * • Top-bar icons route to core areas
+ * • “Storefront” button only opens if the user is flagged as a vendor
+ */
 public class ProfileActivity extends AppCompatActivity {
 
-    private TextView profileNameTextView;
-    private FirebaseFirestore firestore;
-    private FirebaseUser currentUser;
+    /* ───────────────────────── Firebase ───────────────────────── */
+    private final FirebaseFirestore db   = FirebaseFirestore.getInstance();
+    private final FirebaseUser      user = FirebaseAuth.getInstance().getCurrentUser();
 
-    @Override
-    protected void onCreate(Bundle savedInstanceState) {
-        super.onCreate(savedInstanceState);
+    /* ───────────────────────── UI refs ─────────────────────────── */
+    private TextView tvName;
+
+    /* ───────────────────────── lifecycle ───────────────────────── */
+    @Override protected void onCreate(Bundle b) {
+        super.onCreate(b);
         setContentView(R.layout.activity_profile);
 
-        // Initialize Firebase
-        currentUser = FirebaseAuth.getInstance().getCurrentUser();
-        if (currentUser != null) {
-            firestore = FirebaseFirestore.getInstance();
-        }
+        if (user == null) { finish(); return; }   // auth session expired?
 
-        // Initialize views
-        profileNameTextView = findViewById(R.id.profile_name);
-
-        ImageView homeIcon = findViewById(R.id.home_icon);
-        ImageView favoriteIcon = findViewById(R.id.favorites_icon);
-        ImageView messageIcon = findViewById(R.id.messages_icon);
-        ImageView profileIcon = findViewById(R.id.profile_icon);
-        ImageView settingsIcon = findViewById(R.id.settings_icon);
-        Button storefrontButton = findViewById(R.id.storefrontButton);
-
-        // Set navigation
-        homeIcon.setOnClickListener(view -> navigateTo(MainActivity.class));
-        favoriteIcon.setOnClickListener(view -> navigateTo(FavoritesActivity.class));
-        messageIcon.setOnClickListener(view -> navigateTo(MessagesActivity.class));
-        profileIcon.setOnClickListener(view -> navigateTo(ProfileActivity.class));
-        settingsIcon.setOnClickListener(view -> navigateTo(SettingsActivity.class));
-
-
-        storefrontButton.setOnClickListener(view -> {
-            if (currentUser != null) {
-                String userId = currentUser.getUid();
-
-                DocumentReference userDocRef = firestore.collection("Users").document(userId);
-
-                userDocRef.get().addOnCompleteListener(task -> {
-                    if (task.isSuccessful()) {
-                        DocumentSnapshot snapshot = task.getResult();
-
-                        if (snapshot.exists() && Boolean.TRUE.equals(snapshot.getBoolean("isVendor"))) {
-                            navigateTo(StorefrontActivity.class);
-                        } else if (snapshot.exists() && Boolean.FALSE.equals(snapshot.getBoolean("isVendor"))) {
-                            Toast.makeText(ProfileActivity.this, "Upgrade to vendor to use this feature.", Toast.LENGTH_SHORT).show();
-                        } else {
-                            Toast.makeText(ProfileActivity.this, "User data not found.", Toast.LENGTH_SHORT).show();
-                        }
-                    } else {
-                        Toast.makeText(ProfileActivity.this, "Error: " + task.getException().getMessage(), Toast.LENGTH_SHORT).show();
-                    }
-                });
-            }
-        });
-
-        // Fetch user data
-        fetchUserData();
+        initViews();
+        loadUserName();
     }
 
-    private void fetchUserData() {
-        if (currentUser != null) {
-            String userId = currentUser.getUid();
+    /* ───────────────────────── view wiring ────────────────────── */
+    private void initViews() {
+        tvName = findViewById(R.id.profile_name);
 
-            DocumentReference userDocRef = firestore.collection("Users").document(userId);
+        int[] topIcons = { R.id.home_icon, R.id.favorites_icon, R.id.messages_icon,
+                R.id.profile_icon, R.id.settings_icon };
+        Class<?>[] dests = { MainActivity.class, FavoritesActivity.class, MessagesActivity.class,
+                ProfileActivity.class, SettingsActivity.class };
 
-            userDocRef.get().addOnCompleteListener(task -> {
-                if (task.isSuccessful()) {
-                    DocumentSnapshot snapshot = task.getResult();
+        for (int i = 0; i < topIcons.length; i++)
+            findViewById(topIcons[i]).setOnClickListener(v -> nav(dests[i]));
 
-                    if (snapshot.exists() /*&& Boolean.FALSE.equals(snapshot.getBoolean("isVendor"))*/) {
-                        String firstName = snapshot.getString("firstName");
-                        String lastName = snapshot.getString("lastName");
-
-                        // Handle null values
-                        firstName = (firstName != null) ? firstName : "";
-                        lastName = (lastName != null) ? lastName : "";
-
-                        // Use resource string with placeholders
-                        String fullName = getString(R.string.profile_name_format, firstName, lastName);
-                        profileNameTextView.setText(fullName);
-                    } else {
-                        Toast.makeText(ProfileActivity.this, "User data not found.", Toast.LENGTH_SHORT).show();
-                    }
-                } else {
-                    Toast.makeText(ProfileActivity.this, "Error: " + task.getException().getMessage(), Toast.LENGTH_SHORT).show();
-                }
-            });
-        }
+        findViewById(R.id.storefrontButton).setOnClickListener(v -> openStorefrontIfVendor());
     }
 
-    // Helper function for activity navigation
-    private void navigateTo(Class<?> targetActivity) {
-        Intent intent = new Intent(ProfileActivity.this, targetActivity);
-        startActivity(intent);
+    /* ───────────────────── data fetch helpers ─────────────────── */
+    private void loadUserName() {
+        db.collection("Users").document(user.getUid()).get()
+                .addOnSuccessListener(snap -> {
+                    if (!snap.exists()) { toast("User data not found."); return; }
+                    String first = snap.getString("firstName");
+                    String last  = snap.getString("lastName");
+                    tvName.setText(getString(R.string.profile_name_format,
+                            first == null ? "" : first,
+                            last  == null ? "" : last));
+                })
+                .addOnFailureListener(e -> toast("Failed to load profile: " + e.getMessage()));
     }
+
+    private void openStorefrontIfVendor() {
+        db.collection("Users").document(user.getUid()).get()
+                .addOnSuccessListener(snap -> {
+                    if (!snap.exists()) { toast("User data not found."); return; }
+                    boolean isVendor = Boolean.TRUE.equals(snap.getBoolean("isVendor"));
+                    if (isVendor) nav(StorefrontActivity.class);
+                    else          toast("Upgrade to vendor to use this feature.");
+                })
+                .addOnFailureListener(e -> toast("Failed: " + e.getMessage()));
+    }
+
+    /* ───────────────────── helper wrappers ────────────────────── */
+    private void nav(Class<?> c) { startActivity(new Intent(this, c)); }
+    private void toast(String m)  { Toast.makeText(this, m, Toast.LENGTH_SHORT).show(); }
 }
-
-
-
-

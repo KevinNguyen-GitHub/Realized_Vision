@@ -2,13 +2,11 @@ package com.example.realizedvision;
 
 import android.os.Bundle;
 import android.text.TextUtils;
-import android.view.View;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.ImageButton;
 import android.widget.Toast;
 
-import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 
 import com.google.firebase.auth.AuthCredential;
@@ -18,71 +16,89 @@ import com.google.firebase.auth.FirebaseUser;
 import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
 
+import java.util.HashMap;
+import java.util.Map;
+
 public class ChangeNameActivity extends AppCompatActivity {
 
-    private EditText editTextFirstName, editTextLastName, editTextCurrentPassword;
-    private Button saveButton;
-    private FirebaseUser currentUser;
-    private DatabaseReference userDatabaseRef;
+    private EditText etFirst, etLast, etPassword;
+    private Button   btnSave;
 
+    private FirebaseUser      user;
+    private DatabaseReference usersRef;
+
+    // ───────────────────────────── lifecycle ─────────────────────────────
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_changename);
 
-        // Initialize Firebase
-        currentUser = FirebaseAuth.getInstance().getCurrentUser();
-        userDatabaseRef = FirebaseDatabase.getInstance().getReference("Users");
+        user = FirebaseAuth.getInstance().getCurrentUser();
+        if (user == null) {           // signed-out guard
+            Toast.makeText(this, "User not signed in.", Toast.LENGTH_LONG).show();
+            finish(); return;
+        }
+        usersRef = FirebaseDatabase.getInstance().getReference("Users");
 
-        // Initialize UI elements
-        editTextFirstName = findViewById(R.id.firstName);
-        editTextLastName = findViewById(R.id.lastName);
-        editTextCurrentPassword = findViewById(R.id.currentPassword);
-        saveButton = findViewById(R.id.saveButton);
-        ImageButton backButton = findViewById(R.id.backButtonChangeName);
-
-        // Back button logic
-        backButton.setOnClickListener(v -> finish());
-
-        // Save button logic
-        saveButton.setOnClickListener(v -> updateUserName());
+        initViews();
     }
 
-    private void updateUserName() {
-        String newFirstName = editTextFirstName.getText().toString().trim();
-        String newLastName = editTextLastName.getText().toString().trim();
-        String currentPassword = editTextCurrentPassword.getText().toString().trim();
+    // ────────────────────────────── view wiring ───────────────────────────
+    private void initViews() {
+        etFirst    = findViewById(R.id.firstName);
+        etLast     = findViewById(R.id.lastName);
+        etPassword = findViewById(R.id.currentPassword);
+        btnSave    = findViewById(R.id.saveButton);
 
-        if (TextUtils.isEmpty(newFirstName) || TextUtils.isEmpty(newLastName)) {
-            Toast.makeText(this, "Please fill in both name fields.", Toast.LENGTH_SHORT).show();
-            return;
+        ImageButton back = findViewById(R.id.backButtonChangeName);
+        back.setOnClickListener(v -> finish());
+
+        btnSave.setOnClickListener(v -> updateName());
+    }
+
+    // ───────────────────────────── core logic ─────────────────────────────
+    private void updateName() {
+        String first = etFirst.getText().toString().trim();
+        String last  = etLast.getText().toString().trim();
+        String pass  = etPassword.getText().toString().trim();
+
+        if (TextUtils.isEmpty(first) || TextUtils.isEmpty(last)) {
+            toast("Please fill in both name fields."); return;
+        }
+        if (TextUtils.isEmpty(pass)) {
+            toast("Please enter your current password for verification."); return;
         }
 
-        if (TextUtils.isEmpty(currentPassword)) {
-            Toast.makeText(this, "Please enter your current password for verification.", Toast.LENGTH_SHORT).show();
-            return;
-        }
+        btnSave.setEnabled(false);                    // prevent double-clicks
+        AuthCredential cred = EmailAuthProvider.getCredential(
+                String.valueOf(user.getEmail()), pass);
 
-        // Re-authenticate user with current password
-        AuthCredential credential = EmailAuthProvider.getCredential(currentUser.getEmail(), currentPassword);
-        currentUser.reauthenticate(credential)
-                .addOnCompleteListener(task -> {
-                    if (task.isSuccessful()) {
-                        // Update name in Firebase Realtime Database
-                        String userId = currentUser.getUid();
-                        userDatabaseRef.child(userId).child("firstName").setValue(newFirstName);
-                        userDatabaseRef.child(userId).child("lastName").setValue(newLastName)
-                                .addOnCompleteListener(updateTask -> {
-                                    if (updateTask.isSuccessful()) {
-                                        Toast.makeText(ChangeNameActivity.this, "Name updated successfully.", Toast.LENGTH_SHORT).show();
-                                        finish(); // Go back to previous screen
-                                    } else {
-                                        Toast.makeText(ChangeNameActivity.this, "Failed to update name.", Toast.LENGTH_SHORT).show();
-                                    }
-                                });
-                    } else {
-                        Toast.makeText(ChangeNameActivity.this, "Authentication failed. Please check your password.", Toast.LENGTH_SHORT).show();
-                    }
-                });
+        user.reauthenticate(cred).addOnCompleteListener(authTask -> {
+            if (!authTask.isSuccessful()) {
+                toast("Authentication failed. Check your password.");
+                btnSave.setEnabled(true);
+                return;
+            }
+
+            Map<String, Object> update = new HashMap<>();
+            update.put("firstName", first);
+            update.put("lastName",  last);
+
+            usersRef.child(user.getUid()).updateChildren(update)
+                    .addOnCompleteListener(dbTask -> {
+                        if (dbTask.isSuccessful()) {
+                            toast("Name updated successfully.");
+                            finish();
+                        } else {
+                            toast("Failed to update name.");
+                            btnSave.setEnabled(true);
+                        }
+                    });
+        });
+    }
+
+    // ───────────────────────────── helpers ────────────────────────────────
+    private void toast(String msg) {
+        Toast.makeText(this, msg, Toast.LENGTH_SHORT).show();
     }
 }

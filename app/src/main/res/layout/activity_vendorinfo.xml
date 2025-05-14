@@ -53,15 +53,6 @@
             android:hint="Company Name"
             android:textSize="20sp" />
 
-        <EditText
-            android:id="@+id/address"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginBottom="20dp"
-            android:background="@drawable/rounded_edittext"
-            android:padding="10dp"
-            android:hint="Address"
-            android:textSize="20sp" />
 
         <EditText
             android:id="@+id/yearsInBusiness"
@@ -72,6 +63,52 @@
             android:padding="10dp"
             android:hint="Years in Business"
             android:textSize="20sp" />
+
+        <EditText
+            android:id="@+id/streetAddressEditText"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:background="@drawable/rounded_edittext"
+            android:padding="10dp"
+
+            android:hint="Street Address"
+            android:inputType="textPostalAddress"
+            android:layout_marginTop="8dp" />
+
+        <EditText
+            android:id="@+id/cityEditText"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:background="@drawable/rounded_edittext"
+            android:padding="10dp"
+
+            android:hint="City"
+            android:inputType="textCapWords"
+            android:layout_marginTop="8dp" />
+
+        <EditText
+            android:id="@+id/stateEditText"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:background="@drawable/rounded_edittext"
+            android:padding="10dp"
+
+            android:hint="State/Province"
+            android:inputType="textCapCharacters"
+            android:layout_marginTop="8dp" />
+
+        <EditText
+            android:id="@+id/zipCodeEditText"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:background="@drawable/rounded_edittext"
+            android:padding="10dp"
+
+            android:hint="Zip Code"
+            android:inputType="number"
+            android:layout_marginTop="8dp" />
+
+
 
         <TextView
             android:id="@+id/vendorStatus"

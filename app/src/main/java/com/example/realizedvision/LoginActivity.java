@@ -11,86 +11,97 @@ import android.widget.Toast;
 
 import androidx.appcompat.app.AppCompatActivity;
 
-import com.google.android.gms.tasks.Task;
-import com.google.firebase.auth.AuthResult;
 import com.google.firebase.auth.FirebaseAuth;
 
+/**
+ * Simple e-mail / password sign-in screen backed by Firebase Auth.
+ *
+ * Expects:
+ *   • “Forgot password” flow (TODO: uncomment when activity exists)
+ *   • “Create account” flow that routes to {@link SignUpActivity}
+ */
 public class LoginActivity extends AppCompatActivity {
-    private EditText email, password;
-    private Button login;
-    private CheckBox rememberMe;
-    private TextView forgotPassword, createAccount;
-    private FirebaseAuth mAuth;  // Firebase Authentication instance
 
+    /* ─────────────────────────── UI refs ─────────────────────────── */
+    private EditText  etEmail, etPassword;
+    private Button    btnLogin;
+    private CheckBox  cbRemember;
+    private TextView  tvForgot,  tvCreate;
+
+    /* ─────────────────────────── Firebase ────────────────────────── */
+    private FirebaseAuth auth;
+
+    /* ───────────────────────── lifecycle ─────────────────────────── */
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_login);
 
-        // Initialize UI components
-        email = findViewById(R.id.emailEditText);
-        password = findViewById(R.id.passwordEditText);
-        login = findViewById(R.id.loginButton);
-        rememberMe = findViewById(R.id.rememberMe);
-        forgotPassword = findViewById(R.id.forgotPassword);
-        createAccount = findViewById(R.id.createAccount);
+        initViews();
+        auth = FirebaseAuth.getInstance();
+        bindListeners();
+    }
 
-        // Initialize Firebase Authentication
-        mAuth = FirebaseAuth.getInstance();
+    /* ─────────────────────── view wiring ─────────────────────────── */
+    private void initViews() {
+        etEmail    = findViewById(R.id.emailEditText);
+        etPassword = findViewById(R.id.passwordEditText);
+        btnLogin   = findViewById(R.id.loginButton);
+        cbRemember = findViewById(R.id.rememberMe);
+        tvForgot   = findViewById(R.id.forgotPassword);
+        tvCreate   = findViewById(R.id.createAccount);
+    }
 
-        // Set click listener for the login button
-        login.setOnClickListener(view -> {
-            String emailText = email.getText().toString().trim();
-            String passwordText = password.getText().toString().trim();
+    private void bindListeners() {
+        btnLogin.setOnClickListener(v -> attemptLogin());
 
-            // Validate inputs
-            if (TextUtils.isEmpty(emailText)) {
-                email.setError("Email is required.");
-                return;
-            }
-            if (TextUtils.isEmpty(passwordText)) {
-                password.setError("Password is required.");
-                return;
-            }
+        /* Uncomment when ForgotPasswordActivity is implemented
+        tvForgot.setOnClickListener(v ->
+                startActivity(new Intent(this, ForgotPasswordActivity.class)));
+        */
 
+        tvCreate.setOnClickListener(v ->
+                startActivity(new Intent(this, SignUpActivity.class)));
+    }
 
-            // Attempt to sign in with Firebase Authentication
-            mAuth.signInWithEmailAndPassword(emailText, passwordText)
-                    .addOnCompleteListener((Task<AuthResult> task) -> {
-                        if (task.isSuccessful()) {
-                            // Sign in success, show a toast and navigate to home screen (or any other activity)
-                            Toast.makeText(LoginActivity.this, "Login successful", Toast.LENGTH_SHORT).show();
+    /* ───────────────────── auth flow ─────────────────────────────── */
+    private void attemptLogin() {
+        String email    = etEmail.getText().toString().trim();
+        String password = etPassword.getText().toString().trim();
 
-                            // Example: Remember user session if the "rememberMe" checkbox is checked
-                            if (rememberMe.isChecked()) {
-                                // Save the user session data to SharedPreferences or similar storage
-                                // (Implementation depends on your app's requirements)
-                            }
+        if (!validate(email, password)) return;
 
-                            Intent intent = new Intent(LoginActivity.this, MainActivity.class);
-                            startActivity(intent);
-                            finish();
-                        } else {
-                            // If sign in fails, display a message to the user.
-                            Toast.makeText(LoginActivity.this,
-                                    "Error: " + task.getException().getMessage(),
-                                    Toast.LENGTH_LONG).show();
-                        }
-                    });
-        });
+        btnLogin.setEnabled(false);                             // debounce
+        auth.signInWithEmailAndPassword(email, password)
+                .addOnCompleteListener(task -> {
+                    btnLogin.setEnabled(true);
+                    if (task.isSuccessful()) {
+                        toast("Login successful!");
+                        // TODO persist session if (cbRemember.isChecked()) …
+                        startActivity(new Intent(this, MainActivity.class));
+                        finish();
+                    } else {
+                        toast("Error: " + task.getException().getMessage());
+                    }
+                });
+    }
 
-//        // Set click listener for the "Forgot Password" text
-//        forgotPassword.setOnClickListener(view -> {
-//            // Navigate to the ForgotPasswordActivity (ensure this activity is created)
-//            Intent intent = new Intent(LoginActivity.this, ForgotPasswordActivity.class);
-//            startActivity(intent);
-//        });
+    /* ───────────────────── validation ────────────────────────────── */
+    private boolean validate(String email, String pass) {
+        boolean ok = true;
+        if (TextUtils.isEmpty(email)) {
+            etEmail.setError("Email is required.");
+            ok = false;
+        }
+        if (TextUtils.isEmpty(pass)) {
+            etPassword.setError("Password is required.");
+            ok = false;
+        }
+        return ok;
+    }
 
-        // Set click listener for the "Create Account" text
-        createAccount.setOnClickListener(view -> {
-            // Navigate to the RegisterActivity (ensure this activity is created)
-            Intent intent = new Intent(LoginActivity.this, SignUpActivity.class);
-            startActivity(intent);
-        });
+    /* ───────────────────── helpers ──────────────────────────────── */
+    private void toast(String msg) {
+        Toast.makeText(this, msg, Toast.LENGTH_SHORT).show();
     }
 }

@@ -100,6 +100,8 @@ dependencies {
     implementation(libs.material)
     implementation(libs.androidx.recyclerview)
     implementation(libs.androidx.legacy.support.v4)
+    implementation(libs.volley)
+    implementation(libs.play.services.maps)
     debugImplementation(libs.androidx.ui.tooling)
     debugImplementation(libs.androidx.ui.test.manifest)
 
@@ -110,22 +112,23 @@ dependencies {
     implementation(libs.firebase.firestore)
     implementation(libs.firebase.database)
 
-    implementation("com.google.firebase:firebase-config:22.1.1")
-    implementation("com.google.firebase:firebase-auth:23.0.0")
-    implementation("com.google.android.gms:play-services-base:18.4.0")
-    implementation("com.google.android.gms:play-services-basement:18.3.0")
+    implementation(libs.firebase.config)
+    implementation(libs.firebase.auth.v2300)
+    implementation(libs.play.services.base)
+    implementation(libs.play.services.basement)
+    implementation(libs.android.maps.utils.v3)
 
     // Custom Calendar dependencies
-    implementation("com.kizitonwose.calendar:view:2.6.2")
-    implementation("com.kizitonwose.calendar:compose:2.6.2")
-    coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.1.4")
+    implementation(libs.view)
+    implementation(libs.compose)
+    coreLibraryDesugaring(libs.desugar.jdk.libs)
 
     //stripe + retrofit + OkHttp dependencies
-    implementation("com.stripe:stripe-android:21.6.0")
-    implementation("com.squareup.retrofit2:retrofit:2.11.0")
-    implementation("com.squareup.retrofit2:converter-gson:2.11.0")
-    implementation("com.squareup.okhttp3:okhttp:4.12.0")
-    implementation("com.squareup.okhttp3:logging-interceptor:4.12.0")
+    implementation(libs.stripe.android)
+    implementation(libs.retrofit)
+    implementation(libs.converter.gson)
+    implementation(libs.okhttp)
+    implementation(libs.logging.interceptor)
     
     // Testing dependencies
     testImplementation(libs.junit)

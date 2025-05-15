@@ -83,11 +83,11 @@ class ViewCalendarActivity : AppCompatActivity() {
 
                         if (isVendor == true) {
                             // User is a vendor: Show the "editAvailability" button and hide the "bookDate" button
-                            editAvailability.visibility = View.VISIBLE
+                            editAvailability.visibility = View.GONE
                         } else {
                             // User is not a vendor: Hide the "editAvailability" button and show the "bookDate" button
                             editAvailability.visibility = View.GONE
-                            bookDate.visibility = View.VISIBLE
+                            bookDate.visibility = View.GONE
                         }
                     }
                 } else {

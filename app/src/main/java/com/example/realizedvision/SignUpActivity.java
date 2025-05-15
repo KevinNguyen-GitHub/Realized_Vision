@@ -74,7 +74,7 @@ public class SignUpActivity extends AppCompatActivity {
                             userMap.put("phoneNumber", phoneNumber);
                             userMap.put("isVendor", false);
 
-                            firestore.collection("Users").document(userId)
+                            firestore.collection("Users").document(userId);
                             // Store data in Firestore
                             firestore.collection("Users")
                                     .document(userId)

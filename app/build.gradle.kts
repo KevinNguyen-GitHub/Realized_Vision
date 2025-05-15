@@ -6,7 +6,7 @@ plugins {
 
 android {
     namespace = "com.example.realizedvision"
-    compileSdk = 34
+    compileSdk = 35
 
     defaultConfig {
         applicationId = "com.csulb.realized_vision"

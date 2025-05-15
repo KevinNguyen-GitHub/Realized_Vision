@@ -7,6 +7,7 @@ import android.widget.Button
 import android.widget.ExpandableListView
 import android.widget.ImageButton
 import android.widget.TextView
+import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.compose.ui.geometry.isEmpty
 import androidx.lifecycle.lifecycleScope
@@ -23,6 +24,10 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.tasks.await
 import kotlinx.coroutines.withContext
 import java.util.Date
+import java.util.Properties
+import javax.mail.Authenticator
+import javax.mail.PasswordAuthentication
+import javax.mail.Session
 
 
 class CheckoutActivity : AppCompatActivity() {
@@ -38,6 +43,8 @@ class CheckoutActivity : AppCompatActivity() {
     private lateinit var backButton: ImageButton
     private var subtotal: Double = 0.0
     private var destinationAccountId: String? = null
+    private lateinit var notificationHelper: NotificationHelper
+
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -48,6 +55,7 @@ class CheckoutActivity : AppCompatActivity() {
         payNowButton = findViewById(R.id.pay_now_button)
         backButton = findViewById(R.id.backButtonCheckout)
 
+        notificationHelper = NotificationHelper(this)
         paymentSheet = PaymentSheet(this, ::onPaymentSheetResult)
         fetchStripeConfig()
         fetchShoppingCart()
@@ -220,39 +228,87 @@ class CheckoutActivity : AppCompatActivity() {
             }
         }
     }
-    private fun addOrderToHistory(){
-        val userId = auth.currentUser?.uid
-        if (userId == null) {
+
+    private fun addOrderToHistory() {
+        val userId = auth.currentUser?.uid ?: run {
             Log.e("CheckoutActivity", "User not logged in")
             return
         }
 
-        // Gets the shopping cart items
         db.collection("Users").document(userId).collection("Shopping Cart").get()
-            .addOnSuccessListener { queryDocumentSnapshots: QuerySnapshot ->
-                val items: MutableList<Map<String, Any>?> = ArrayList()
-                for (document in queryDocumentSnapshots) {
-                    items.add(document.data)
-                }
+            .addOnSuccessListener { cartSnapshot ->
+                val items = cartSnapshot.documents.mapNotNull { it.data }
+                val orderRef = db.collection("Order History").document()
 
-                // Creates a new order document
-                val order: MutableMap<String, Any> = HashMap()
-                order["userId"] = userId
-                order["items"] = items
-                order["timestamp"] = Date()
+                val order = mapOf(
+                    "userId" to userId,
+                    "items" to items,
+                    "timestamp" to Date()
+                )
 
-                db.collection("Order History").add(order)
-                    .addOnSuccessListener { documentReference: DocumentReference? ->
-                        for (document in queryDocumentSnapshots) {
-                            db.collection("Users").document(userId).collection("Shopping Cart")
-                                .document(document.id)
-                                .delete()
+                //Process order creation and cart clearing
+                orderRef.set(order)
+                    .addOnSuccessListener {
+                        // Clear cart
+                        val batch = db.batch()
+                        cartSnapshot.documents.forEach { doc ->
+                            batch.delete(
+                                db.collection("Users")
+                                    .document(userId)
+                                    .collection("Shopping Cart")
+                                    .document(doc.id)
+                            )
                         }
+                        batch.commit()
+
+                        //Send notifications with enhanced error handling
+                        sendOrderNotification(orderRef.id, items)
+                    }
+                    .addOnFailureListener { e ->
+                        Log.e("Checkout", "Order creation failed", e)
+                        Toast.makeText(this, "Order failed to process", Toast.LENGTH_SHORT).show()
                     }
                     .addOnFailureListener { e: java.lang.Exception? -> println("Shopping cart is empty for user: $e")}
             }
-            .addOnFailureListener { e: java.lang.Exception? -> println("Error retrieving shopping cart for user: $e")}
+            .addOnFailureListener { e ->
+                Log.e("Checkout", "Failed to load cart", e)
+            }
+    }
 
+    private fun sendOrderNotification(orderId: String, items: List<Map<String, Any>>) {
+        val notificationHelper = NotificationHelper(this)
+        val shortId = orderId.take(6)
+        val total = items.sumOf {
+            (it["price"] as? Double ?: 0.0) * (it["quantity"] as? Long ?: 1L)
+        }
+
+        //App notification
+        notificationHelper.checkAndSendNotification(
+            "app_purchases",
+            "Order #$shortId Confirmed",
+            "${items.size} items • Total: $${"%.2f".format(total)}"
+        )
+
+        //Enhanced email handling
+        try {
+
+            val emailBody = """
+            Order Confirmation #$shortId
+            --------------------------
+            Items: ${items.size}
+            Total: $${"%.2f".format(total)}
+            
+            Thank you for your purchase!
+        """.trimIndent()
+
+            notificationHelper.checkAndSendNotification(
+                "email_purchases",
+                "Your Order Confirmation (#$shortId)",
+                emailBody
+            )
+        } catch (e: Exception) {
+            Log.e("Email", "Failed to send confirmation", e)
+        }
     }
 
 }

@@ -62,9 +62,6 @@
 
         <TextView
             android:id="@+id/buy_again"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="90dp"
             android:gravity="right"
             android:text="Buy Again"
             android:textColor="@color/wallet_holo_blue_light" />

@@ -104,6 +104,7 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:text="View More"
+            android:background="@drawable/rounded_button"
             android:layout_gravity="center"
             android:padding="8dp"
             android:layout_marginTop="8dp" />
@@ -135,6 +136,7 @@
             android:text="Add New Item"
             android:gravity="center"
             android:padding="16dp"
+            android:background="@drawable/rounded_button"
             android:layout_marginBottom="8dp" />
 
         <!-- Delete Products -->
@@ -145,6 +147,7 @@
             android:text="Delete Item"
             android:gravity="center"
             android:padding="16dp"
+            android:background="@drawable/rounded_button"
             android:layout_marginBottom="8dp" />
 
         <!-- View Orders -->
@@ -154,6 +157,7 @@
             android:layout_height="wrap_content"
             android:text="View Orders"
             android:gravity="center"
+            android:background="@drawable/rounded_button"
             android:padding="16dp" />
     </LinearLayout>
 

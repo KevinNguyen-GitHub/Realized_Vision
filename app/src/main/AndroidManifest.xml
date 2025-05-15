@@ -2,6 +2,10 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools">
 
+
+    <uses-permission android:name="android.permission.INTERNET"/>
+
+
     <application
         android:allowBackup="true"
         android:dataExtractionRules="@xml/data_extraction_rules"
@@ -10,85 +14,122 @@
         android:label="@string/app_name"
         android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
-        android:theme="@style/Theme.RealizedVision.MaterialComponents"
+        android:theme="@style/Theme.RealizedVision"
         tools:targetApi="31">
+
+        <meta-data
+            android:name="com.google.android.geo.API_KEY"
+            android:value="AIzaSyAK-CF5sPzNZKx-mIF5rVy4e6sG86rX6lU"/>
 
         <activity
             android:name=".LoginActivity"
-            android:exported="true"
-            android:label="@string/app_name"
-            android:theme="@style/Theme.RealizedVision.MaterialComponents">
+            android:exported="true">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
 
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
-
-        <activity
-            android:name=".TermsAndConditionsActivity"
+        <activity android:name=".VendorOnboardActivity"
             android:exported="true"
             android:label="Realized Vision"
-            android:theme="@style/Theme.RealizedVision.MaterialComponents" />
+            android:theme="@style/Theme.RealizedVision">
+            <intent-filter android:autoVerify="true">
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data
+                    android:scheme="https"
+                    android:host="f-andrade27.github.io"
+                    android:pathPrefix="/stripe_return.html" />
+            </intent-filter>
 
-        <activity
-            android:name=".OrderHistoryActivity"
+            <intent-filter android:autoVerify="true">
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data
+                    android:scheme="https"
+                    android:host="f-andrade27.github.io"
+                    android:pathPrefix="/stripe_refresh.html" />
+            </intent-filter>
+
+            <!-- Custom Scheme intent filters (for realizedvision:// URLs) -->
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data
+                    android:scheme="realizedvision"
+                    android:host="stripe"
+                    android:pathPrefix="/onboarding_complete" />
+            </intent-filter>
+
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data
+                    android:scheme="realizedvision"
+                    android:host="stripe"
+                    android:pathPrefix="/refresh" />
+            </intent-filter>
+        </activity>
+        <activity android:name=".TermsAndConditionsActivity"
             android:exported="true"
             android:label="Realized Vision"
-            android:theme="@style/Theme.RealizedVision.MaterialComponents" />
-
-        <activity
-            android:name=".ChangeNameActivity"
+            android:theme="@style/Theme.RealizedVision">
+        </activity>
+        <activity android:name=".OrderHistoryActivity"
             android:exported="true"
             android:label="Realized Vision"
-            android:theme="@style/Theme.RealizedVision.MaterialComponents" />
-
-        <activity
-            android:name=".ChangePasswordActivity"
+            android:theme="@style/Theme.RealizedVision">
+        </activity>
+        <activity android:name=".ChangeNameActivity"
             android:exported="true"
             android:label="Realized Vision"
-            android:theme="@style/Theme.RealizedVision.MaterialComponents" />
-
-        <activity
-            android:name=".VendorInfoActivity"
+            android:theme="@style/Theme.RealizedVision">
+        </activity>
+        <activity android:name=".ChangePasswordActivity"
             android:exported="true"
             android:label="Realized Vision"
-            android:theme="@style/Theme.RealizedVision.MaterialComponents" />
-
-        <activity
-            android:name=".NotificationsActivity"
+            android:theme="@style/Theme.RealizedVision">
+        </activity>
+        <activity android:name=".VendorInfoActivity"
             android:exported="true"
             android:label="Realized Vision"
-            android:theme="@style/Theme.RealizedVision.MaterialComponents" />
-
+            android:theme="@style/Theme.RealizedVision">
+        </activity>
+        <activity android:name=".NotificationsActivity"
+            android:exported="true"
+            android:label="Realized Vision"
+            android:theme="@style/Theme.RealizedVision">
+        </activity>
         <activity
             android:name=".ProfileActivity"
-            android:exported="true"
-            android:theme="@style/Theme.RealizedVision.MaterialComponents">
+            android:exported="true">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
 
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
-
         <activity
             android:name=".SignUpActivity"
             android:exported="true"
             android:label="Realized Vision"
-            android:theme="@style/Theme.RealizedVision.MaterialComponents">
+            android:theme="@style/Theme.RealizedVision">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
 
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
-
         <activity
             android:name=".MainActivity"
             android:exported="true"
             android:label="Realized Vision"
-            android:theme="@style/Theme.RealizedVision.MaterialComponents">
+            android:theme="@style/Theme.RealizedVision">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
 
@@ -100,7 +141,7 @@
             android:name=".SettingsActivity"
             android:exported="true"
             android:label="Realized Vision"
-            android:theme="@style/Theme.RealizedVision.MaterialComponents">
+            android:theme="@style/Theme.RealizedVision">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
 
@@ -112,7 +153,20 @@
             android:name=".MessagesActivity"
             android:exported="true"
             android:label="Realized Vision"
-            android:theme="@style/Theme.RealizedVision.MaterialComponents">
+            android:theme="@style/Theme.RealizedVision">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+
+        <activity
+            android:name=".MapActivity"
+            android:exported="true"
+            android:label="Realized Vision"
+            android:theme="@style/Theme.RealizedVision">
+
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
 
@@ -124,7 +178,7 @@
             android:name=".FavoritesActivity"
             android:exported="true"
             android:label="Realized Vision"
-            android:theme="@style/Theme.RealizedVision.MaterialComponents">
+            android:theme="@style/Theme.RealizedVision">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
 
@@ -136,7 +190,7 @@
             android:name=".StorefrontActivity"
             android:exported="true"
             android:label="Realized Vision"
-            android:theme="@style/Theme.RealizedVision.MaterialComponents">
+            android:theme="@style/Theme.RealizedVision">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
 
@@ -145,10 +199,10 @@
         </activity>
 
         <activity
-            android:name=".cancel_order"
+            android:name=".AddAddressActivity"
             android:exported="true"
-            android:label="@string/app_name"
-            android:theme="@style/Theme.RealizedVision.MaterialComponents">
+            android:label="Realized Vision"
+            android:theme="@style/Theme.RealizedVision">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
 
@@ -157,7 +211,7 @@
         </activity>
 
         <activity
-            android:name=".CommissionActivity"
+            android:name=".UserCommissionRequestsActivity"
             android:exported="true"
             android:label="Realized Vision"
             android:theme="@style/Theme.RealizedVision.MaterialComponents">
@@ -169,7 +223,7 @@
         </activity>
 
         <activity
-            android:name=".AcceptedRequestsActivity"
+            android:name=".VendorCommissionActivity"
             android:exported="true"
             android:label="Realized Vision"
             android:theme="@style/Theme.RealizedVision.MaterialComponents">
@@ -178,6 +232,48 @@
 
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
+        </activity>
+
+        <activity
+            android:name=".VendorFilterActivity"
+            android:exported="true"
+            android:label="Realized Vision"
+            android:theme="@style/Theme.RealizedVision">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+
+        <activity
+            android:name=".ChatListActivity"
+            android:exported="true"
+            android:label="Realized Vision"
+            android:theme="@style/Theme.RealizedVision.MaterialComponents">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+
+        <activity
+            android:name=".ChatActivity"
+            android:exported="true"
+            android:label="Realized Vision"
+            android:theme="@style/Theme.RealizedVision.MaterialComponents">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+        <activity
+            android:name=".ItemReviewsActivity"
+            android:exported="true"
+            android:label="Realized Vision"
+            android:theme="@style/Theme.RealizedVision">
         </activity>
     </application>
 

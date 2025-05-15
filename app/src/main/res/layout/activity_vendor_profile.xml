@@ -54,38 +54,6 @@
     </LinearLayout>
 
 
-    <!-- Section Title -->
-
-    <LinearLayout
-        android:id="@+id/storefront_add_delete"
-        android:layout_width="401dp"
-        android:layout_height="57dp"
-        android:gravity="center_vertical"
-        android:orientation="horizontal"
-        android:padding="16dp"
-        app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toTopOf="parent"
-        app:layout_constraintVertical_bias="0.928">
-
-        <Button
-            android:id="@+id/add_button"
-            android:layout_width="292dp"
-            android:layout_height="36dp"
-            android:layout_weight="1"
-            android:text="Add" />
-
-        <Button
-            android:id="@+id/delete_button"
-            android:layout_width="291dp"
-            android:layout_height="36dp"
-            android:layout_weight="1"
-            android:text="Delete"
-            tools:layout_editor_absoluteX="7dp"
-            tools:layout_editor_absoluteY="642dp" />
-
-    </LinearLayout>
 
     <TextView
         android:id="@+id/vendor_address"
@@ -219,7 +187,7 @@
         android:gravity="center"
         android:orientation="horizontal"
         android:padding="8dp"
-        android:weightSum="4"
+        android:weightSum="3"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent">
@@ -232,15 +200,6 @@
             android:layout_weight="1"
             android:contentDescription="Home"
             android:src="@drawable/ic_home" />
-
-        <ImageView
-            android:id="@+id/favorites_icon"
-            android:layout_width="32dp"
-            android:layout_height="32dp"
-            android:layout_gravity="center"
-            android:layout_weight="1"
-            android:contentDescription="@string/favorites"
-            android:src="@drawable/ic_favorite" />
 
         <ImageView
             android:id="@+id/messages_icon"

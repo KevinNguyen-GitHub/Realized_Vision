@@ -2,6 +2,9 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools">
 
+    <uses-feature
+        android:name="android.hardware.telephony"
+        android:required="false" />
 
     <uses-permission android:name="android.permission.INTERNET"/>
     <uses-permission android:name="android.permission.READ_PHONE_STATE"/>
@@ -176,7 +179,7 @@
             </intent-filter>
         </activity>
         <activity
-            android:name=".StorefrontActivity"
+            android:name=".storefrontActivity"
             android:exported="true"
             android:label="Realized Vision"
             android:theme="@style/Theme.RealizedVision">

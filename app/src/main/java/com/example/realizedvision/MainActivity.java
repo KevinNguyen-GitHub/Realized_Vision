@@ -150,31 +150,7 @@ public class MainActivity extends AppCompatActivity implements ItemAdapter.OnIte
         // Navigate to desired elements when clicked
         favoriteIcon.setOnClickListener(view -> navigateTo(FavoritesActivity.class));
         messageIcon.setOnClickListener(view -> navigateTo(MessagesActivity.class));
-
-        //handling of profileicon navigation
-        profileIcon.setOnClickListener(view -> {
-            if (currentUser != null) {
-                String userId = currentUser.getUid();
-
-                DocumentReference userDocRef = firestore.collection("Users").document(userId);
-
-                userDocRef.get().addOnCompleteListener(task -> {
-                    if (task.isSuccessful()) {
-                        DocumentSnapshot snapshot = task.getResult();
-
-                        if (snapshot.exists() && Boolean.TRUE.equals(snapshot.getBoolean("isVendor"))) {
-                            navigateTo(StorefrontActivity.class);
-                        } else if (snapshot.exists() && Boolean.FALSE.equals(snapshot.getBoolean("isVendor"))) {
-                            navigateTo(ProfileActivity.class);
-                        } else {
-                            Toast.makeText(MainActivity.this, "User data not found.", Toast.LENGTH_SHORT).show();
-                        }
-                    } else {
-                        Toast.makeText(MainActivity.this, "Error: " + task.getException().getMessage(), Toast.LENGTH_SHORT).show();
-                    }
-                });
-            }
-        });
+        profileIcon.setOnClickListener(view -> navigateTo(ProfileActivity.class));
 
         TextView searchInput = findViewById(R.id.search_input);
         searchInput.setOnClickListener(view -> showVendorFilterDialog());
@@ -389,11 +365,22 @@ public class MainActivity extends AppCompatActivity implements ItemAdapter.OnIte
         TextView  popupVendorName  = popupView.findViewById(R.id.item_vendor);
         Button    popupAddtoCart   = popupView.findViewById(R.id.popup_cart_button);
         Button    popupAddFavorites= popupView.findViewById(R.id.popup_favorite_button);
+        Button popupShowReviews = popupView.findViewById(R.id.showReviewsButton);
 
         popupAddtoCart.setOnClickListener(view -> onCartClick(position));
         popupAddFavorites.setOnClickListener(view -> onFavoriteClick(position));
 
         popupVendorName.setOnClickListener(view -> navigateToVendorStorefront(item.getVendorID()));
+
+        popupShowReviews.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                String itemID = item.getItemID();
+                Intent intent = new Intent(MainActivity.this, ItemReviewsActivity.class);
+                intent.putExtra("itemID", itemID);
+                startActivity(intent);
+            }
+        });
 
         popupItemName.setText(item.getName());
         popupItemPrice.setText(String.format("$%.2f", item.getPrice()));
@@ -697,6 +684,7 @@ public class MainActivity extends AppCompatActivity implements ItemAdapter.OnIte
     private void navigateToVendorStorefront(String vendorID) {
         Intent intent = new Intent(MainActivity.this, StorefrontActivity.class);
         intent.putExtra("vendorID", vendorID); // Pass the vendor ID to the storefront activity
+        startActivity(intent);
     }
 
     // Copy the distance calculation from MapActivity

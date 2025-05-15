@@ -28,6 +28,7 @@
 =======
       <SelectionState runConfigName="ViewCalendarActivity">
 >>>>>>> origin/Final
+      <SelectionState runConfigName="ViewCalendarActivity">
         <option name="selectionMode" value="DROPDOWN" />
       </SelectionState>
     </selectionStates>

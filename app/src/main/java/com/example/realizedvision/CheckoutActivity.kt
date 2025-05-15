@@ -44,6 +44,7 @@ class CheckoutActivity : AppCompatActivity() {
     private var subtotal: Double = 0.0
     private var destinationAccountId: String? = null
     private lateinit var notificationHelper: NotificationHelper
+    private var destinationAccountId: String? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -267,6 +268,7 @@ class CheckoutActivity : AppCompatActivity() {
                         Log.e("Checkout", "Order creation failed", e)
                         Toast.makeText(this, "Order failed to process", Toast.LENGTH_SHORT).show()
                     }
+                    .addOnFailureListener { e: java.lang.Exception? -> println("Shopping cart is empty for user: $e")}
             }
             .addOnFailureListener { e ->
                 Log.e("Checkout", "Failed to load cart", e)

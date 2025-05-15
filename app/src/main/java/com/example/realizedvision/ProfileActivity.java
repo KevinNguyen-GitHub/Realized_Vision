@@ -40,7 +40,6 @@ public class ProfileActivity extends AppCompatActivity {
         ImageView messageIcon = findViewById(R.id.messages_icon);
         ImageView profileIcon = findViewById(R.id.profile_icon);
         ImageView settingsIcon = findViewById(R.id.settings_icon);
-        Button storefrontButton = findViewById(R.id.storefrontButton);
 
         // Set navigation
         homeIcon.setOnClickListener(view -> navigateTo(MainActivity.class));
@@ -49,31 +48,6 @@ public class ProfileActivity extends AppCompatActivity {
         profileIcon.setOnClickListener(view -> navigateTo(ProfileActivity.class));
         settingsIcon.setOnClickListener(view -> navigateTo(SettingsActivity.class));
 
-
-        storefrontButton.setOnClickListener(view -> {
-            if (currentUser != null) {
-                String userId = currentUser.getUid();
-
-                DocumentReference userDocRef = firestore.collection("Users").document(userId);
-
-                userDocRef.get().addOnCompleteListener(task -> {
-                    if (task.isSuccessful()) {
-                        DocumentSnapshot snapshot = task.getResult();
-
-                        if (snapshot.exists() && Boolean.TRUE.equals(snapshot.getBoolean("isVendor"))) {
-                            navigateTo(StorefrontActivity.class);
-                        } else if (snapshot.exists() && Boolean.FALSE.equals(snapshot.getBoolean("isVendor"))) {
-                            Toast.makeText(ProfileActivity.this, "Upgrade to vendor to use this feature.", Toast.LENGTH_SHORT).show();
-                        } else {
-                            Toast.makeText(ProfileActivity.this, "User data not found.", Toast.LENGTH_SHORT).show();
-                        }
-                    } else {
-                        Toast.makeText(ProfileActivity.this, "Error: " + task.getException().getMessage(), Toast.LENGTH_SHORT).show();
-                    }
-                });
-            }
-        });
-
         // Fetch user data
         fetchUserData();
     }
@@ -81,31 +55,43 @@ public class ProfileActivity extends AppCompatActivity {
     private void fetchUserData() {
         if (currentUser != null) {
             String userId = currentUser.getUid();
+            firestore.collection("Users").document(userId).get()
+                    .addOnSuccessListener(snapshot -> {
+                        Boolean isVendor = snapshot.getBoolean("isVendor");
+                        if (isVendor != null && isVendor) {
+                            navigateToVendorStorefront(userId);
+                        } else if (snapshot.exists() && Boolean.FALSE.equals(snapshot.getBoolean("isVendor"))) {
+                            DocumentReference userDocRef = firestore.collection("Users").document(userId);
 
-            DocumentReference userDocRef = firestore.collection("Users").document(userId);
+                            userDocRef.get().addOnCompleteListener(task -> {
+                                if (task.isSuccessful()) {
+                                    DocumentSnapshot snapshotTwo = task.getResult();
 
-            userDocRef.get().addOnCompleteListener(task -> {
-                if (task.isSuccessful()) {
-                    DocumentSnapshot snapshot = task.getResult();
+                                    if (snapshotTwo.exists() /*&& Boolean.FALSE.equals(snapshot.getBoolean("isVendor"))*/) {
+                                        String firstName = snapshotTwo.getString("firstName");
+                                        String lastName = snapshotTwo.getString("lastName");
 
-                    if (snapshot.exists() /*&& Boolean.FALSE.equals(snapshot.getBoolean("isVendor"))*/) {
-                        String firstName = snapshot.getString("firstName");
-                        String lastName = snapshot.getString("lastName");
+                                        // Handle null values
+                                        firstName = (firstName != null) ? firstName : "";
+                                        lastName = (lastName != null) ? lastName : "";
 
-                        // Handle null values
-                        firstName = (firstName != null) ? firstName : "";
-                        lastName = (lastName != null) ? lastName : "";
-
-                        // Use resource string with placeholders
-                        String fullName = getString(R.string.profile_name_format, firstName, lastName);
-                        profileNameTextView.setText(fullName);
-                    } else {
-                        Toast.makeText(ProfileActivity.this, "User data not found.", Toast.LENGTH_SHORT).show();
-                    }
-                } else {
-                    Toast.makeText(ProfileActivity.this, "Error: " + task.getException().getMessage(), Toast.LENGTH_SHORT).show();
-                }
-            });
+                                        // Use resource string with placeholders
+                                        String fullName = getString(R.string.profile_name_format, firstName, lastName);
+                                        profileNameTextView.setText(fullName);
+                                    } else {
+                                        Toast.makeText(ProfileActivity.this, "User data not found.", Toast.LENGTH_SHORT).show();
+                                    }
+                                } else {
+                                    Toast.makeText(ProfileActivity.this, "Error: " + task.getException().getMessage(), Toast.LENGTH_SHORT).show();
+                                }
+                            });
+                        } else {
+                            Toast.makeText(ProfileActivity.this, "User data not found.", Toast.LENGTH_SHORT).show();
+                        }
+                    })
+                    .addOnFailureListener(e -> {
+                        Toast.makeText(ProfileActivity.this, "Failed to check vendor status.", Toast.LENGTH_SHORT).show();
+                    });
         }
     }
 
@@ -114,8 +100,9 @@ public class ProfileActivity extends AppCompatActivity {
         Intent intent = new Intent(ProfileActivity.this, targetActivity);
         startActivity(intent);
     }
+    private void navigateToVendorStorefront(String vendorID) {
+        Intent intent = new Intent(ProfileActivity.this, StorefrontActivity.class);
+        intent.putExtra("vendorID", vendorID); // Pass the vendor ID to the storefront activity
+        startActivity(intent);
+    }
 }
-
-
-
-

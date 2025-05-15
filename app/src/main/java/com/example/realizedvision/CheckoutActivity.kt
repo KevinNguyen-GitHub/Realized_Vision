@@ -44,7 +44,7 @@ class CheckoutActivity : AppCompatActivity() {
     private var subtotal: Double = 0.0
     private var destinationAccountId: String? = null
     private lateinit var notificationHelper: NotificationHelper
-    private var destinationAccountId: String? = null
+
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)

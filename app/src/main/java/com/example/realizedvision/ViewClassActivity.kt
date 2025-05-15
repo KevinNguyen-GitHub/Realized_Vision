@@ -8,6 +8,7 @@ import android.util.Log
 import android.view.View
 import android.widget.Button
 import android.widget.EditText
+import android.widget.ImageView
 import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.AlertDialog
@@ -55,6 +56,52 @@ class ViewClassActivity : AppCompatActivity(), ClassAdapter.OnItemClickListener 
         adapter = ClassAdapter(selectedProfileId != auth.currentUser?.uid)
         adapter.setOnItemClickListener(this)
         recyclerView.adapter = adapter
+
+        val homeIcon = findViewById<ImageView>(R.id.home_icon)
+        val favoriteIcon = findViewById<ImageView>(R.id.favorites_icon)
+        val messageIcon = findViewById<ImageView>(R.id.messages_icon)
+        val profileIcon = findViewById<ImageView>(R.id.profile_icon)
+        val settingsIcon = findViewById<ImageView>(R.id.settings_icon)
+        val calendarIcon = findViewById<ImageView>(R.id.calendar_icon)
+        val storeIcon = findViewById<ImageView>(R.id.storefront_label)
+
+        storeIcon.setOnClickListener { view: View? ->
+            navigateTo(
+                StorefrontActivity::class.java
+            )
+        }
+        homeIcon.setOnClickListener { view: View? ->
+            navigateTo(
+                MainActivity::class.java
+            )
+        }
+        favoriteIcon.setOnClickListener { view: View? ->
+            navigateTo(
+                FavoritesActivity::class.java
+            )
+        }
+        messageIcon.setOnClickListener { view: View? ->
+            navigateTo(
+                MessagesActivity::class.java
+            )
+        }
+        calendarIcon.setOnClickListener { view: View? ->
+            navigateTo(
+                ViewCalendarActivity::class.java
+            )
+        }
+
+        profileIcon.setOnClickListener { view: View? ->
+            navigateTo(
+                StorefrontActivity::class.java
+            )
+        }
+
+        settingsIcon.setOnClickListener { view: View? ->
+            navigateTo(
+                SettingsActivity::class.java
+            )
+        }
 
         fetchUserData()
         loadClasses()

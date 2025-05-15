@@ -200,18 +200,6 @@
         </activity>
 
         <activity
-            android:name=".storefrontActivity"
-            android:exported="true"
-            android:label="Realized Vision"
-            android:theme="@style/Theme.RealizedVision">
-            <intent-filter>
-                <action android:name="android.intent.action.MAIN" />
-
-                <category android:name="android.intent.category.LAUNCHER" />
-            </intent-filter>
-        </activity>
-
-        <activity
             android:name=".AddAddressActivity"
             android:exported="true"
             android:label="Realized Vision"
@@ -284,6 +272,18 @@
         </activity>
         <activity
             android:name=".ItemReviewsActivity"
+            android:exported="true"
+            android:label="Realized Vision"
+            android:theme="@style/Theme.RealizedVision">
+        </activity>
+        <activity
+            android:name=".CheckoutActivity"
+            android:exported="true"
+            android:label="Realized Vision"
+            android:theme="@style/Theme.RealizedVision">
+        </activity>
+        <activity
+            android:name=".StorefrontActivity"
             android:exported="true"
             android:label="Realized Vision"
             android:theme="@style/Theme.RealizedVision">

@@ -103,7 +103,7 @@ public class SettingsActivity extends AppCompatActivity {
                         DocumentSnapshot snapshot = task.getResult();
 
                         if (snapshot.exists() && Boolean.TRUE.equals(snapshot.getBoolean("isVendor"))) {
-                            navigateTo(StorefrontActivity.class);
+                            navigateToVendorStorefront(userId);
                         } else if (snapshot.exists() && Boolean.FALSE.equals(snapshot.getBoolean("isVendor"))) {
                             navigateTo(ProfileActivity.class);
                         } else {
@@ -127,6 +127,12 @@ public class SettingsActivity extends AppCompatActivity {
 
     private void navigateTo(Class<?> targetActivity) {
         Intent intent = new Intent(SettingsActivity.this, targetActivity);
+        startActivity(intent);
+    }
+
+    private void navigateToVendorStorefront(String vendorID) {
+        Intent intent = new Intent(SettingsActivity.this, StorefrontActivity.class);
+        intent.putExtra("vendorID", vendorID); // Pass the vendor ID to the storefront activity
         startActivity(intent);
     }
 }

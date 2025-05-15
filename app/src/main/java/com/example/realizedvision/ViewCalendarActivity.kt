@@ -13,7 +13,9 @@ import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
+import com.google.android.gms.tasks.Task
 import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.firestore.DocumentSnapshot
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.QuerySnapshot
 import com.kizitonwose.calendar.core.CalendarDay
@@ -38,6 +40,7 @@ class ViewCalendarActivity : AppCompatActivity() {
     private lateinit var calendarView : CalendarView
     private lateinit var monthText: TextView
     private val today = LocalDate.now()
+    private lateinit var profileName: TextView
 
     private lateinit var auth: FirebaseAuth
     private lateinit var firestore: FirebaseFirestore
@@ -59,11 +62,12 @@ class ViewCalendarActivity : AppCompatActivity() {
         val calendarIcon = findViewById<ImageView>(R.id.calendar_icon)
         val settingsIcon = findViewById<ImageView>(R.id.settings_icon)
         val profileImage = findViewById<ImageView>(R.id.profile_image)
-        val profileName = findViewById<TextView>(R.id.profile_name)
+        profileName = findViewById<TextView>(R.id.profile_name)
         val storefrontLabel = findViewById<ImageView>(R.id.storefront_label)
         val starIcon = findViewById<ImageView>(R.id.star_icon)
         val editAvailability = findViewById<Button>(R.id.btnEditAvailability)
         val bookDate = findViewById<Button>(R.id.btnBookDate)
+
 
         calendarIcon.setOnClickListener { view: View? -> navigateTo(ViewCalendarActivity::class.java) }
         settingsIcon.setOnClickListener { view: View? -> navigateTo(SettingsActivity::class.java) }
@@ -99,13 +103,14 @@ class ViewCalendarActivity : AppCompatActivity() {
         editAvailability.setOnClickListener { view: View? -> navigateTo(EditAvailability::class.java) }
         bookDate.setOnClickListener{view: View? -> navigateTo(BookingAvailability::class.java)}
 
-
+        fetchUserData()
         loadCalendarData()
 
     }
 
     override fun onRestart() {
         super.onRestart()
+        fetchUserData()
         loadCalendarData()
     }
 
@@ -123,6 +128,45 @@ class ViewCalendarActivity : AppCompatActivity() {
                 .addOnFailureListener { _ ->
                     Toast.makeText(this, "Error getting classes", Toast.LENGTH_SHORT).show()
                 }
+        }
+    }
+
+    private fun fetchUserData() {
+        val currentUser = auth.currentUser
+        if (currentUser != null) {
+            val userId: String = "rDEWVBzmtnb6S4VCy4D368axIWi2"
+
+            val userDocRef = firestore.collection("Vendors").document(userId)
+
+            userDocRef.get().addOnCompleteListener { task: Task<DocumentSnapshot> ->
+                if (task.isSuccessful) {
+                    val snapshot = task.result
+
+                    if (snapshot.exists() /*&& Boolean.FALSE.equals(snapshot.getBoolean("isVendor"))*/) {
+                        var companyName = snapshot.getString("companyName")
+
+                        // Handle null values
+                        companyName = companyName ?: ""
+
+                        // Use resource string with placeholders
+                        val displayCompanyName =
+                            getString(R.string.profile_name_format, companyName, "")
+                        profileName.setText(displayCompanyName)
+                    } else {
+                        Toast.makeText(
+                            this@ViewCalendarActivity,
+                            "User data not found.",
+                            Toast.LENGTH_SHORT
+                        ).show()
+                    }
+                } else {
+                    Toast.makeText(
+                        this@ViewCalendarActivity,
+                        "Error: " + task.exception!!.message,
+                        Toast.LENGTH_SHORT
+                    ).show()
+                }
+            }
         }
     }
 

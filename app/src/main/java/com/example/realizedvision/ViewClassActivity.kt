@@ -15,8 +15,10 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.view.ContextThemeWrapper
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
+import com.google.android.gms.tasks.Task
 import com.google.firebase.Timestamp
 import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.firestore.DocumentSnapshot
 import com.google.firebase.firestore.FieldValue
 import com.google.firebase.firestore.FirebaseFirestore
 import java.text.SimpleDateFormat
@@ -31,6 +33,7 @@ class ViewClassActivity : AppCompatActivity(), ClassAdapter.OnItemClickListener 
     private lateinit var recyclerView: RecyclerView
     private var selectedDate: String? = null
     private var isRemoveMode = false
+    private lateinit var profileName: TextView
     private var selectedProfileId: String? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -42,7 +45,7 @@ class ViewClassActivity : AppCompatActivity(), ClassAdapter.OnItemClickListener 
 
         selectedProfileId = intent.getStringExtra("selectedProfileId") ?: auth.currentUser?.uid
         //viewingUserId = testUserId
-
+        profileName = findViewById(R.id.profile_name)
         selectedDate = intent.getStringExtra("selectedDate")
         val selectedDateTextView = findViewById<TextView>(R.id.selectedDate)
         selectedDateTextView.text = "Schedule for\n$selectedDate"
@@ -53,6 +56,7 @@ class ViewClassActivity : AppCompatActivity(), ClassAdapter.OnItemClickListener 
         adapter.setOnItemClickListener(this)
         recyclerView.adapter = adapter
 
+        fetchUserData()
         loadClasses()
 
         val addClassButton = findViewById<Button>(R.id.add_class_button)
@@ -88,6 +92,44 @@ class ViewClassActivity : AppCompatActivity(), ClassAdapter.OnItemClickListener 
             showReserveSeatDialog(classInfo)
         } else {
             showReservedSeatsDialog(classInfo)
+        }
+    }
+    private fun fetchUserData() {
+        val currentUser = auth.currentUser
+        if (currentUser != null) {
+            val userId: String = "rDEWVBzmtnb6S4VCy4D368axIWi2"
+
+            val userDocRef = firestore.collection("Vendors").document(userId)
+
+            userDocRef.get().addOnCompleteListener { task: Task<DocumentSnapshot> ->
+                if (task.isSuccessful) {
+                    val snapshot = task.result
+
+                    if (snapshot.exists() /*&& Boolean.FALSE.equals(snapshot.getBoolean("isVendor"))*/) {
+                        var companyName = snapshot.getString("companyName")
+
+                        // Handle null values
+                        companyName = companyName ?: ""
+
+                        // Use resource string with placeholders
+                        val displayCompanyName =
+                            getString(R.string.profile_name_format, companyName, "")
+                        profileName.setText(displayCompanyName)
+                    } else {
+                        Toast.makeText(
+                            this@ViewClassActivity,
+                            "User data not found.",
+                            Toast.LENGTH_SHORT
+                        ).show()
+                    }
+                } else {
+                    Toast.makeText(
+                        this@ViewClassActivity,
+                        "Error: " + task.exception!!.message,
+                        Toast.LENGTH_SHORT
+                    ).show()
+                }
+            }
         }
     }
 

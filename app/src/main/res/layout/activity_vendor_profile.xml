@@ -184,6 +184,18 @@
             android:layout_width="2dp"
             android:layout_height="30dp"
             android:background="@android:color/white" />
+
+        <!-- Commission Request Button at the Top -->
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/RequestButton"
+            android:layout_width="40dp"
+            android:layout_height="40dp"
+            android:layout_marginLeft="20dp"
+            android:text="Commission Request"
+            android:textColor="@color/black"
+            app:backgroundTint="@color/white"
+            android:layout_gravity="center" />
+
     </LinearLayout>
 
     <androidx.recyclerview.widget.RecyclerView

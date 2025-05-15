@@ -19,7 +19,7 @@ import com.google.firebase.firestore.FirebaseFirestore;
 public class SettingsActivity extends AppCompatActivity {
     private FirebaseUser currentUser;
     private FirebaseFirestore firestore;
-
+    private Button enablePayments;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -31,6 +31,7 @@ public class SettingsActivity extends AppCompatActivity {
             firestore = FirebaseFirestore.getInstance();
         }
 
+        getVendorStatus();
 
 
         Button termsAndConditionsButton = findViewById(R.id.tcButton);
@@ -42,7 +43,7 @@ public class SettingsActivity extends AppCompatActivity {
         ImageButton backButton = findViewById(R.id.backButtonChangePass);
         Button logoutButton = findViewById(R.id.btn_logout);
         Button addAddressButton = findViewById(R.id.addAddressButton);
-        Button enablePayments = findViewById(R.id.enablePayments);
+        enablePayments = findViewById(R.id.enablePayments);
 
         addAddressButton.setOnClickListener(v -> {
             FirebaseFirestore firestore = FirebaseFirestore.getInstance();
@@ -54,7 +55,6 @@ public class SettingsActivity extends AppCompatActivity {
                         .addOnSuccessListener(snapshot -> {
                             Boolean isVendor = snapshot.getBoolean("isVendor");
                             if (isVendor != null && isVendor) {
-                                enablePayments.setVisibility(View.VISIBLE);
                                 Toast.makeText(SettingsActivity.this, "You’ve already provided an address as a vendor.", Toast.LENGTH_SHORT).show();
                             } else {
                                 startActivity(new Intent(SettingsActivity.this, AddAddressActivity.class));
@@ -128,6 +128,23 @@ public class SettingsActivity extends AppCompatActivity {
         });
     }
 
+    private void getVendorStatus() {
+        if (currentUser != null) {
+            String userId = currentUser.getUid();
+            firestore.collection("Users").document(userId).get()
+                    .addOnSuccessListener(snapshot -> {
+                        Boolean isVendor = snapshot.getBoolean("isVendor");
+                        if (isVendor != null && isVendor) {
+                            enablePayments.setVisibility(View.VISIBLE);
+                        } else {
+                            enablePayments.setVisibility(View.GONE);
+                        }
+                    })
+                    .addOnFailureListener(e -> {
+                        Toast.makeText(SettingsActivity.this, "Failed to check vendor status.", Toast.LENGTH_SHORT).show();
+                    });
+        }
+    }
     private void navigateTo(Class<?> targetActivity) {
         Intent intent = new Intent(SettingsActivity.this, targetActivity);
         startActivity(intent);

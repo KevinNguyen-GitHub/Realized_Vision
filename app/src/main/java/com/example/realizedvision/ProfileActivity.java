@@ -2,12 +2,13 @@ package com.example.realizedvision;
 
 import android.content.Intent;
 import android.os.Bundle;
-import android.widget.Button;
 import android.widget.ImageView;
 import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.recyclerview.widget.LinearLayoutManager;
+import androidx.recyclerview.widget.RecyclerView;
 
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
@@ -15,11 +16,18 @@ import com.google.firebase.firestore.DocumentReference;
 import com.google.firebase.firestore.DocumentSnapshot;
 import com.google.firebase.firestore.FirebaseFirestore;
 
+import java.util.ArrayList;
+import java.util.List;
+
 public class ProfileActivity extends AppCompatActivity {
 
     private TextView profileNameTextView;
     private FirebaseFirestore firestore;
     private FirebaseUser currentUser;
+
+    private RecyclerView userRequestsRecyclerView;
+    private CommissionUserAdapter userAdapter;
+    private List<CommissionRequest> userRequests = new ArrayList<>();
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -34,6 +42,7 @@ public class ProfileActivity extends AppCompatActivity {
 
         // Initialize views
         profileNameTextView = findViewById(R.id.profile_name);
+        userRequestsRecyclerView = findViewById(R.id.userRequestsRecyclerView);
 
         ImageView homeIcon = findViewById(R.id.home_icon);
         ImageView favoriteIcon = findViewById(R.id.favorites_icon);
@@ -41,7 +50,7 @@ public class ProfileActivity extends AppCompatActivity {
         ImageView profileIcon = findViewById(R.id.profile_icon);
         ImageView settingsIcon = findViewById(R.id.settings_icon);
 
-        // Set navigation
+        // Set navigation listeners
         homeIcon.setOnClickListener(view -> navigateTo(MainActivity.class));
         favoriteIcon.setOnClickListener(view -> navigateTo(FavoritesActivity.class));
         messageIcon.setOnClickListener(view -> navigateTo(MessagesActivity.class));
@@ -50,6 +59,10 @@ public class ProfileActivity extends AppCompatActivity {
 
         // Fetch user data
         fetchUserData();
+
+        // Setup and load user requests
+        setupRequestsRecyclerView();
+        loadUserRequests();
     }
 
     private void fetchUserData() {
@@ -62,47 +75,69 @@ public class ProfileActivity extends AppCompatActivity {
                             navigateToVendorStorefront(userId);
                         } else if (snapshot.exists() && Boolean.FALSE.equals(snapshot.getBoolean("isVendor"))) {
                             DocumentReference userDocRef = firestore.collection("Users").document(userId);
-
                             userDocRef.get().addOnCompleteListener(task -> {
                                 if (task.isSuccessful()) {
                                     DocumentSnapshot snapshotTwo = task.getResult();
-
-                                    if (snapshotTwo.exists() /*&& Boolean.FALSE.equals(snapshot.getBoolean("isVendor"))*/) {
+                                    if (snapshotTwo.exists()) {
                                         String firstName = snapshotTwo.getString("firstName");
                                         String lastName = snapshotTwo.getString("lastName");
-
-                                        // Handle null values
                                         firstName = (firstName != null) ? firstName : "";
                                         lastName = (lastName != null) ? lastName : "";
-
-                                        // Use resource string with placeholders
                                         String fullName = getString(R.string.profile_name_format, firstName, lastName);
                                         profileNameTextView.setText(fullName);
                                     } else {
-                                        Toast.makeText(ProfileActivity.this, "User data not found.", Toast.LENGTH_SHORT).show();
+                                        showToast("User data not found.");
                                     }
                                 } else {
-                                    Toast.makeText(ProfileActivity.this, "Error: " + task.getException().getMessage(), Toast.LENGTH_SHORT).show();
+                                    showToast("Error: " + task.getException().getMessage());
                                 }
                             });
                         } else {
-                            Toast.makeText(ProfileActivity.this, "User data not found.", Toast.LENGTH_SHORT).show();
+                            showToast("User data not found.");
                         }
                     })
-                    .addOnFailureListener(e -> {
-                        Toast.makeText(ProfileActivity.this, "Failed to check vendor status.", Toast.LENGTH_SHORT).show();
-                    });
+                    .addOnFailureListener(e -> showToast("Failed to check vendor status."));
         }
     }
 
-    // Helper function for activity navigation
-    private void navigateTo(Class<?> targetActivity) {
-        Intent intent = new Intent(ProfileActivity.this, targetActivity);
-        startActivity(intent);
+    private void setupRequestsRecyclerView() {
+        userAdapter = new CommissionUserAdapter(this, userRequests);
+        userAdapter.setOnOrderCanceledListener(userAdapter::notifyDataSetChanged);
+
+        userRequestsRecyclerView.setLayoutManager(new LinearLayoutManager(this));
+        userRequestsRecyclerView.setAdapter(userAdapter);
     }
+
+    private void loadUserRequests() {
+        firestore.collection("CommissionRequests")
+                .get()
+                .addOnSuccessListener(snapshots -> {
+                    userRequests.clear();
+                    if (snapshots != null && !snapshots.isEmpty()) {
+                        for (DocumentSnapshot doc : snapshots) {
+                            CommissionRequest req = doc.toObject(CommissionRequest.class);
+                            if (req != null) {
+                                req.setDocumentId(doc.getId());
+                                userRequests.add(req);
+                            }
+                        }
+                        userAdapter.notifyDataSetChanged();
+                    }
+                })
+                .addOnFailureListener(e -> showToast("Failed to load requests."));
+    }
+
+    private void navigateTo(Class<?> targetActivity) {
+        startActivity(new Intent(ProfileActivity.this, targetActivity));
+    }
+
     private void navigateToVendorStorefront(String vendorID) {
         Intent intent = new Intent(ProfileActivity.this, StorefrontActivity.class);
-        intent.putExtra("vendorID", vendorID); // Pass the vendor ID to the storefront activity
+        intent.putExtra("vendorID", vendorID);
         startActivity(intent);
+    }
+
+    private void showToast(String message) {
+        Toast.makeText(this, message, Toast.LENGTH_SHORT).show();
     }
 }

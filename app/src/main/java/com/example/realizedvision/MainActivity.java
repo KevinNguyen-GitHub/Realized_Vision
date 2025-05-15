@@ -19,6 +19,7 @@ import android.view.ViewGroup;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
 import android.widget.Button;
+import android.widget.CheckBox;
 import android.widget.ImageView;
 import android.widget.PopupWindow;
 import android.widget.Spinner;
@@ -49,6 +50,7 @@ import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
 import com.google.firebase.database.ValueEventListener;
 import com.google.firebase.firestore.CollectionReference;
+import com.google.firebase.firestore.DocumentReference;
 import com.google.firebase.firestore.DocumentSnapshot;
 import com.google.firebase.firestore.EventListener;
 import com.google.firebase.firestore.FirebaseFirestore;
@@ -66,6 +68,10 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.Map;
+
+
+
+
 
 public class MainActivity extends AppCompatActivity implements ItemAdapter.OnItemClickListener {
 
@@ -144,7 +150,36 @@ public class MainActivity extends AppCompatActivity implements ItemAdapter.OnIte
         // Navigate to desired elements when clicked
         favoriteIcon.setOnClickListener(view -> navigateTo(FavoritesActivity.class));
         messageIcon.setOnClickListener(view -> navigateTo(MessagesActivity.class));
-        profileIcon.setOnClickListener(view -> navigateTo(ProfileActivity.class));
+
+        //handling of profileicon navigation
+        profileIcon.setOnClickListener(view -> {
+            if (currentUser != null) {
+                String userId = currentUser.getUid();
+
+                DocumentReference userDocRef = firestore.collection("Users").document(userId);
+
+                userDocRef.get().addOnCompleteListener(task -> {
+                    if (task.isSuccessful()) {
+                        DocumentSnapshot snapshot = task.getResult();
+
+                        if (snapshot.exists() && Boolean.TRUE.equals(snapshot.getBoolean("isVendor"))) {
+                            navigateTo(StorefrontActivity.class);
+                        } else if (snapshot.exists() && Boolean.FALSE.equals(snapshot.getBoolean("isVendor"))) {
+                            navigateTo(ProfileActivity.class);
+                        } else {
+                            Toast.makeText(MainActivity.this, "User data not found.", Toast.LENGTH_SHORT).show();
+                        }
+                    } else {
+                        Toast.makeText(MainActivity.this, "Error: " + task.getException().getMessage(), Toast.LENGTH_SHORT).show();
+                    }
+                });
+            }
+        });
+
+        TextView searchInput = findViewById(R.id.search_input);
+        searchInput.setOnClickListener(view -> showVendorFilterDialog());
+
+
     }
 
     // Helper function for activity navigation
@@ -397,7 +432,148 @@ public class MainActivity extends AppCompatActivity implements ItemAdapter.OnIte
     }
 
     private void showVendorFilterDialog() {
-        // (implementation goes here)
+        AlertDialog.Builder builder = new AlertDialog.Builder(this);
+        View dialogView = LayoutInflater.from(this).inflate(R.layout.dialog_vendor_filters, null);
+        builder.setView(dialogView);
+
+        CheckBox cbWoodworking = dialogView.findViewById(R.id.checkbox_woodworking);
+        CheckBox cbWelding = dialogView.findViewById(R.id.checkbox_welding);
+        CheckBox cbProgramming = dialogView.findViewById(R.id.checkbox_programming);
+        CheckBox cbFlooring = dialogView.findViewById(R.id.checkbox_flooring);
+        CheckBox cbArtist = dialogView.findViewById(R.id.checkbox_artist);
+        CheckBox cbMechanic = dialogView.findViewById(R.id.checkbox_mechanic);
+        CheckBox cbVideo = dialogView.findViewById(R.id.checkbox_video);
+        CheckBox cbDesign = dialogView.findViewById(R.id.checkbox_design);
+
+        Button searchButton = dialogView.findViewById(R.id.search_filters_button);
+        AlertDialog dialog = builder.create();
+
+        searchButton.setOnClickListener(v -> {
+            List<String> selectedFilters = new ArrayList<>();
+            if (cbWoodworking.isChecked()) selectedFilters.add("woodworking");
+            if (cbWelding.isChecked()) selectedFilters.add("welding");
+            if (cbProgramming.isChecked()) selectedFilters.add("programming");
+            if (cbFlooring.isChecked()) selectedFilters.add("flooring");
+            if (cbArtist.isChecked()) selectedFilters.add("artist");
+            if (cbMechanic.isChecked()) selectedFilters.add("mechanic");
+            if (cbVideo.isChecked()) selectedFilters.add("video_and_automation");
+            if (cbDesign.isChecked()) selectedFilters.add("graphic_design");
+
+            if (selectedFilters.isEmpty()) {
+                Toast.makeText(MainActivity.this, "Please select at least one filter.", Toast.LENGTH_SHORT).show();
+                return;
+            }
+
+            String userId = currentUser.getUid();
+            firestore.collection("Users").document(userId).get()
+                    .addOnSuccessListener(userDoc -> {
+                        if (userDoc.exists()) {
+                            String userAddress = userDoc.getString("address");
+                            if (userAddress != null && !userAddress.isEmpty()) {
+                                geocodeAddress(userAddress, (userLat, userLng) -> {
+                                    LatLng userLocation = new LatLng(userLat, userLng);
+                                    firestore.collection("Vendors").get()
+                                            .addOnSuccessListener(querySnapshot -> {
+                                                List<Pair<String, Double>> matchedVendors = new ArrayList<>();
+                                                AtomicInteger totalVendorsToProcess = new AtomicInteger(0);
+                                                AtomicInteger processedVendors = new AtomicInteger(0);
+
+                                                for (QueryDocumentSnapshot doc : querySnapshot) {
+                                                    HashMap<String, Object> filters = (HashMap<String, Object>) doc.get("vendorFilters");
+                                                    if (filters != null) {
+                                                        boolean matchesAll = true;
+                                                        for (String filter : selectedFilters) {
+                                                            Object value = filters.get(filter);
+                                                            if (!(value instanceof Boolean) || !(Boolean) value) {
+                                                                matchesAll = false;
+                                                                break;
+                                                            }
+                                                        }
+
+                                                        if (matchesAll) {
+                                                            String vendorAddress = doc.getString("address");
+                                                            if (vendorAddress != null && !vendorAddress.isEmpty()) {
+                                                                totalVendorsToProcess.incrementAndGet();
+                                                                geocodeAddress(vendorAddress, (vendorLat, vendorLng) -> {
+                                                                    LatLng vendorLocation = new LatLng(vendorLat, vendorLng);
+                                                                    double distance = calculateDistance(userLocation, vendorLocation);
+                                                                    matchedVendors.add(new Pair<>(doc.getId(), distance));
+                                                                    processedVendors.incrementAndGet();
+
+                                                                    if (processedVendors.get() == totalVendorsToProcess.get()) {
+                                                                        showVendorResultsDialog(matchedVendors, userLocation);
+                                                                    }
+                                                                });
+                                                            } else {
+                                                                matchedVendors.add(new Pair<>(doc.getId(), null));
+                                                                processedVendors.incrementAndGet();
+
+                                                                if (processedVendors == totalVendorsToProcess) {
+                                                                    showVendorResultsDialog(matchedVendors, userLocation);
+                                                                }
+                                                            }
+                                                        }
+                                                    }
+                                                }
+
+                                                if (totalVendorsToProcess.get() == 0) {
+                                                    Toast.makeText(MainActivity.this, "No vendors match your filters", Toast.LENGTH_SHORT).show();
+                                                }
+                                            });
+                                });
+                            } else {
+                                firestore.collection("Vendors").get()
+                                        .addOnSuccessListener(querySnapshot -> {
+                                            List<Pair<String, Double>> matchedVendors = new ArrayList<>();
+                                            for (QueryDocumentSnapshot doc : querySnapshot) {
+                                                HashMap<String, Object> filters = (HashMap<String, Object>) doc.get("vendorFilters");
+                                                if (filters != null) {
+                                                    boolean matchesAll = true;
+                                                    for (String filter : selectedFilters) {
+                                                        Object value = filters.get(filter);
+                                                        if (!(value instanceof Boolean) || !(Boolean) value) {
+                                                            matchesAll = false;
+                                                            break;
+                                                        }
+                                                    }
+                                                    if (matchesAll) {
+                                                        matchedVendors.add(new Pair<>(doc.getId(), null));
+                                                    }
+                                                }
+                                            }
+                                            showVendorResultsDialog(matchedVendors, null);
+                                        });
+                            }
+                        }
+                    })
+                    .addOnFailureListener(e -> {
+                        firestore.collection("Vendors").get()
+                                .addOnSuccessListener(querySnapshot -> {
+                                    List<Pair<String, Double>> matchedVendors = new ArrayList<>();
+                                    for (QueryDocumentSnapshot doc : querySnapshot) {
+                                        HashMap<String, Object> filters = (HashMap<String, Object>) doc.get("vendorFilters");
+                                        if (filters != null) {
+                                            boolean matchesAll = true;
+                                            for (String filter : selectedFilters) {
+                                                Object value = filters.get(filter);
+                                                if (!(value instanceof Boolean) || !(Boolean) value) {
+                                                    matchesAll = false;
+                                                    break;
+                                                }
+                                            }
+                                            if (matchesAll) {
+                                                matchedVendors.add(new Pair<>(doc.getId(), null));
+                                            }
+                                        }
+                                    }
+                                    showVendorResultsDialog(matchedVendors, null);
+                                });
+                    });
+
+            dialog.dismiss();
+        });
+
+        dialog.show();
     }
 
     private void checkUserType() {

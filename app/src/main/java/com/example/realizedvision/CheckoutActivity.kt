@@ -9,15 +9,19 @@ import android.widget.ImageButton
 import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
+import androidx.compose.ui.geometry.isEmpty
 import androidx.lifecycle.lifecycleScope
 import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.firestore.DocumentReference
 import com.google.firebase.firestore.FirebaseFirestore
+import com.google.firebase.firestore.QuerySnapshot
 import com.stripe.android.PaymentConfiguration
 import com.stripe.android.paymentsheet.PaymentSheet
 import com.stripe.android.paymentsheet.PaymentSheetResult
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.tasks.await
 import kotlinx.coroutines.withContext
 import java.util.Date
 import java.util.Properties
@@ -39,6 +43,7 @@ class CheckoutActivity : AppCompatActivity() {
     private lateinit var backButton: ImageButton
     private var subtotal: Double = 0.0
     private lateinit var notificationHelper: NotificationHelper
+    private var destinationAccountId: String? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -103,9 +108,16 @@ class CheckoutActivity : AppCompatActivity() {
                     }
                 }
                 updateUI(items)
+                lifecycleScope.launch {
+                    determineDestinationAccount(items)
+                }
             }
             .addOnFailureListener { exception ->
                 Log.w("CheckoutActivity", "Error getting shopping cart", exception)
+                updateUI(emptyList())
+                lifecycleScope.launch {
+                    determineDestinationAccount(emptyList())
+                }
             }
     }
 
@@ -120,14 +132,63 @@ class CheckoutActivity : AppCompatActivity() {
         orderSummaryExpandableList.expandGroup(0)
     }
 
+    private suspend fun determineDestinationAccount(items: List<Item>) {
+        destinationAccountId = null // Reset before determining
+        payNowButton.isEnabled = false // Disable button initially
+
+        if (items.isNotEmpty()) {
+            val firstItem = items.first()
+            val vendorId = firstItem.vendorID
+
+            if (vendorId != null) {
+                try {
+                    // **Query the Vendors collection to find the vendor by vendorId**
+                    val querySnapshot = db.collection("Vendors")
+                        .whereEqualTo("vendorID", vendorId)
+                        .limit(1) // Limit to 1 as vendorId should be unique
+                        .get()
+                        .await()
+
+                    if (!querySnapshot.isEmpty) {
+                        val vendorDocument = querySnapshot.documents.first()
+                        // Extract the stripeAccountId from the vendor document
+                        destinationAccountId = vendorDocument.getString("stripeAccountId")
+                        Log.d("CheckoutActivity", "Found Destination Account ID for vendor $vendorId: $destinationAccountId")
+
+                        if (destinationAccountId != null) {
+                            payNowButton.isEnabled = true
+                        } else {
+                            Log.e("CheckoutActivity", "stripeAccountId is null for vendor $vendorId")
+                        }
+                    } else {
+                        Log.w("CheckoutActivity", "Vendor document not found for vendorId: $vendorId")
+                    }
+                } catch (e: Exception) {
+                    Log.e("CheckoutActivity", "Error fetching vendor details for vendorId: $vendorId", e)
+                }
+            } else {
+                Log.w("CheckoutActivity", "First item has no vendorId.")
+            }
+        } else {
+            Log.w("CheckoutActivity", "Shopping cart is empty. Cannot determine destination account.")
+        }
+    }
+
     private fun createPaymentIntent() {
         lifecycleScope.launch {
             try {
+                if (destinationAccountId == null) {
+                    Log.e("CheckoutActivity", "Destination account ID is null")
+                    return@launch
+                }
+
                 val amountInCents = (subtotal * 100).toLong()
+                val transferData = TransferData(destination = destinationAccountId!!)
                 val request = CreatePaymentIntentRequest(
                     amount = amountInCents,
                     currency = "usd",
-                    automatic_payment_methods = AutomaticPaymentMethods()
+                    automatic_payment_methods = AutomaticPaymentMethods(),
+                    transfer_data = transferData,
                 )
 
                 val response = withContext(Dispatchers.IO) {
@@ -206,6 +267,7 @@ class CheckoutActivity : AppCompatActivity() {
                         Log.e("Checkout", "Order creation failed", e)
                         Toast.makeText(this, "Order failed to process", Toast.LENGTH_SHORT).show()
                     }
+                    .addOnFailureListener { e: java.lang.Exception? -> println("Shopping cart is empty for user: $e")}
             }
             .addOnFailureListener { e ->
                 Log.e("Checkout", "Failed to load cart", e)

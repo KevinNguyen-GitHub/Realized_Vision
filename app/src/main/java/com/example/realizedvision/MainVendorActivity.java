@@ -1,4 +1,5 @@
 package com.example.realizedvision;
+
 import android.app.AlertDialog;
 import android.content.ActivityNotFoundException;
 import android.content.Intent;
@@ -8,29 +9,22 @@ import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.Button;
-import android.widget.EditText;
-import android.widget.ImageView;
-import android.widget.TextView;
-import android.widget.Toast;
-
+import android.widget.*;
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.recyclerview.widget.LinearLayoutManager;
+import androidx.recyclerview.widget.RecyclerView;
 
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
-import com.google.firebase.firestore.CollectionReference;
-import com.google.firebase.firestore.DocumentReference;
-import com.google.firebase.firestore.DocumentSnapshot;
-import com.google.firebase.firestore.FirebaseFirestore;
+import com.google.firebase.firestore.*;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.UUID;
+import java.util.*;
 
 import retrofit2.Response;
 
-public class MainVendorActivity extends AppCompatActivity{
+public class MainVendorActivity extends AppCompatActivity {
+
     private FirebaseFirestore firestore;
     private FirebaseUser currentUser;
     private String vendorId;
@@ -38,355 +32,283 @@ public class MainVendorActivity extends AppCompatActivity{
     private StripeApiService stripeApiService = NetworkModule.INSTANCE.provideStripeApiService();
     private StripeApiHelper stripeApiHelper;
     private TextView profileNameTextView;
-    private TextView totalSales;
-    private TextView totalOrders;
 
+    private RecyclerView vendorRequestsRecyclerView;
+    private CommissionVendorAdapter vendorAdapter;
+    private List<CommissionRequest> vendorRequests = new ArrayList<>();
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_vendormain);
 
-//        Connect to db, find user instance
+        // Firebase and Stripe Initialization
         currentUser = FirebaseAuth.getInstance().getCurrentUser();
         firestore = FirebaseFirestore.getInstance();
         vendorId = currentUser.getUid();
         stripeApiHelper = new StripeApiHelper(stripeApiService);
 
-        ImageView messageIcon = findViewById(R.id.messages_icon);
-        ImageView profileIcon = findViewById(R.id.profile_icon);
+        // Initialize UI Elements
+        profileNameTextView = findViewById(R.id.vendor_greeting_text);
+        ImageView messageIcon = findViewById(R.id.nav_messages_icon);
+        ImageView profileIcon = findViewById(R.id.nav_profile_icon);
 
         Button addItemButton = findViewById(R.id.add_item_button);
         Button deleteItemButton = findViewById(R.id.delete_item_button);
         Button viewOrdersButton = findViewById(R.id.view_orders_button);
-        Button viewMoreButton = findViewById(R.id.btn_view_analytics);
-        profileNameTextView = findViewById(R.id.main_vendor_name);
+        Button viewMoreButton = findViewById(R.id.view_analytics_button);
 
-//        Clicking on add or delete buttons
+        // RecyclerView Setup for Vendor Requests
+        vendorRequestsRecyclerView = findViewById(R.id.vendor_requests_recycler_view);
+        vendorAdapter = new CommissionVendorAdapter(this, vendorRequests);
+        vendorAdapter.setOnStatusChangedListener(vendorAdapter::notifyDataSetChanged);
+        vendorRequestsRecyclerView.setLayoutManager(new LinearLayoutManager(this));
+        vendorRequestsRecyclerView.setAdapter(vendorAdapter);
+
+        // Button Listeners
         viewMoreButton.setOnClickListener(v -> openStripeDashboard());
         addItemButton.setOnClickListener(v -> addItem(vendorId));
         deleteItemButton.setOnClickListener(v -> deleteItem(vendorId));
         viewOrdersButton.setOnClickListener(v -> navigateTo(OrderHistoryActivity.class));
 
-
-//        Navigate to desired elements when clicked
         messageIcon.setOnClickListener(view -> navigateTo(MessagesActivity.class));
         profileIcon.setOnClickListener(view -> navigateTo(StorefrontActivity.class));
 
-
+        // Load Data
         fetchUserData();
         checkForStripeAccount();
+        loadVendorRequests();
     }
 
-    private void addItem(String vendorId) {
-        AlertDialog.Builder builder = new AlertDialog.Builder(this);
-        builder.setTitle("Add New Item");
-
-        View viewInflated = LayoutInflater.from(this).inflate(R.layout.dialog_add_item, null);
-        final EditText inputName = viewInflated.findViewById(R.id.input_name);
-        final EditText inputDescription = viewInflated.findViewById(R.id.input_description);
-        final EditText inputPrice = viewInflated.findViewById(R.id.input_price);
-        final EditText inputCategory = viewInflated.findViewById(R.id.input_category);
-
-        builder.setView(viewInflated);
-
-        builder.setPositiveButton("Add", (dialog, which) -> {
-            String name = inputName.getText().toString().trim();
-            String description = inputDescription.getText().toString().trim();
-            String priceString = inputPrice.getText().toString().trim();
-            String category = inputCategory.getText().toString().trim();
-
-            if (!name.isEmpty() && !description.isEmpty() && !priceString.isEmpty() && !category.isEmpty()) {
-                double price = Double.parseDouble(priceString);
-                String userId = currentUser.getUid();
-
-                // Check if an item with the same name already exists for the vendor
-                firestore.collection("Storefront")
-                        .whereEqualTo("name", name)
-                        .whereEqualTo("vendorID", userId)
-                        .get()
-                        .addOnSuccessListener(querySnapshot -> {
-                            if (!querySnapshot.isEmpty()) {
-                                // Item with the same name exists, show error message
-                                Toast.makeText(this, "Item with this name already exists!", Toast.LENGTH_SHORT).show();
-                            } else {
-                                // No duplicate, proceed with adding the item
-                                addNewItemToFirestore(name, description, price, category, userId, vendorId);
-                            }
-                        })
-                        .addOnFailureListener(e -> {
-                            Toast.makeText(this, "Error checking existing items.", Toast.LENGTH_SHORT).show();
-                        });
-            }
-        });
-
-        builder.setNegativeButton("Cancel", (dialog, which) -> dialog.cancel());
-
-        AlertDialog dialog = builder.create();
-        dialog.setOnShowListener(dialogInterface -> {
-            dialog.getButton(AlertDialog.BUTTON_POSITIVE).setTextColor(getColor(android.R.color.black));
-            dialog.getButton(AlertDialog.BUTTON_NEGATIVE).setTextColor(getColor(android.R.color.black));
-        });
-        dialog.show();
-    }
-
-    // Helper function to add the item and reload storefront
-    private void addNewItemToFirestore(String name, String description, double price,String category, String userId, String vendorId) {
-        CollectionReference storefrontColRef = firestore.collection("Storefront");
-        String itemID = storefrontColRef.document().getId();
-        String imageUrl = ""; // Placeholder for image URL
-
-        HashMap<String, Object> item = new HashMap<>();
-        item.put("name", name);
-        item.put("description", description);
-        item.put("imageUrl", imageUrl);
-        item.put("price", price);
-        item.put("category", category);
-        item.put("itemID", itemID);
-        item.put("vendorID", userId);
-        item.put("quantity", 1);
-
-        storefrontColRef.document(itemID).set(item)
-                .addOnSuccessListener(aVoid -> {
-                    Toast.makeText(this, "Item Added Successfully", Toast.LENGTH_SHORT).show();
-                })
-                .addOnFailureListener(e -> {
-                    Toast.makeText(this, "Error Adding Item", Toast.LENGTH_SHORT).show();
-                });
-    }
-
-    private void deleteItem(String vendorId) {
-        AlertDialog.Builder builder = new AlertDialog.Builder(this);
-        builder.setTitle("Delete Item");
-
-        View viewInflated = LayoutInflater.from(this).inflate(R.layout.dialog_delete_item, null);
-        final EditText inputItem = viewInflated.findViewById(R.id.input_item_id);
-
-        builder.setView(viewInflated);
-
-        builder.setPositiveButton("Delete", (dialog, which) -> {
-            String inputText = inputItem.getText().toString().trim();
-            if (!inputText.isEmpty()) {
-                // Check if input is an item ID
-                DocumentReference itemRef = firestore.collection("Storefront").document(inputText);
-                itemRef.get().addOnSuccessListener(documentSnapshot -> {
-                    if (documentSnapshot.exists()) {
-                        String itemVendorId = documentSnapshot.getString("vendorID");
-
-                        if (itemVendorId != null && itemVendorId.equals(vendorId)) {
-                            // Delete the item by item ID
-                            itemRef.delete().addOnSuccessListener(aVoid -> {
-                                Toast.makeText(this, "Item Deleted Successfully", Toast.LENGTH_SHORT).show();
-                            }).addOnFailureListener(e -> {
-                                Toast.makeText(this, "Error Deleting Item", Toast.LENGTH_SHORT).show();
-                            });
-                        } else {
-                            Toast.makeText(this, "You can only delete your own items.", Toast.LENGTH_SHORT).show();
-                        }
-                    } else {
-                        // If not an item ID, search by name
-                        searchAndDeleteByName(inputText, vendorId);
-                    }
-                }).addOnFailureListener(e -> {
-                    Toast.makeText(this, "Error retrieving item data.", Toast.LENGTH_SHORT).show();
-                });
-            }
-        });
-
-        builder.setNegativeButton("Cancel", (dialog, which) -> dialog.cancel());
-
-        AlertDialog dialog = builder.create();
-        dialog.setOnShowListener(dialogInterface -> {
-            dialog.getButton(AlertDialog.BUTTON_POSITIVE).setTextColor(getResources().getColor(android.R.color.black));
-            dialog.getButton(AlertDialog.BUTTON_NEGATIVE).setTextColor(getResources().getColor(android.R.color.black));
-        });
-        dialog.show();
-    }
-
-    // Function to delete by item name
-    private void searchAndDeleteByName(String itemName, String vendorId) {
-        firestore.collection("Storefront")
-                .whereEqualTo("name", itemName)
-                .whereEqualTo("vendorID", vendorId) // Ensure only deleting current user's items
+    private void loadVendorRequests() {
+        firestore.collection("CommissionRequests")
                 .get()
-                .addOnSuccessListener(queryDocumentSnapshots -> {
-                    if (!queryDocumentSnapshots.isEmpty()) {
-                        for (DocumentSnapshot doc : queryDocumentSnapshots.getDocuments()) {
-                            doc.getReference().delete().addOnSuccessListener(aVoid -> {
-                                Toast.makeText(this, "Item Deleted Successfully", Toast.LENGTH_SHORT).show();
-                            }).addOnFailureListener(e -> {
-                                Toast.makeText(this, "Error Deleting Item", Toast.LENGTH_SHORT).show();
-                            });
+                .addOnSuccessListener(snapshots -> {
+                    vendorRequests.clear();
+                    if (snapshots != null && !snapshots.isEmpty()) {
+                        for (QueryDocumentSnapshot doc : snapshots) {
+                            CommissionRequest req = doc.toObject(CommissionRequest.class);
+                            if (req != null) {
+                                req.setDocumentId(doc.getId());
+                                vendorRequests.add(req);
+                            }
                         }
-                    } else {
-                        Toast.makeText(this, "Item not found.", Toast.LENGTH_SHORT).show();
+                        vendorAdapter.notifyDataSetChanged();
                     }
                 })
-                .addOnFailureListener(e -> {
-                    Toast.makeText(this, "Error searching for item.", Toast.LENGTH_SHORT).show();
-                });
+                .addOnFailureListener(e -> showToast("Failed to load requests"));
     }
 
     private void fetchUserData() {
-
         if (currentUser != null) {
-            String userId = vendorId;
-
-            DocumentReference userDocRef = firestore.collection("Vendors").document(userId);
-
+            DocumentReference userDocRef = firestore.collection("Vendors").document(vendorId);
             userDocRef.get().addOnCompleteListener(task -> {
-                if (task.isSuccessful()) {
-                    DocumentSnapshot snapshot = task.getResult();
-
-                    if (snapshot.exists() /*&& Boolean.FALSE.equals(snapshot.getBoolean("isVendor"))*/) {
-                        String companyName = snapshot.getString("companyName");
-
-                        // Handle null values
-                        companyName = (companyName != null) ? companyName : "";
-
-                        // Use resource string with placeholders
-                        String displayCompanyName = getString(R.string.profile_name_format, companyName, "");
-                        profileNameTextView.setText("Welcome, " + displayCompanyName);
-                    } else {
-                        Toast.makeText(MainVendorActivity.this, "User data not found.", Toast.LENGTH_SHORT).show();
-                    }
+                if (task.isSuccessful() && task.getResult().exists()) {
+                    String companyName = task.getResult().getString("companyName");
+                    profileNameTextView.setText("Welcome, " + (companyName != null ? companyName : "Vendor") + "!");
                 } else {
-                    Toast.makeText(MainVendorActivity.this, "Error: " + task.getException().getMessage(), Toast.LENGTH_SHORT).show();
+                    showToast("User data not found.");
                 }
             });
         }
     }
 
-    //   Helper function for activity navigation
-    private void navigateTo(Class<?> targetActivity) {
-        Intent intent = new Intent(MainVendorActivity.this, targetActivity);
-        startActivity(intent);
-    }
+    private void addItem(String vendorId) {
+        View viewInflated = LayoutInflater.from(this).inflate(R.layout.dialog_add_item, null);
+        EditText inputName = viewInflated.findViewById(R.id.input_name);
+        EditText inputDescription = viewInflated.findViewById(R.id.input_description);
+        EditText inputPrice = viewInflated.findViewById(R.id.input_price);
+        EditText inputCategory = viewInflated.findViewById(R.id.input_category);
 
-    private void openStripeDashboard(){
-        if(stripeAccountId == null){
-            createConnectAccount();
-            return;
-        }
-        generateDashboardLink();
-    }
+        new AlertDialog.Builder(this)
+                .setTitle("Add New Item")
+                .setView(viewInflated)
+                .setPositiveButton("Add", (dialog, which) -> {
+                    String name = inputName.getText().toString().trim();
+                    String description = inputDescription.getText().toString().trim();
+                    String priceStr = inputPrice.getText().toString().trim();
+                    String category = inputCategory.getText().toString().trim();
 
-    private void generateDashboardLink(){
-        if(stripeAccountId == null || stripeAccountId.isEmpty()){
-            Toast.makeText(MainVendorActivity.this, "Stripe account not set up", Toast.LENGTH_SHORT).show();
-            createConnectAccount();
-            return;
-        }
-        String uniqueId = UUID.randomUUID().toString();
-        String returnUrl = "https://f-andrade27.github.io/stripe_return.html?id=" + uniqueId;
-
-        stripeApiHelper.generateDashboardLink(
-                stripeAccountId,
-                returnUrl,
-                new StripeApiHelper.Callback<GenerateDashboardLinkResponse>(){
-                    @Override
-                    public void onSuccess(@NonNull Response<GenerateDashboardLinkResponse> response) {
-                        if(response.isSuccessful() && response.body() != null){
-                            String url = response.body().getUrl();
-                            openUrlInBrowser(url);
-                        }else{
-                            Toast.makeText(MainVendorActivity.this, "Failed to generate url",Toast.LENGTH_SHORT).show();
-                        }
+                    if (!name.isEmpty() && !description.isEmpty() && !priceStr.isEmpty() && !category.isEmpty()) {
+                        checkDuplicateAndAddItem(name, description, Double.parseDouble(priceStr), category, vendorId);
                     }
-                    @Override
-                    public void onError(@NonNull Throwable throwable) {
-                        Toast.makeText(MainVendorActivity.this, "Error: " + throwable.getMessage(), Toast.LENGTH_SHORT).show();
-                    }
-                }
-        );
-
+                })
+                .setNegativeButton("Cancel", (dialog, which) -> dialog.cancel())
+                .show();
     }
-    private void checkForStripeAccount(){
-        String userId = FirebaseAuth.getInstance().getUid();
-        FirebaseFirestore.getInstance().collection("Vendors")
-                .document(userId)
+
+    private void checkDuplicateAndAddItem(String name, String description, double price, String category, String vendorId) {
+        firestore.collection("Storefront")
+                .whereEqualTo("name", name)
+                .whereEqualTo("vendorID", vendorId)
                 .get()
-                .addOnSuccessListener(documentSnapshot -> {
-                    if(documentSnapshot.exists()){
-                        stripeAccountId = documentSnapshot.getString("stripeAccountId");
+                .addOnSuccessListener(querySnapshot -> {
+                    if (querySnapshot.isEmpty()) {
+                        addNewItemToFirestore(name, description, price, category, vendorId);
+                    } else {
+                        showToast("Item with this name already exists!");
                     }
-                }).addOnFailureListener(e ->{
-                    Log.e("Vendor Main", "Error checking vendors" + e.getMessage());
-                });
+                })
+                .addOnFailureListener(e -> showToast("Error checking existing items."));
     }
 
-    private void createConnectAccount(){
-        AlertDialog.Builder builder = new AlertDialog.Builder(this);
-        builder.setTitle("Stripe Account Setup");
-        builder.setMessage("You must create a Stripe Account to view your analytics");
-        builder.setPositiveButton("Set up", ((dialogInterface, i) -> {
-            View loadingView = getLayoutInflater().inflate(R.layout.loading_overlay, null);
-            TextView loadingText = loadingView.findViewById(R.id.loading_text);
-            loadingText.setText("Creating account...");
+    private void addNewItemToFirestore(String name, String description, double price, String category, String vendorId) {
+        String itemID = firestore.collection("Storefront").document().getId();
+        Map<String, Object> item = new HashMap<>();
+        item.put("name", name);
+        item.put("description", description);
+        item.put("price", price);
+        item.put("category", category);
+        item.put("itemID", itemID);
+        item.put("vendorID", vendorId);
+        item.put("quantity", 1);
+        item.put("imageUrl", "");
 
-            ViewGroup rootView = findViewById(android.R.id.content);
-            rootView.addView(loadingView);
-
-            //Get the user's email from Firebase
-            String userEmail = FirebaseAuth.getInstance().getCurrentUser().getEmail();
-
-            stripeApiHelper.createConnectAccount(
-                    userEmail,
-                    vendorId,
-                    new StripeApiHelper.Callback<CreateConnectAccountResponse>() {
-                        @Override
-                        public void onSuccess(@NonNull Response<CreateConnectAccountResponse> response) {
-                            rootView.removeView(loadingView);
-
-                            if(response.isSuccessful() && response.body() != null){
-                                stripeAccountId = response.body().getAccountId();
-                                saveStripeAccountId(stripeAccountId);
-
-                                generateDashboardLink();
-                            }
-                        }
-
-                        @Override
-                        public void onError(@NonNull Throwable throwable) {
-                            rootView.removeView(loadingView);
-                            Toast.makeText(MainVendorActivity.this, "Error: "+throwable.getMessage(), Toast.LENGTH_SHORT).show();
-                        }
-                    }
-            );
-
-        }));
-        builder.setNegativeButton("Cancel", ((dialogInterface, i) -> dialogInterface.cancel()));
-
-        AlertDialog dialog = builder.create();
-        dialog.setOnShowListener(dialogInterface -> {
-            dialog.getButton(AlertDialog.BUTTON_POSITIVE).setTextColor(getColor(R.color.black));
-            dialog.getButton(AlertDialog.BUTTON_NEGATIVE).setTextColor(getColor(R.color.black));
-        });
-        dialog.show();
+        firestore.collection("Storefront").document(itemID)
+                .set(item)
+                .addOnSuccessListener(aVoid -> showToast("Item Added Successfully"))
+                .addOnFailureListener(e -> showToast("Error Adding Item"));
     }
-    private void openUrlInBrowser(String url){
-        try {
-            Intent intent = new Intent(Intent.ACTION_VIEW, Uri.parse(url));
-            if(intent.resolveActivity(getPackageManager()) != null){
-                startActivity(intent);
+
+    private void deleteItem(String vendorId) {
+        View viewInflated = LayoutInflater.from(this).inflate(R.layout.dialog_delete_item, null);
+        EditText inputItem = viewInflated.findViewById(R.id.input_item_id);
+
+        new AlertDialog.Builder(this)
+                .setTitle("Delete Item")
+                .setView(viewInflated)
+                .setPositiveButton("Delete", (dialog, which) -> {
+                    String inputText = inputItem.getText().toString().trim();
+                    if (!inputText.isEmpty()) {
+                        attemptDeleteByIdOrName(inputText, vendorId);
+                    }
+                })
+                .setNegativeButton("Cancel", (dialog, which) -> dialog.cancel())
+                .show();
+    }
+
+    private void attemptDeleteByIdOrName(String itemIdOrName, String vendorId) {
+        DocumentReference itemRef = firestore.collection("Storefront").document(itemIdOrName);
+        itemRef.get().addOnSuccessListener(documentSnapshot -> {
+            if (documentSnapshot.exists() && vendorId.equals(documentSnapshot.getString("vendorID"))) {
+                itemRef.delete().addOnSuccessListener(aVoid -> showToast("Item Deleted Successfully"));
+            } else {
+                searchAndDeleteByName(itemIdOrName, vendorId);
             }
-            else{
-                Toast.makeText(MainVendorActivity.this, "No browser to open", Toast.LENGTH_SHORT).show();
-            }
-        }catch(ActivityNotFoundException e){
-            Toast.makeText(this, "No browser available", Toast.LENGTH_SHORT).show();
+        }).addOnFailureListener(e -> showToast("Error retrieving item data."));
+    }
+
+    private void searchAndDeleteByName(String itemName, String vendorId) {
+        firestore.collection("Storefront")
+                .whereEqualTo("name", itemName)
+                .whereEqualTo("vendorID", vendorId)
+                .get()
+                .addOnSuccessListener(snapshot -> {
+                    if (!snapshot.isEmpty()) {
+                        snapshot.forEach(doc -> doc.getReference().delete());
+                        showToast("Item Deleted Successfully");
+                    } else {
+                        showToast("Item not found.");
+                    }
+                })
+                .addOnFailureListener(e -> showToast("Error searching for item."));
+    }
+
+    private void openStripeDashboard() {
+        if (stripeAccountId == null) {
+            createConnectAccount();
+        } else {
+            generateDashboardLink();
         }
     }
 
-    private void saveStripeAccountId(String accountId){
-        FirebaseFirestore.getInstance().collection("Vendors")
-                .document(vendorId)
-                .update("stripeAccountId", accountId)
-                .addOnSuccessListener(s ->{
-                    Log.d("Main Vendor Activity", "accountId saved successfully");
-                }).addOnFailureListener(e->{
-                    Log.e("Main Vendor Activity", "Error saving Stripe account id: "+ e.getMessage());
-                });
+    private void generateDashboardLink() {
+        if (stripeAccountId == null || stripeAccountId.isEmpty()) {
+            showToast("Stripe account not set up");
+            createConnectAccount();
+            return;
+        }
+
+        String returnUrl = "https://f-andrade27.github.io/stripe_return.html?id=" + UUID.randomUUID();
+        stripeApiHelper.generateDashboardLink(stripeAccountId, returnUrl, new StripeApiHelper.Callback<GenerateDashboardLinkResponse>() {
+            @Override
+            public void onSuccess(@NonNull Response<GenerateDashboardLinkResponse> response) {
+                if (response.isSuccessful() && response.body() != null) {
+                    openUrlInBrowser(response.body().getUrl());
+                } else {
+                    showToast("Failed to generate URL");
+                }
+            }
+
+            @Override
+            public void onError(@NonNull Throwable throwable) {
+                showToast("Error: " + throwable.getMessage());
+            }
+        });
     }
 
+    private void checkForStripeAccount() {
+        firestore.collection("Vendors").document(vendorId)
+                .get()
+                .addOnSuccessListener(doc -> {
+                    if (doc.exists()) stripeAccountId = doc.getString("stripeAccountId");
+                })
+                .addOnFailureListener(e -> Log.e("Vendor Main", "Error checking vendor: " + e.getMessage()));
+    }
+
+    private void createConnectAccount() {
+        new AlertDialog.Builder(this)
+                .setTitle("Stripe Account Setup")
+                .setMessage("You must create a Stripe Account to view your analytics")
+                .setPositiveButton("Set up", (dialog, which) -> startStripeAccountCreation())
+                .setNegativeButton("Cancel", null)
+                .show();
+    }
+
+    private void startStripeAccountCreation() {
+        View loadingView = getLayoutInflater().inflate(R.layout.loading_overlay, null);
+        ((TextView) loadingView.findViewById(R.id.loading_text)).setText("Creating account...");
+        ((ViewGroup) findViewById(android.R.id.content)).addView(loadingView);
+
+        stripeApiHelper.createConnectAccount(currentUser.getEmail(), vendorId, new StripeApiHelper.Callback<CreateConnectAccountResponse>() {
+            @Override
+            public void onSuccess(@NonNull Response<CreateConnectAccountResponse> response) {
+                ((ViewGroup) findViewById(android.R.id.content)).removeView(loadingView);
+                if (response.isSuccessful() && response.body() != null) {
+                    stripeAccountId = response.body().getAccountId();
+                    saveStripeAccountId(stripeAccountId);
+                    generateDashboardLink();
+                }
+            }
+
+            @Override
+            public void onError(@NonNull Throwable throwable) {
+                ((ViewGroup) findViewById(android.R.id.content)).removeView(loadingView);
+                showToast("Error: " + throwable.getMessage());
+            }
+        });
+    }
+
+    private void saveStripeAccountId(String accountId) {
+        firestore.collection("Vendors").document(vendorId)
+                .update("stripeAccountId", accountId)
+                .addOnSuccessListener(aVoid -> Log.d("Vendor Main", "Account ID saved successfully"))
+                .addOnFailureListener(e -> Log.e("Vendor Main", "Error saving account ID: " + e.getMessage()));
+    }
+
+    private void openUrlInBrowser(String url) {
+        try {
+            startActivity(new Intent(Intent.ACTION_VIEW, Uri.parse(url)));
+        } catch (ActivityNotFoundException e) {
+            showToast("No browser available");
+        }
+    }
+
+    private void navigateTo(Class<?> targetActivity) {
+        startActivity(new Intent(this, targetActivity));
+    }
+
+    private void showToast(String message) {
+        Toast.makeText(this, message, Toast.LENGTH_SHORT).show();
+    }
 }

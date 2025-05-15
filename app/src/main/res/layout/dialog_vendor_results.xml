@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    android:background="@color/beige"
+    android:padding="16dp">
+
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Filtered Vendors"
+        android:textSize="18sp"
+        android:textStyle="bold"
+        android:textColor="@color/maroon"
+        android:gravity="center"
+        android:layout_marginBottom="16dp"/>
+
+    <androidx.recyclerview.widget.RecyclerView
+        android:id="@+id/vendorsRecyclerView"
+        android:layout_width="match_parent"
+        android:layout_height="300dp"
+        android:layout_marginBottom="16dp"
+        android:background="@color/white"
+        android:padding="8dp"/>
+
+    <Button
+        android:id="@+id/close_button"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Close"
+        android:backgroundTint="@color/maroon"
+        android:textColor="@color/white"
+        android:textAllCaps="false"
+        android:paddingVertical="12dp"/>
+</LinearLayout>

@@ -3,6 +3,7 @@ package com.example.realizedvision;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
+import android.net.Uri;
 import android.content.pm.PackageManager;
 import android.graphics.Color;
 import android.graphics.drawable.ColorDrawable;
@@ -11,6 +12,7 @@ import android.os.Bundle;
 import android.util.DisplayMetrics;
 import android.util.Log;
 import android.view.Gravity;
+import android.util.Pair;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -26,12 +28,18 @@ import android.widget.Toast;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AlertDialog;
+import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
+import com.android.volley.Request;
+import com.android.volley.RequestQueue;
+import com.android.volley.toolbox.JsonArrayRequest;
+import com.android.volley.toolbox.Volley;
+import com.google.android.gms.maps.model.LatLng;
 import com.bumptech.glide.Glide;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
@@ -49,10 +57,14 @@ import com.google.firebase.firestore.Query;
 import com.google.firebase.firestore.QueryDocumentSnapshot;
 import com.google.firebase.firestore.QuerySnapshot;
 
+import org.json.JSONException;
+import org.json.JSONObject;
+
 import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.Map;
 
 public class MainActivity extends AppCompatActivity implements ItemAdapter.OnItemClickListener{
@@ -405,6 +417,9 @@ public class MainActivity extends AppCompatActivity implements ItemAdapter.OnIte
 
     }
 
+
+    private void showVendorFilterDialog() {
+
     private void checkUserType() {
         if (currentUser == null) {
             return;
@@ -454,6 +469,7 @@ public class MainActivity extends AppCompatActivity implements ItemAdapter.OnIte
         adapter.setDropDownViewResource(com.google.android.material.R.layout.support_simple_spinner_dropdown_item);
         filterSpinner.setAdapter(adapter);
 
+        Button searchButton = dialogView.findViewById(R.id.search_filters_button);
         builder.setNegativeButton("Cancel", null);
 
         AlertDialog dialog = builder.create();
@@ -461,6 +477,164 @@ public class MainActivity extends AppCompatActivity implements ItemAdapter.OnIte
 
         // Add temporary variable to track if selection is from user
         final boolean[] isUserSelection = {false};
+
+            String userId = currentUser.getUid();
+            firestore.collection("Users").document(userId).get()
+                    .addOnSuccessListener(userDoc -> {
+                        if (userDoc.exists()) {
+                            String userAddress = userDoc.getString("address");
+                            if (userAddress != null && !userAddress.isEmpty()) {
+                                geocodeAddress(userAddress, (userLat, userLng) -> {
+                                    LatLng userLocation = new LatLng(userLat, userLng);
+                                    firestore.collection("Vendors").get()
+                                            .addOnSuccessListener(querySnapshot -> {
+                                                List<Pair<String, Double>> matchedVendors = new ArrayList<>();
+                                                AtomicInteger totalVendorsToProcess = new AtomicInteger(0);
+                                                AtomicInteger processedVendors = new AtomicInteger(0);
+
+                                                for (QueryDocumentSnapshot doc : querySnapshot) {
+                                                    HashMap<String, Object> filters = (HashMap<String, Object>) doc.get("vendorFilters");
+                                                    if (filters != null) {
+                                                        boolean matchesAll = true;
+                                                        for (String filter : selectedFilters) {
+                                                            Object value = filters.get(filter);
+                                                            if (!(value instanceof Boolean) || !(Boolean) value) {
+                                                                matchesAll = false;
+                                                                break;
+                                                            }
+                                                        }
+
+                                                        if (matchesAll) {
+                                                            String vendorAddress = doc.getString("address");
+                                                            if (vendorAddress != null && !vendorAddress.isEmpty()) {
+                                                                totalVendorsToProcess.incrementAndGet();
+                                                                geocodeAddress(vendorAddress, (vendorLat, vendorLng) -> {
+                                                                    LatLng vendorLocation = new LatLng(vendorLat, vendorLng);
+                                                                    double distance = calculateDistance(userLocation, vendorLocation);
+                                                                    matchedVendors.add(new Pair<>(doc.getId(), distance));
+                                                                    processedVendors.incrementAndGet();
+
+                                                                    if (processedVendors.get() == totalVendorsToProcess.get()) {
+                                                                        showVendorResultsDialog(matchedVendors, userLocation);
+                                                                    }
+                                                                });
+                                                            } else {
+                                                                matchedVendors.add(new Pair<>(doc.getId(), null));
+                                                                processedVendors.incrementAndGet();
+
+                                                                if (processedVendors == totalVendorsToProcess) {
+                                                                    showVendorResultsDialog(matchedVendors, userLocation);
+                                                                }
+                                                            }
+                                                        }
+                                                    }
+                                                }
+
+                                                if (totalVendorsToProcess.get() == 0) {
+                                                    Toast.makeText(MainActivity.this, "No vendors match your filters", Toast.LENGTH_SHORT).show();
+                                                }
+                                            });
+                                });
+                            } else {
+                                firestore.collection("Vendors").get()
+                                        .addOnSuccessListener(querySnapshot -> {
+                                            List<Pair<String, Double>> matchedVendors = new ArrayList<>();
+                                            for (QueryDocumentSnapshot doc : querySnapshot) {
+                                                HashMap<String, Object> filters = (HashMap<String, Object>) doc.get("vendorFilters");
+                                                if (filters != null) {
+                                                    boolean matchesAll = true;
+                                                    for (String filter : selectedFilters) {
+                                                        Object value = filters.get(filter);
+                                                        if (!(value instanceof Boolean) || !(Boolean) value) {
+                                                            matchesAll = false;
+                                                            break;
+                                                        }
+                                                    }
+                                                    if (matchesAll) {
+                                                        matchedVendors.add(new Pair<>(doc.getId(), null));
+                                                    }
+                                                }
+                                            }
+                                            showVendorResultsDialog(matchedVendors, null);
+                                        });
+                            }
+                        }
+                    })
+                    .addOnFailureListener(e -> {
+                        firestore.collection("Vendors").get()
+                                .addOnSuccessListener(querySnapshot -> {
+                                    List<Pair<String, Double>> matchedVendors = new ArrayList<>();
+                                    for (QueryDocumentSnapshot doc : querySnapshot) {
+                                        HashMap<String, Object> filters = (HashMap<String, Object>) doc.get("vendorFilters");
+                                        if (filters != null) {
+                                            boolean matchesAll = true;
+                                            for (String filter : selectedFilters) {
+                                                Object value = filters.get(filter);
+                                                if (!(value instanceof Boolean) || !(Boolean) value) {
+                                                    matchesAll = false;
+                                                    break;
+                                                }
+                                            }
+                                            if (matchesAll) {
+                                                matchedVendors.add(new Pair<>(doc.getId(), null));
+                                            }
+                                        }
+                                    }
+                                    showVendorResultsDialog(matchedVendors, null);
+                                });
+                    });
+
+            dialog.dismiss();
+        });
+
+        dialog.show();
+    }
+
+    // Add these helper methods to MainActivity
+    private void showVendorResultsDialog(List<Pair<String, Double>> vendors, LatLng userLocation) {
+        AlertDialog.Builder builder = new AlertDialog.Builder(this);
+        View dialogView = LayoutInflater.from(this).inflate(R.layout.dialog_vendor_results, null);
+        builder.setView(dialogView);
+
+        RecyclerView vendorsRecyclerView = dialogView.findViewById(R.id.vendorsRecyclerView);
+        vendorsRecyclerView.setLayoutManager(new LinearLayoutManager(this));
+
+        VendorAdapter adapter = new VendorAdapter(vendors, firestore, userLocation) {
+            @Override
+            public void onBindViewHolder(@NonNull VendorViewHolder holder, int position) {
+                super.onBindViewHolder(holder, position);
+                String vendorId = vendors.get(position).first;
+
+                firestore.collection("Vendors").document(vendorId).get()
+                        .addOnSuccessListener(documentSnapshot -> {
+                            if (documentSnapshot.exists()) {
+                                String vendorAddress = documentSnapshot.getString("address");
+                                holder.directionsButton.setOnClickListener(v -> {
+                                    if (vendorAddress != null && !vendorAddress.isEmpty()) {
+                                        Intent mapIntent = new Intent(MainActivity.this, MapActivity.class);
+                                        mapIntent.putExtra("selectedAddress", vendorAddress);
+                                        mapIntent.putExtra("hasUserLocation", userLocation != null);
+                                        startActivity(mapIntent);
+                                    } else {
+                                        Toast.makeText(MainActivity.this,
+                                                "Vendor address not available",
+                                                Toast.LENGTH_SHORT).show();
+                                    }
+                                });
+                            }
+                        });
+            }
+        };
+
+        vendorsRecyclerView.setAdapter(adapter);
+
+        Button closeButton = dialogView.findViewById(R.id.close_button);
+        AlertDialog dialog = builder.create();
+
+        closeButton.setOnClickListener(v -> dialog.dismiss());
+        dialog.show();
+    }
+
 
         filterSpinner.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
             @Override
@@ -473,6 +647,83 @@ public class MainActivity extends AppCompatActivity implements ItemAdapter.OnIte
                 isUserSelection[0] = true;
             }
 
+
+
+//    private void showVendorResultsDialog(List<Pair<String, Double>> vendors, LatLng userLocation) {
+//        AlertDialog.Builder builder = new AlertDialog.Builder(this);
+//        View dialogView = LayoutInflater.from(this).inflate(R.layout.dialog_vendor_results, null);
+//        builder.setView(dialogView);
+//
+//        RecyclerView vendorsRecyclerView = dialogView.findViewById(R.id.vendorsRecyclerView);
+//        vendorsRecyclerView.setLayoutManager(new LinearLayoutManager(this));
+//        VendorAdapter adapter = new VendorAdapter(vendors, firestore, userLocation);
+//        vendorsRecyclerView.setAdapter(adapter);
+//
+//        Button closeButton = dialogView.findViewById(R.id.close_button);
+//        AlertDialog dialog = builder.create();
+//
+//        closeButton.setOnClickListener(v -> dialog.dismiss());
+//        dialog.show();
+//    }
+
+
+
+    // Copy the distance calculation from MapActivity
+    private double calculateDistance(LatLng origin, LatLng destination) {
+        final int EARTH_RADIUS = 3959; // Earth radius in miles
+
+        double latDiff = Math.toRadians(destination.latitude - origin.latitude);
+        double lonDiff = Math.toRadians(destination.longitude - origin.longitude);
+
+        double lat1 = Math.toRadians(origin.latitude);
+        double lat2 = Math.toRadians(destination.latitude);
+
+        double a = Math.sin(latDiff / 2) * Math.sin(latDiff / 2) +
+                Math.cos(lat1) * Math.cos(lat2) *
+                        Math.sin(lonDiff / 2) * Math.sin(lonDiff / 2);
+
+        double c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+
+        return EARTH_RADIUS * c; // Returns distance in miles
+    }
+
+    // Add geocodeAddress interface and method (similar to MapActivity)
+    interface OnGeocodeCompleteListener {
+        void onGeocodeSuccess(double latitude, double longitude);
+    }
+
+    private void geocodeAddress(String address, OnGeocodeCompleteListener listener) {
+        String url = "https://nominatim.openstreetmap.org/search?q=" +
+                Uri.encode(address) + "&format=json";
+
+        RequestQueue queue = Volley.newRequestQueue(this);
+
+        JsonArrayRequest request = new JsonArrayRequest(Request.Method.GET, url, null,
+                response -> {
+                    try {
+                        if (response.length() > 0) {
+                            JSONObject place = response.getJSONObject(0);
+                            double lat = place.getDouble("lat");
+                            double lon = place.getDouble("lon");
+                            listener.onGeocodeSuccess(lat, lon);
+                        } else {
+                            Toast.makeText(this, "Location not found: " + address, Toast.LENGTH_SHORT).show();
+                        }
+                    } catch (JSONException e) {
+                        e.printStackTrace();
+                        Toast.makeText(this, "Error fetching location for " + address, Toast.LENGTH_SHORT).show();
+                    }
+                },
+                error -> Toast.makeText(this, "Geocoding failed for " + address, Toast.LENGTH_SHORT).show());
+        queue.add(request);
+    }
+
+
+
+
+    //   Helper function for activity navigation
+    private void navigateTo(Class<?> targetActivity) {
+        Intent intent = new Intent(MainActivity.this, targetActivity);
             @Override
             public void onNothingSelected(AdapterView<?> adapterView) {
                 // Do nothing

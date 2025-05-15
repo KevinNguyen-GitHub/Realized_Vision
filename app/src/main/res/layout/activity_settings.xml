@@ -57,7 +57,8 @@
                 android:fontFamily="sans-serif-medium"
                 android:gravity="start|top"
                 android:padding="2dp"
-                android:text="Terms And Conditions" />
+                android:text="Terms And Conditions"
+                />
 
             <Button
                 android:id="@+id/changeUsernameButton"

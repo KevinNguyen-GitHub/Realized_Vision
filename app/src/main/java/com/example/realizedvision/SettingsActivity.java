@@ -42,6 +42,7 @@ public class SettingsActivity extends AppCompatActivity {
         ImageButton backButton = findViewById(R.id.backButtonChangePass);
         Button logoutButton = findViewById(R.id.btn_logout);
         Button addAddressButton = findViewById(R.id.addAddressButton);
+        Button enablePayments = findViewById(R.id.enablePayments);
 
         addAddressButton.setOnClickListener(v -> {
             FirebaseFirestore firestore = FirebaseFirestore.getInstance();
@@ -53,6 +54,7 @@ public class SettingsActivity extends AppCompatActivity {
                         .addOnSuccessListener(snapshot -> {
                             Boolean isVendor = snapshot.getBoolean("isVendor");
                             if (isVendor != null && isVendor) {
+                                enablePayments.setVisibility(View.VISIBLE);
                                 Toast.makeText(SettingsActivity.this, "You’ve already provided an address as a vendor.", Toast.LENGTH_SHORT).show();
                             } else {
                                 startActivity(new Intent(SettingsActivity.this, AddAddressActivity.class));
@@ -91,6 +93,7 @@ public class SettingsActivity extends AppCompatActivity {
         changePasswordButton.setOnClickListener(view -> navigateTo(ChangePasswordActivity.class));
         notificationsButton.setOnClickListener(view -> navigateTo(NotificationsActivity.class));
         vendorInfoButton.setOnClickListener(view -> navigateTo(VendorInfoActivity.class));
+        enablePayments.setOnClickListener(view -> navigateTo(VendorOnboardActivity.class));
 
         backButton.setOnClickListener(view -> {
             if (currentUser != null) {

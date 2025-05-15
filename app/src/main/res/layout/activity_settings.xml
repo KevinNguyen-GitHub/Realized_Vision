@@ -80,6 +80,17 @@
                 android:text="Upgrade to Vendor" />
 
             <Button
+                android:id="@+id/enablePayments"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="16dp"
+                android:background="@color/white"
+                android:gravity="start|top"
+                android:padding="2dp"
+                android:text="Enable Payments"
+                android:visibility="gone" />
+
+            <Button
                 android:id="@+id/historyButton"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"

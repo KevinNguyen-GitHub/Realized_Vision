@@ -54,7 +54,6 @@
     </LinearLayout>
 
 
-
     <!-- Section Title -->
 
     <LinearLayout
@@ -123,12 +122,13 @@
             android:id="@+id/storefront_label"
             android:layout_width="0dp"
             android:layout_height="32dp"
+            android:layout_marginEnd="4dp"
             android:layout_weight="1"
             android:contentDescription="Storefront"
-            android:src="@drawable/ic_storefront"
             android:scaleType="centerInside"
-            app:tint="@android:color/white"
-            android:layout_marginEnd="4dp"/>
+            android:src="@drawable/ic_storefront"
+            app:tint="@android:color/white" />
+
         <View
             android:layout_width="2dp"
             android:layout_height="30dp"
@@ -138,13 +138,14 @@
             android:id="@+id/star_icon"
             android:layout_width="0dp"
             android:layout_height="32dp"
+            android:layout_marginEnd="4dp"
             android:layout_weight="1"
             android:contentDescription="Favorites"
-            android:src="@drawable/ic_star"
             android:scaleType="centerInside"
-            app:tint="@android:color/white"
+            android:src="@drawable/ic_star"
 
-            android:layout_marginEnd="4dp"/>
+            app:tint="@android:color/white" />
+
         <View
             android:layout_width="2dp"
             android:layout_height="30dp"
@@ -154,13 +155,14 @@
             android:id="@+id/calendar_icon"
             android:layout_width="0dp"
             android:layout_height="32dp"
+            android:layout_marginEnd="4dp"
             android:layout_weight="1"
             android:contentDescription="Calendar"
-            android:src="@drawable/ic_calendar"
             android:scaleType="centerInside"
-            app:tint="@android:color/white"
+            android:src="@drawable/ic_calendar"
 
-            android:layout_marginEnd="4dp"/>
+            app:tint="@android:color/white" />
+
         <View
             android:layout_width="2dp"
             android:layout_height="30dp"
@@ -170,24 +172,19 @@
             android:id="@+id/book_icon"
             android:layout_width="0dp"
             android:layout_height="30dp"
+            android:layout_marginEnd="4dp"
             android:layout_weight="1"
             android:contentDescription="Portfolio"
-            android:src="@drawable/ic_book"
             android:scaleType="centerInside"
-            app:tint="@android:color/white"
+            android:src="@drawable/ic_book"
 
-            android:layout_marginEnd="4dp"/>
+            app:tint="@android:color/white" />
+
         <View
             android:layout_width="2dp"
             android:layout_height="30dp"
             android:background="@android:color/white" />
     </LinearLayout>
-
-
-
-    <!-- RecyclerView for Items -->
-
-    <!-- Bottom Navigation -->
 
     <androidx.recyclerview.widget.RecyclerView
         android:id="@+id/recyclerView"
@@ -251,7 +248,6 @@
             android:contentDescription="@string/profile"
             android:src="@drawable/ic_profile" />
     </LinearLayout>
-
 
 
 </androidx.constraintlayout.widget.ConstraintLayout>

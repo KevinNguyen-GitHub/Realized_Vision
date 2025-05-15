@@ -23,6 +23,8 @@
         android:id="@+id/submitReviewButton"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="Submit Review" />
+        android:text="Submit Review"
+        android:background="@drawable/rounded_button"
+        android:padding="10dp"/>
 
 </LinearLayout>

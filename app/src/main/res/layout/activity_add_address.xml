@@ -11,25 +11,37 @@
     <!-- Back Button -->
     <ImageButton
         android:id="@+id/backButtonAddress"
-        android:layout_width="60dp"
+        android:layout_width="52dp"
         android:layout_height="52dp"
-        android:layout_marginStart="24dp"
-        android:layout_marginTop="24dp"
-        android:background="@color/beige"
+        android:layout_margin="16dp"
+        android:background="@android:color/transparent"
         android:scaleType="centerInside"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent"
         app:srcCompat="@drawable/back_arrow" />
 
+    <!-- Title -->
+    <TextView
+        android:id="@+id/addressTitle"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Add Address"
+        android:textSize="24sp"
+        android:textStyle="bold"
+        android:textColor="@android:color/black"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintBottom_toTopOf="@id/scrollView"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        android:layout_marginTop="24dp" />
+
     <!-- ScrollView for Address Input Fields -->
     <ScrollView
+        android:id="@+id/scrollView"
         android:layout_width="0dp"
         android:layout_height="0dp"
-        android:layout_marginStart="16dp"
-        android:layout_marginEnd="16dp"
-        android:layout_marginTop="100dp"
-        android:layout_marginBottom="50dp"
-        app:layout_constraintTop_toBottomOf="@id/backButtonAddress"
+        android:layout_margin="16dp"
+        app:layout_constraintTop_toBottomOf="@id/addressTitle"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent">
@@ -37,42 +49,55 @@
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:orientation="vertical">
+            android:orientation="vertical"
+            android:padding="8dp">
 
             <EditText
                 android:id="@+id/streetAddressEditText"
+                style="@style/Widget.MaterialComponents.TextInputEditText.OutlinedBox"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:hint="Street Address"
+                android:textSize="20sp"
+                android:textAlignment="center"
                 android:padding="12dp"
-                android:background="@android:color/white"
+                android:background="@drawable/rounded_edittext"
                 android:layout_marginBottom="16dp" />
 
             <EditText
                 android:id="@+id/cityEditText"
+                style="@style/Widget.MaterialComponents.TextInputEditText.OutlinedBox"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:hint="City"
+                android:textSize="20sp"
+                android:textAlignment="center"
                 android:padding="12dp"
-                android:background="@android:color/white"
+                android:background="@drawable/rounded_edittext"
                 android:layout_marginBottom="16dp" />
 
             <EditText
                 android:id="@+id/stateEditText"
+                style="@style/Widget.MaterialComponents.TextInputEditText.OutlinedBox"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:hint="State"
+                android:textSize="20sp"
+                android:textAlignment="center"
                 android:padding="12dp"
-                android:background="@android:color/white"
+                android:background="@drawable/rounded_edittext"
                 android:layout_marginBottom="16dp" />
 
             <EditText
                 android:id="@+id/zipCodeEditText"
+                style="@style/Widget.MaterialComponents.TextInputEditText.OutlinedBox"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:hint="Zip Code"
+                android:textSize="20sp"
+                android:textAlignment="center"
                 android:padding="12dp"
-                android:background="@android:color/white"
+                android:background="@drawable/rounded_edittext"
                 android:layout_marginBottom="24dp" />
 
             <Button
@@ -82,7 +107,8 @@
                 android:text="Save Address"
                 android:background="@drawable/rounded_button"
                 android:textColor="@android:color/white"
-                android:textSize="18sp" />
+                android:textSize="18sp"
+                android:layout_marginTop="8dp" />
         </LinearLayout>
     </ScrollView>
 </androidx.constraintlayout.widget.ConstraintLayout>
